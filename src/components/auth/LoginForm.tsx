@@ -1,11 +1,17 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -20,13 +26,19 @@ export const LoginForm = () => {
 
     try {
       await signIn({ email, password });
+      // Aguarda um pouco para garantir que os cookies foram definidos
+      await new Promise((resolve) => setTimeout(resolve, 100));
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
       });
-      navigate("/");
+      // Navega após um pequeno delay para garantir que o estado foi atualizado
+      setTimeout(() => {
+        navigate("/", { replace: true });
+      }, 100);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Erro ao fazer login";
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro ao fazer login";
       toast({
         title: "Erro ao fazer login",
         description: errorMessage,
@@ -77,4 +89,3 @@ export const LoginForm = () => {
     </Card>
   );
 };
-

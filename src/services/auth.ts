@@ -63,11 +63,23 @@ export const auth = {
     };
     const response = await authRequest<{
       data?: {
-        user: User;
-        session: Session;
+        user: Omit<User, "createdAt" | "updatedAt"> & {
+          createdAt: string;
+          updatedAt: string;
+        };
+        session?: Omit<Session, "expiresAt" | "user"> & {
+          expiresAt: string;
+        };
+        token?: string;
       };
-      user?: User;
-      session?: Session;
+      user?: Omit<User, "createdAt" | "updatedAt"> & {
+        createdAt: string;
+        updatedAt: string;
+      };
+      token?: string;
+      session?: Omit<Session, "expiresAt" | "user"> & {
+        expiresAt: string;
+      };
       error?: { message: string };
     }>("/sign-in/email", {
       method: "POST",
@@ -78,12 +90,13 @@ export const auth = {
       throw new Error(response.error?.message || "Erro ao fazer login");
     }
 
-    // Better Auth retorna { token, user } no sign-in também
+    // Better Auth pode retornar em diferentes formatos
     const userRaw = response.data?.user || response.user;
     const token = response.data?.token || response.token;
     const sessionFromResponse = response.data?.session || response.session;
 
     if (!userRaw) {
+      console.error("Resposta completa do sign-in:", response);
       throw new Error("Resposta inválida do servidor: usuário não encontrado");
     }
 
@@ -100,11 +113,19 @@ export const auth = {
           : new Date(userRaw.updatedAt),
     };
 
-    // Se já tiver session na resposta, usa ela
+    // Se já tiver session na resposta, usa ela (convertendo datas se necessário)
     if (sessionFromResponse) {
+      const session: Session = {
+        ...sessionFromResponse,
+        expiresAt:
+          sessionFromResponse.expiresAt instanceof Date
+            ? sessionFromResponse.expiresAt
+            : new Date(sessionFromResponse.expiresAt),
+        user: user,
+      };
       return {
         user,
-        session: sessionFromResponse,
+        session,
       };
     }
 
@@ -127,8 +148,11 @@ export const auth = {
       };
     }
 
-    // Se não tiver token nem session, tenta obter a sessão
+    // Se não tiver token nem session, tenta obter a sessão do servidor
+    // Isso é importante em produção onde os cookies podem demorar um pouco para serem definidos
     try {
+      // Aguarda um pouco para garantir que os cookies foram processados
+      await new Promise((resolve) => setTimeout(resolve, 200));
       const sessionData = await this.getSession();
       if (sessionData) {
         return {
@@ -137,7 +161,7 @@ export const auth = {
         };
       }
     } catch (e) {
-      console.warn("Não foi possível obter a sessão:", e);
+      console.warn("Não foi possível obter a sessão após login:", e);
     }
 
     throw new Error("Resposta inválida do servidor: sessão não encontrada");

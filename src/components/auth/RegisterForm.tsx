@@ -41,11 +41,16 @@ export const RegisterForm = () => {
 
     try {
       await signUp({ email, password, name: name || undefined });
+      // Aguarda um pouco para garantir que os cookies foram definidos
+      await new Promise((resolve) => setTimeout(resolve, 100));
       toast({
         title: "Conta criada com sucesso!",
         description: "Bem-vindo ao sistema!",
       });
-      navigate("/");
+      // Navega após um pequeno delay para garantir que o estado foi atualizado
+      setTimeout(() => {
+        navigate("/", { replace: true });
+      }, 100);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erro ao criar conta";
       toast({

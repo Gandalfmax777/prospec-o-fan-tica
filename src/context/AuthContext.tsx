@@ -46,13 +46,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const result = await auth.signIn(input);
     setUser(result.user);
     setSession(result.session);
-  }, []);
+    // Atualiza a sessão para garantir que está sincronizada com o servidor
+    await refreshSession();
+  }, [refreshSession]);
 
   const signUp = useCallback(async (input: RegisterInput) => {
     const result = await auth.signUp(input);
     setUser(result.user);
     setSession(result.session);
-  }, []);
+    // Atualiza a sessão para garantir que está sincronizada com o servidor
+    await refreshSession();
+  }, [refreshSession]);
 
   const signOut = useCallback(async () => {
     await auth.signOut();
