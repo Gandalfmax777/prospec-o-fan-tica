@@ -12,12 +12,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { formatPhone } from '@/lib/phoneMask';
 import { CalendarIcon, Phone, Edit, Trash2, History, Plus, CheckCircle, MessageSquare } from 'lucide-react';
 import { BriefingDialog } from './BriefingDialog';
 import { HistoricoDialog } from './HistoricoDialog';
 
 export const LeadTable = () => {
-  const { leads, updateLead, deleteLead, registrarContato, addLead } = useCRM();
+  const { leads, updateLead, deleteLead, registrarContato, addLead, loading, error } = useCRM();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -39,27 +40,54 @@ export const LeadTable = () => {
 
   const activeLeads = leads.filter(l => l.status !== 'Convertido');
 
-  const handleAddLead = () => {
-    addLead(newLead);
-    setShowAddDialog(false);
-    setNewLead({
-      nome: '',
-      cidade: '',
-      origem: 'Instagram',
-      telefone: '',
-      codigo: '',
-      cadencia: 'Semanal',
-      ultimoContato: null,
-      temperatura: 'Frio',
-      observacao: '',
-      dataEntrada: new Date(),
-      dataConversao: null,
-    });
+  const handleAddLead = async () => {
+    try {
+      await addLead(newLead);
+      setShowAddDialog(false);
+      setNewLead({
+        nome: '',
+        cidade: '',
+        origem: 'Instagram',
+        telefone: '',
+        codigo: '',
+        cadencia: 'Semanal',
+        ultimoContato: null,
+        temperatura: 'Frio',
+        observacao: '',
+        dataEntrada: new Date(),
+        dataConversao: null,
+      });
+    } catch (err) {
+      console.error('Erro ao adicionar lead:', err);
+    }
   };
 
-  const handleRegistrarContatoHoje = (lead: Lead) => {
-    registrarContato(lead.id);
+  const handleRegistrarContatoHoje = async (lead: Lead) => {
+    try {
+      await registrarContato(lead.id);
+    } catch (err) {
+      console.error('Erro ao registrar contato:', err);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <p className="text-muted-foreground">Carregando leads...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-2">
+          <p className="text-destructive font-medium">Erro ao carregar dados</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -110,8 +138,12 @@ export const LeadTable = () => {
                 <label className="text-sm font-medium">Telefone</label>
                 <Input
                   value={newLead.telefone}
-                  onChange={e => setNewLead({ ...newLead, telefone: e.target.value })}
+                  onChange={e => {
+                    const formatted = formatPhone(e.target.value);
+                    setNewLead({ ...newLead, telefone: formatted });
+                  }}
                   placeholder="(00) 00000-0000"
+                  maxLength={15}
                 />
               </div>
               <div className="space-y-2">
@@ -226,7 +258,13 @@ export const LeadTable = () => {
                   <TableCell>
                     <Select
                       value={lead.cadencia}
-                      onValueChange={(v: Cadencia) => updateLead(lead.id, { cadencia: v })}
+                      onValueChange={async (v: Cadencia) => {
+                        try {
+                          await updateLead(lead.id, { cadencia: v });
+                        } catch (err) {
+                          console.error('Erro ao atualizar lead:', err);
+                        }
+                      }}
                     >
                       <SelectTrigger className="w-[120px] h-8">
                         <SelectValue />
@@ -250,7 +288,13 @@ export const LeadTable = () => {
                         <Calendar
                           mode="single"
                           selected={lead.ultimoContato || undefined}
-                          onSelect={(date) => updateLead(lead.id, { ultimoContato: date || null })}
+                          onSelect={async (date) => {
+                            try {
+                              await updateLead(lead.id, { ultimoContato: date || null });
+                            } catch (err) {
+                              console.error('Erro ao atualizar lead:', err);
+                            }
+                          }}
                           initialFocus
                           className="pointer-events-auto"
                         />
@@ -274,7 +318,13 @@ export const LeadTable = () => {
                   <TableCell>
                     <Select
                       value={lead.temperatura}
-                      onValueChange={(v: Temperatura) => updateLead(lead.id, { temperatura: v })}
+                      onValueChange={async (v: Temperatura) => {
+                        try {
+                          await updateLead(lead.id, { temperatura: v });
+                        } catch (err) {
+                          console.error('Erro ao atualizar lead:', err);
+                        }
+                      }}
                     >
                       <SelectTrigger className="w-[120px] h-8">
                         <SelectValue />
@@ -328,7 +378,13 @@ export const LeadTable = () => {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-destructive"
-                        onClick={() => deleteLead(lead.id)}
+                        onClick={async () => {
+                          try {
+                            await deleteLead(lead.id);
+                          } catch (err) {
+                            console.error('Erro ao deletar lead:', err);
+                          }
+                        }}
                         title="Excluir lead"
                       >
                         <Trash2 className="w-4 h-4" />

@@ -40,11 +40,15 @@ export const ConvertidosTab = () => {
     setEditData(lead);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editingId && editData) {
-      updateLead(editingId, editData);
-      setEditingId(null);
-      setEditData({});
+      try {
+        await updateLead(editingId, editData);
+        setEditingId(null);
+        setEditData({});
+      } catch (err) {
+        console.error('Erro ao atualizar lead:', err);
+      }
     }
   };
 
@@ -241,10 +245,34 @@ export const ConvertidosTab = () => {
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(lead)} title="Editar">
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => retornarAoFunil(lead.id)} title="Retornar ao Funil">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-primary" 
+                            onClick={async () => {
+                              try {
+                                await retornarAoFunil(lead.id);
+                              } catch (err) {
+                                console.error('Erro ao retornar ao funil:', err);
+                              }
+                            }} 
+                            title="Retornar ao Funil"
+                          >
                             <RotateCcw className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteLead(lead.id)} title="Excluir">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive" 
+                            onClick={async () => {
+                              try {
+                                await deleteLead(lead.id);
+                              } catch (err) {
+                                console.error('Erro ao deletar lead:', err);
+                              }
+                            }} 
+                            title="Excluir"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </>

@@ -1,412 +1,511 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { Lead, Cadencia, Status, Temperatura, Prioridade, Origem, HistoricoContato, Briefing, Gamificacao, MissaoDiaria, MetricasDiarias, TipoContato } from '@/types/crm';
-import { addDays, isToday, isBefore, startOfDay, differenceInDays, startOfWeek, startOfMonth, isWithinInterval, endOfWeek, endOfMonth } from 'date-fns';
+import { api } from "@/services/api";
+import {
+  Briefing,
+  Gamificacao,
+  Lead,
+  MetricasDiarias,
+  MissaoDiaria,
+  Temperatura,
+} from "@/types/crm";
+import type { UpdateLeadInput } from "@/types/api";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 interface CRMContextType {
   leads: Lead[];
   gamificacao: Gamificacao;
   metricasDiarias: MetricasDiarias;
-  addLead: (lead: Omit<Lead, 'id' | 'proximoContato' | 'status' | 'prioridade' | 'score' | 'historico' | 'pontos' | 'nivel' | 'conquistas'>) => void;
-  updateLead: (id: string, updates: Partial<Lead>) => void;
-  deleteLead: (id: string) => void;
-  registrarContato: (id: string, briefing?: Partial<Briefing>) => void;
-  moverTemperatura: (id: string, novaTemperatura: Temperatura) => void;
-  converterLead: (id: string) => void;
-  retornarAoFunil: (id: string) => void;
-  adicionarBriefing: (leadId: string, briefing: Omit<Briefing, 'id' | 'leadId' | 'data'>) => void;
-  completarMissao: (missaoId: string) => void;
+  loading: boolean;
+  error: string | null;
+  addLead: (
+    lead: Omit<
+      Lead,
+      | "id"
+      | "proximoContato"
+      | "status"
+      | "prioridade"
+      | "score"
+      | "historico"
+      | "pontos"
+      | "nivel"
+      | "conquistas"
+    >
+  ) => Promise<void>;
+  updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
+  deleteLead: (id: string) => Promise<void>;
+  registrarContato: (id: string, briefing?: Partial<Briefing>) => Promise<void>;
+  moverTemperatura: (id: string, novaTemperatura: Temperatura) => Promise<void>;
+  converterLead: (id: string) => Promise<void>;
+  retornarAoFunil: (id: string) => Promise<void>;
+  adicionarBriefing: (
+    leadId: string,
+    briefing: Omit<Briefing, "id" | "leadId" | "data">
+  ) => Promise<void>;
+  completarMissao: (missaoId: string) => Promise<void>;
+  refreshData: () => Promise<void>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
 
-const calcularProximoContato = (ultimoContato: Date | null, cadencia: Cadencia): Date | null => {
-  if (!ultimoContato) return null;
-  const dias = cadencia === 'Semanal' ? 7 : cadencia === 'Quinzenal' ? 15 : 30;
-  return addDays(ultimoContato, dias);
-};
-
-const calcularStatus = (proximoContato: Date | null): Status => {
-  if (!proximoContato) return 'Em Dia';
-  const hoje = startOfDay(new Date());
-  const proximo = startOfDay(proximoContato);
-  
-  if (isBefore(proximo, hoje)) return 'Atrasado';
-  if (isToday(proximoContato)) return 'Falar Hoje';
-  return 'Em Dia';
-};
-
-const calcularPrioridade = (status: Status, proximoContato: Date | null): Prioridade => {
-  if (status === 'Atrasado') return 'Urgente';
-  if (!proximoContato) return 'Normal';
-  
-  const diasAte = differenceInDays(startOfDay(proximoContato), startOfDay(new Date()));
-  if (diasAte <= 0) return 'Urgente';
-  if (diasAte <= 2) return 'Alerta';
-  if (isToday(proximoContato)) return 'Atenção';
-  return 'Normal';
-};
-
-const calcularScore = (lead: Partial<Lead>): number => {
-  let score = 0;
-  if (lead.status === 'Atrasado') score += 5;
-  if (lead.prioridade === 'Alerta') score += 3;
-  if (lead.temperatura === 'Quente') score += 3;
-  if (['Indicação', 'Evento'].includes(lead.origem || '')) score += 2;
-  if (lead.observacao && lead.observacao.toLowerCase().includes('interesse')) score += 2;
-  return score;
-};
-
-const calcularNivel = (pontos: number): string => {
-  if (pontos >= 600) return 'Closer';
-  if (pontos >= 301) return 'Cadência Master';
-  if (pontos >= 151) return 'Consistente';
-  if (pontos >= 51) return 'Persistente';
-  return 'Prospectador Iniciante';
-};
-
 const gerarMissoesDiarias = (): MissaoDiaria[] => [
-  { id: '1', descricao: 'Falar com 5 leads', meta: 5, progresso: 0, concluida: false, pontos: 5 },
-  { id: '2', descricao: 'Esquentar 2 leads', meta: 2, progresso: 0, concluida: false, pontos: 5 },
-  { id: '3', descricao: 'Resolver todos atrasados', meta: 1, progresso: 0, concluida: false, pontos: 10 },
-];
-
-const leadsIniciais: Lead[] = [
   {
-    id: '1',
-    nome: 'João Silva',
-    cidade: 'São Paulo',
-    origem: 'Instagram',
-    telefone: '(11) 99999-1234',
-    codigo: 'SP001',
-    cadencia: 'Semanal',
-    ultimoContato: addDays(new Date(), -10),
-    proximoContato: addDays(new Date(), -3),
-    status: 'Atrasado',
-    temperatura: 'Quente',
-    observacao: 'Demonstrou muito interesse no produto',
-    prioridade: 'Urgente',
-    score: 10,
-    dataEntrada: addDays(new Date(), -30),
-    dataConversao: null,
-    historico: [],
-    pontos: 45,
-    nivel: 'Prospectador Iniciante',
-    conquistas: [],
+    id: "1",
+    descricao: "Falar com 5 leads",
+    meta: 5,
+    progresso: 0,
+    concluida: false,
+    pontos: 5,
   },
   {
-    id: '2',
-    nome: 'Maria Santos',
-    cidade: 'Rio de Janeiro',
-    origem: 'Indicação',
-    telefone: '(21) 98888-5678',
-    codigo: 'RJ001',
-    cadencia: 'Quinzenal',
-    ultimoContato: addDays(new Date(), -1),
-    proximoContato: addDays(new Date(), 0),
-    status: 'Falar Hoje',
-    temperatura: 'Morno',
-    observacao: 'Pediu mais informações sobre preços',
-    prioridade: 'Atenção',
-    score: 7,
-    dataEntrada: addDays(new Date(), -15),
-    dataConversao: null,
-    historico: [],
-    pontos: 30,
-    nivel: 'Prospectador Iniciante',
-    conquistas: [],
+    id: "2",
+    descricao: "Esquentar 2 leads",
+    meta: 2,
+    progresso: 0,
+    concluida: false,
+    pontos: 5,
   },
   {
-    id: '3',
-    nome: 'Carlos Oliveira',
-    cidade: 'Belo Horizonte',
-    origem: 'Anúncio',
-    telefone: '(31) 97777-9012',
-    codigo: 'BH001',
-    cadencia: 'Mensal',
-    ultimoContato: addDays(new Date(), -5),
-    proximoContato: addDays(new Date(), 25),
-    status: 'Em Dia',
-    temperatura: 'Frio',
-    observacao: '',
-    prioridade: 'Normal',
-    score: 2,
-    dataEntrada: addDays(new Date(), -60),
-    dataConversao: null,
-    historico: [],
-    pontos: 15,
-    nivel: 'Prospectador Iniciante',
-    conquistas: [],
-  },
-  {
-    id: '4',
-    nome: 'Ana Costa',
-    cidade: 'Curitiba',
-    origem: 'WhatsApp',
-    telefone: '(41) 96666-3456',
-    codigo: 'CT001',
-    cadencia: 'Semanal',
-    ultimoContato: addDays(new Date(), -2),
-    proximoContato: addDays(new Date(), 5),
-    status: 'Em Dia',
-    temperatura: 'Quente',
-    observacao: 'Quer fechar até o final do mês',
-    prioridade: 'Normal',
-    score: 8,
-    dataEntrada: addDays(new Date(), -7),
-    dataConversao: null,
-    historico: [],
-    pontos: 60,
-    nivel: 'Persistente',
-    conquistas: ['Tempo Real'],
-  },
-  {
-    id: '5',
-    nome: 'Pedro Lima',
-    cidade: 'Porto Alegre',
-    origem: 'LinkedIn',
-    telefone: '(51) 95555-7890',
-    codigo: 'PA001',
-    cadencia: 'Quinzenal',
-    ultimoContato: addDays(new Date(), -20),
-    proximoContato: addDays(new Date(), -5),
-    status: 'Atrasado',
-    temperatura: 'Morno',
-    observacao: 'Aguardando retorno sobre proposta',
-    prioridade: 'Urgente',
-    score: 8,
-    dataEntrada: addDays(new Date(), -45),
-    dataConversao: null,
-    historico: [],
-    pontos: 25,
-    nivel: 'Prospectador Iniciante',
-    conquistas: [],
+    id: "3",
+    descricao: "Resolver todos atrasados",
+    meta: 1,
+    progresso: 0,
+    concluida: false,
+    pontos: 10,
   },
 ];
 
-export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [leads, setLeads] = useState<Lead[]>(leadsIniciais);
+export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [gamificacao, setGamificacao] = useState<Gamificacao>({
+    id: "",
+    userId: "",
     pontosHoje: 0,
     pontosSemana: 0,
     pontosMes: 0,
-    nivel: 'Prospectador Iniciante',
+    nivel: "Prospectador Iniciante",
     conquistas: [],
     missoesDiarias: gerarMissoesDiarias(),
     progressoDiario: 0,
   });
   const [metricasDiarias, setMetricasDiarias] = useState<MetricasDiarias>({
+    id: "",
+    userId: "",
+    data: new Date(),
     contatosFeitos: 0,
     atrasosResolvidos: 0,
     novosLeads: 0,
     leadsQuentesTrabalhados: 0,
     taxaRitmo: 0,
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const adicionarPontos = useCallback((pontos: number) => {
-    setGamificacao(prev => ({
-      ...prev,
-      pontosHoje: prev.pontosHoje + pontos,
-      pontosSemana: prev.pontosSemana + pontos,
-      pontosMes: prev.pontosMes + pontos,
-      nivel: calcularNivel(prev.pontosMes + pontos),
-    }));
-  }, []);
+  const refreshData = useCallback(async () => {
+    try {
+      setError(null);
+      const [leadsData, gamificacaoData, metricasData] = await Promise.all([
+        api.getLeads(),
+        api.getGamificacao(),
+        api.getMetricas(),
+      ]);
 
-  const addLead = useCallback((leadData: Omit<Lead, 'id' | 'proximoContato' | 'status' | 'prioridade' | 'score' | 'historico' | 'pontos' | 'nivel' | 'conquistas'>) => {
-    const proximoContato = calcularProximoContato(leadData.ultimoContato, leadData.cadencia);
-    const status = calcularStatus(proximoContato);
-    const prioridade = calcularPrioridade(status, proximoContato);
-    
-    const novoLead: Lead = {
-      ...leadData,
-      id: Date.now().toString(),
-      proximoContato,
-      status,
-      prioridade,
-      score: 0,
-      historico: [],
-      pontos: 0,
-      nivel: 'Prospectador Iniciante',
-      conquistas: [],
-    };
-    novoLead.score = calcularScore(novoLead);
-    
-    setLeads(prev => [...prev, novoLead]);
-    adicionarPontos(2);
-    setMetricasDiarias(prev => ({ ...prev, novosLeads: prev.novosLeads + 1 }));
-  }, [adicionarPontos]);
+      // Converter datas de string para Date
+      const leadsFormatados = leadsData.map((lead) => ({
+        ...lead,
+        ultimoContato: lead.ultimoContato ? new Date(lead.ultimoContato) : null,
+        proximoContato: lead.proximoContato
+          ? new Date(lead.proximoContato)
+          : null,
+        dataEntrada: new Date(lead.dataEntrada),
+        dataConversao: lead.dataConversao ? new Date(lead.dataConversao) : null,
+        historico:
+          lead.historico?.map((h) => ({
+            ...h,
+            data: new Date(h.data),
+          })) || [],
+      }));
 
-  const updateLead = useCallback((id: string, updates: Partial<Lead>) => {
-    setLeads(prev => prev.map(lead => {
-      if (lead.id !== id) return lead;
-      
-      const updated = { ...lead, ...updates };
-      
-      if (updates.ultimoContato || updates.cadencia) {
-        updated.proximoContato = calcularProximoContato(
-          updates.ultimoContato || lead.ultimoContato,
-          updates.cadencia || lead.cadencia
-        );
-      }
-      
-      if (updated.status !== 'Convertido') {
-        updated.status = calcularStatus(updated.proximoContato);
-      }
-      updated.prioridade = calcularPrioridade(updated.status, updated.proximoContato);
-      updated.score = calcularScore(updated);
-      updated.nivel = calcularNivel(updated.pontos);
-      
-      return updated;
-    }));
-  }, []);
-
-  const deleteLead = useCallback((id: string) => {
-    setLeads(prev => prev.filter(lead => lead.id !== id));
-  }, []);
-
-  const registrarContato = useCallback((id: string, briefing?: Partial<Briefing>) => {
-    const lead = leads.find(l => l.id === id);
-    if (!lead) return;
-
-    const wasAtrasado = lead.status === 'Atrasado';
-    const hoje = new Date();
-    
-    const novoHistorico: HistoricoContato = {
-      id: Date.now().toString(),
-      data: hoje,
-      tipo: briefing?.tipoContato || 'Ligação',
-      temperatura: lead.temperatura,
-      status: lead.status,
-      resumo: briefing?.conversa || 'Contato registrado',
-      proximoPasso: briefing?.proximoPasso || '',
-      responsavel: 'Usuário',
-    };
-
-    updateLead(id, {
-      ultimoContato: hoje,
-      historico: [...lead.historico, novoHistorico],
-    });
-
-    adicionarPontos(3);
-    setMetricasDiarias(prev => ({
-      ...prev,
-      contatosFeitos: prev.contatosFeitos + 1,
-      atrasosResolvidos: wasAtrasado ? prev.atrasosResolvidos + 1 : prev.atrasosResolvidos,
-    }));
-
-    if (wasAtrasado) {
-      adicionarPontos(5);
-    }
-  }, [leads, updateLead, adicionarPontos]);
-
-  const moverTemperatura = useCallback((id: string, novaTemperatura: Temperatura) => {
-    const lead = leads.find(l => l.id === id);
-    if (!lead) return;
-
-    const pontosGanhos = novaTemperatura === 'Quente' ? 5 : novaTemperatura === 'Morno' ? 3 : 0;
-    
-    updateLead(id, { temperatura: novaTemperatura });
-    
-    if (pontosGanhos > 0) {
-      adicionarPontos(pontosGanhos);
-      if (novaTemperatura === 'Quente') {
-        setMetricasDiarias(prev => ({
-          ...prev,
-          leadsQuentesTrabalhados: prev.leadsQuentesTrabalhados + 1,
-        }));
-      }
-    }
-  }, [leads, updateLead, adicionarPontos]);
-
-  const converterLead = useCallback((id: string) => {
-    updateLead(id, {
-      status: 'Convertido',
-      dataConversao: new Date(),
-    });
-    adicionarPontos(10);
-  }, [updateLead, adicionarPontos]);
-
-  const retornarAoFunil = useCallback((id: string) => {
-    updateLead(id, {
-      status: 'Em Dia',
-      temperatura: 'Morno',
-      dataConversao: null,
-    });
-  }, [updateLead]);
-
-  const adicionarBriefing = useCallback((leadId: string, briefingData: Omit<Briefing, 'id' | 'leadId' | 'data'>) => {
-    const lead = leads.find(l => l.id === leadId);
-    if (!lead) return;
-
-    const novoHistorico: HistoricoContato = {
-      id: Date.now().toString(),
-      data: new Date(),
-      tipo: briefingData.tipoContato,
-      temperatura: briefingData.temperaturaAtualizada,
-      status: lead.status,
-      resumo: briefingData.conversa,
-      proximoPasso: briefingData.proximoPasso,
-      responsavel: 'Usuário',
-    };
-
-    updateLead(leadId, {
-      temperatura: briefingData.temperaturaAtualizada,
-      ultimoContato: new Date(),
-      historico: [...lead.historico, novoHistorico],
-    });
-
-    adicionarPontos(2);
-  }, [leads, updateLead, adicionarPontos]);
-
-  const completarMissao = useCallback((missaoId: string) => {
-    setGamificacao(prev => {
-      const missoes = prev.missoesDiarias.map(m => {
-        if (m.id === missaoId && !m.concluida) {
-          return { ...m, concluida: true, progresso: m.meta };
-        }
-        return m;
+      setLeads(leadsFormatados);
+      setGamificacao({
+        ...gamificacaoData,
+        missoesDiarias: gamificacaoData.missoesDiarias || gerarMissoesDiarias(),
       });
-      
-      const missaoConcluida = prev.missoesDiarias.find(m => m.id === missaoId);
-      const pontosBonus = missaoConcluida && !missaoConcluida.concluida ? missaoConcluida.pontos : 0;
-      
-      const todasConcluidas = missoes.every(m => m.concluida);
-      const pontosExtras = todasConcluidas ? 20 : 0;
-      
-      return {
+      setMetricasDiarias(metricasData);
+    } catch (err) {
+      console.error("Erro ao carregar dados:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro ao carregar dados";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  const adicionarPontos = useCallback(async (pontos: number) => {
+    try {
+      const updated = await api.adicionarPontos(pontos);
+      setGamificacao((prev) => ({
         ...prev,
-        missoesDiarias: missoes,
-        pontosHoje: prev.pontosHoje + pontosBonus + pontosExtras,
-        pontosSemana: prev.pontosSemana + pontosBonus + pontosExtras,
-        pontosMes: prev.pontosMes + pontosBonus + pontosExtras,
+        ...updated,
+        missoesDiarias: updated.missoesDiarias || prev.missoesDiarias,
+      }));
+    } catch (err) {
+      console.error("Erro ao adicionar pontos:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro ao adicionar pontos";
+      setError(errorMessage);
+    }
+  }, []);
+
+  const addLead = useCallback(
+    async (
+      leadData: Omit<
+        Lead,
+        | "id"
+        | "proximoContato"
+        | "status"
+        | "prioridade"
+        | "score"
+        | "historico"
+        | "pontos"
+        | "nivel"
+        | "conquistas"
+      >
+    ) => {
+      try {
+        setError(null);
+        const novoLead = await api.createLead({
+          ...leadData,
+          ultimoContato: leadData.ultimoContato?.toISOString() || null,
+          dataEntrada:
+            leadData.dataEntrada?.toISOString() || new Date().toISOString(),
+        });
+
+        // Converter datas
+        const leadFormatado = {
+          ...novoLead,
+          ultimoContato: novoLead.ultimoContato
+            ? new Date(novoLead.ultimoContato)
+            : null,
+          proximoContato: novoLead.proximoContato
+            ? new Date(novoLead.proximoContato)
+            : null,
+          dataEntrada: new Date(novoLead.dataEntrada),
+          dataConversao: novoLead.dataConversao
+            ? new Date(novoLead.dataConversao)
+            : null,
+          historico:
+            novoLead.historico?.map((h) => ({
+              ...h,
+              data: new Date(h.data),
+            })) || [],
+        };
+
+        setLeads((prev) => [...prev, leadFormatado]);
+        await adicionarPontos(2);
+
+        const metricas = await api.getMetricas();
+        await api.updateMetricas({
+          ...metricas,
+          novosLeads: metricas.novosLeads + 1,
+        });
+        setMetricasDiarias((prev) => ({
+          ...prev,
+          novosLeads: prev.novosLeads + 1,
+        }));
+      } catch (err) {
+        console.error("Erro ao adicionar lead:", err);
+        const errorMessage = err instanceof Error ? err.message : "Erro ao adicionar lead";
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [adicionarPontos]
+  );
+
+  const updateLead = useCallback(async (id: string, updates: Partial<Lead>) => {
+    try {
+      setError(null);
+      const updateData: UpdateLeadInput = { ...updates };
+
+      // Converter datas para ISO string
+      if (updates.ultimoContato)
+        updateData.ultimoContato = updates.ultimoContato.toISOString();
+      if (updates.proximoContato)
+        updateData.proximoContato = updates.proximoContato.toISOString();
+      if (updates.dataEntrada)
+        updateData.dataEntrada = updates.dataEntrada.toISOString();
+      if (updates.dataConversao)
+        updateData.dataConversao = updates.dataConversao.toISOString();
+
+      const leadAtualizado = await api.updateLead(id, updateData);
+
+      // Converter datas
+      const leadFormatado = {
+        ...leadAtualizado,
+        ultimoContato: leadAtualizado.ultimoContato
+          ? new Date(leadAtualizado.ultimoContato)
+          : null,
+        proximoContato: leadAtualizado.proximoContato
+          ? new Date(leadAtualizado.proximoContato)
+          : null,
+        dataEntrada: new Date(leadAtualizado.dataEntrada),
+        dataConversao: leadAtualizado.dataConversao
+          ? new Date(leadAtualizado.dataConversao)
+          : null,
+        historico:
+          leadAtualizado.historico?.map((h) => ({
+            ...h,
+            data: new Date(h.data),
+          })) || [],
       };
-    });
+
+      setLeads((prev) =>
+        prev.map((lead) => (lead.id === id ? leadFormatado : lead))
+      );
+    } catch (err) {
+      console.error("Erro ao atualizar lead:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro ao atualizar lead";
+      setError(errorMessage);
+      throw err;
+    }
+  }, []);
+
+  const deleteLead = useCallback(async (id: string) => {
+    try {
+      setError(null);
+      await api.deleteLead(id);
+      setLeads((prev) => prev.filter((lead) => lead.id !== id));
+    } catch (err) {
+      console.error("Erro ao deletar lead:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro ao deletar lead";
+      setError(errorMessage);
+      throw err;
+    }
+  }, []);
+
+  const registrarContato = useCallback(
+    async (id: string, briefing?: Partial<Briefing>) => {
+      try {
+        setError(null);
+        const lead = leads.find((l) => l.id === id);
+        if (!lead) return;
+
+        const wasAtrasado = lead.status === "Atrasado";
+        const leadAtualizado = await api.registrarContato(id, briefing);
+
+        // Converter datas
+        const leadFormatado = {
+          ...leadAtualizado,
+          ultimoContato: leadAtualizado.ultimoContato
+            ? new Date(leadAtualizado.ultimoContato)
+            : null,
+          proximoContato: leadAtualizado.proximoContato
+            ? new Date(leadAtualizado.proximoContato)
+            : null,
+          dataEntrada: new Date(leadAtualizado.dataEntrada),
+          dataConversao: leadAtualizado.dataConversao
+            ? new Date(leadAtualizado.dataConversao)
+            : null,
+          historico:
+            leadAtualizado.historico?.map((h) => ({
+              ...h,
+              data: new Date(h.data),
+            })) || [],
+        };
+
+        setLeads((prev) => prev.map((l) => (l.id === id ? leadFormatado : l)));
+        await adicionarPontos(3);
+
+        const metricas = await api.getMetricas();
+        await api.updateMetricas({
+          ...metricas,
+          contatosFeitos: metricas.contatosFeitos + 1,
+          atrasosResolvidos: wasAtrasado
+            ? metricas.atrasosResolvidos + 1
+            : metricas.atrasosResolvidos,
+        });
+        setMetricasDiarias((prev) => ({
+          ...prev,
+          contatosFeitos: prev.contatosFeitos + 1,
+          atrasosResolvidos: wasAtrasado
+            ? prev.atrasosResolvidos + 1
+            : prev.atrasosResolvidos,
+        }));
+
+        if (wasAtrasado) {
+          await adicionarPontos(5);
+        }
+      } catch (err) {
+        console.error("Erro ao registrar contato:", err);
+        const errorMessage = err instanceof Error ? err.message : "Erro ao registrar contato";
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [leads, adicionarPontos]
+  );
+
+  const moverTemperatura = useCallback(
+    async (id: string, novaTemperatura: Temperatura) => {
+      try {
+        setError(null);
+        const lead = leads.find((l) => l.id === id);
+        if (!lead) return;
+
+        const pontosGanhos =
+          novaTemperatura === "Quente"
+            ? 5
+            : novaTemperatura === "Morno"
+            ? 3
+            : 0;
+
+        await updateLead(id, { temperatura: novaTemperatura });
+
+        if (pontosGanhos > 0) {
+          await adicionarPontos(pontosGanhos);
+          if (novaTemperatura === "Quente") {
+            const metricas = await api.getMetricas();
+            await api.updateMetricas({
+              ...metricas,
+              leadsQuentesTrabalhados: metricas.leadsQuentesTrabalhados + 1,
+            });
+            setMetricasDiarias((prev) => ({
+              ...prev,
+              leadsQuentesTrabalhados: prev.leadsQuentesTrabalhados + 1,
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao mover temperatura:", err);
+        const errorMessage = err instanceof Error ? err.message : "Erro ao mover temperatura";
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [leads, updateLead, adicionarPontos]
+  );
+
+  const converterLead = useCallback(
+    async (id: string) => {
+      try {
+        setError(null);
+        await updateLead(id, {
+          status: "Convertido",
+          dataConversao: new Date(),
+        });
+        await adicionarPontos(10);
+      } catch (err) {
+        console.error("Erro ao converter lead:", err);
+        const errorMessage = err instanceof Error ? err.message : "Erro ao converter lead";
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [updateLead, adicionarPontos]
+  );
+
+  const retornarAoFunil = useCallback(
+    async (id: string) => {
+      try {
+        setError(null);
+        await updateLead(id, {
+          status: "Em Dia",
+          temperatura: "Morno",
+          dataConversao: null,
+        });
+      } catch (err) {
+        console.error("Erro ao retornar ao funil:", err);
+        const errorMessage = err instanceof Error ? err.message : "Erro ao retornar ao funil";
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [updateLead]
+  );
+
+  const adicionarBriefing = useCallback(
+    async (
+      leadId: string,
+      briefingData: Omit<Briefing, "id" | "leadId" | "data">
+    ) => {
+      try {
+        setError(null);
+        await api.createBriefing({
+          ...briefingData,
+          leadId,
+          proximoFollowUp: briefingData.proximoFollowUp?.toISOString() || null,
+        });
+
+        // Atualizar lead localmente
+        await refreshData();
+        await adicionarPontos(2);
+      } catch (err) {
+        console.error("Erro ao adicionar briefing:", err);
+        const errorMessage = err instanceof Error ? err.message : "Erro ao adicionar briefing";
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [refreshData, adicionarPontos]
+  );
+
+  const completarMissao = useCallback(async (missaoId: string) => {
+    try {
+      setError(null);
+      const updated = await api.completarMissao(missaoId);
+      setGamificacao((prev) => ({
+        ...prev,
+        ...updated,
+        missoesDiarias: updated.missoesDiarias || prev.missoesDiarias,
+      }));
+    } catch (err) {
+      console.error("Erro ao completar missão:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro ao completar missão";
+      setError(errorMessage);
+      throw err;
+    }
   }, []);
 
   useEffect(() => {
     const meta = 10;
-    const progresso = metricasDiarias.contatosFeitos + metricasDiarias.atrasosResolvidos;
-    setGamificacao(prev => ({
+    const progresso =
+      metricasDiarias.contatosFeitos + metricasDiarias.atrasosResolvidos;
+    setGamificacao((prev) => ({
       ...prev,
       progressoDiario: Math.min((progresso / meta) * 100, 100),
     }));
   }, [metricasDiarias]);
 
   return (
-    <CRMContext.Provider value={{
-      leads,
-      gamificacao,
-      metricasDiarias,
-      addLead,
-      updateLead,
-      deleteLead,
-      registrarContato,
-      moverTemperatura,
-      converterLead,
-      retornarAoFunil,
-      adicionarBriefing,
-      completarMissao,
-    }}>
+    <CRMContext.Provider
+      value={{
+        leads,
+        gamificacao,
+        metricasDiarias,
+        loading,
+        error,
+        addLead,
+        updateLead,
+        deleteLead,
+        registrarContato,
+        moverTemperatura,
+        converterLead,
+        retornarAoFunil,
+        adicionarBriefing,
+        completarMissao,
+        refreshData,
+      }}
+    >
       {children}
     </CRMContext.Provider>
   );
@@ -415,7 +514,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 export const useCRM = () => {
   const context = useContext(CRMContext);
   if (!context) {
-    throw new Error('useCRM must be used within CRMProvider');
+    throw new Error("useCRM must be used within CRMProvider");
   }
   return context;
 };

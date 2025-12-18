@@ -89,7 +89,17 @@ export const PendenciasTab = () => {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="default" onClick={() => registrarContato(lead.id)}>
+          <Button 
+            size="sm" 
+            variant="default" 
+            onClick={async () => {
+              try {
+                await registrarContato(lead.id);
+              } catch (err) {
+                console.error('Erro ao registrar contato:', err);
+              }
+            }}
+          >
             <CheckCircle className="w-3 h-3 mr-1" />
             Registrar Contato
           </Button>
@@ -108,7 +118,13 @@ export const PendenciasTab = () => {
             <Button 
               size="sm" 
               variant="outline"
-              onClick={() => moverTemperatura(lead.id, lead.temperatura === 'Frio' ? 'Morno' : 'Quente')}
+              onClick={async () => {
+                try {
+                  await moverTemperatura(lead.id, lead.temperatura === 'Frio' ? 'Morno' : 'Quente');
+                } catch (err) {
+                  console.error('Erro ao mover temperatura:', err);
+                }
+              }}
             >
               <ThermometerSun className="w-3 h-3 mr-1" />
               Esquentar

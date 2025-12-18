@@ -33,6 +33,7 @@ export interface Briefing {
 
 export interface Lead {
   id: string;
+  userId: string;
   nome: string;
   cidade: string;
   origem: Origem;
@@ -55,6 +56,8 @@ export interface Lead {
 }
 
 export interface Gamificacao {
+  id: string;
+  userId: string;
   pontosHoje: number;
   pontosSemana: number;
   pontosMes: number;
@@ -74,6 +77,9 @@ export interface MissaoDiaria {
 }
 
 export interface MetricasDiarias {
+  id: string;
+  userId: string;
+  data: Date;
   contatosFeitos: number;
   atrasosResolvidos: number;
   novosLeads: number;

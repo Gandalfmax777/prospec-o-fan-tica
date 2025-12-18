@@ -33,20 +33,24 @@ export const BriefingDialog = ({ open, onOpenChange, lead }: BriefingDialogProps
     temperaturaAtualizada: lead.temperatura,
   });
 
-  const handleSubmit = () => {
-    adicionarBriefing(lead.id, briefing);
-    onOpenChange(false);
-    setBriefing({
-      tipoContato: 'Ligação',
-      objetivo: '',
-      conversa: '',
-      resultado: '',
-      interesseDemonstrado: '',
-      objecoes: '',
-      proximoPasso: '',
-      proximoFollowUp: null,
-      temperaturaAtualizada: lead.temperatura,
-    });
+  const handleSubmit = async () => {
+    try {
+      await adicionarBriefing(lead.id, briefing);
+      onOpenChange(false);
+      setBriefing({
+        tipoContato: 'Ligação',
+        objetivo: '',
+        conversa: '',
+        resultado: '',
+        interesseDemonstrado: '',
+        objecoes: '',
+        proximoPasso: '',
+        proximoFollowUp: null,
+        temperaturaAtualizada: lead.temperatura,
+      });
+    } catch (err) {
+      console.error('Erro ao adicionar briefing:', err);
+    }
   };
 
   return (
