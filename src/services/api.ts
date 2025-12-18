@@ -1,15 +1,18 @@
+import { ensureHttpsInProduction } from "@/lib/utils";
 import type {
-  CreateLeadInput,
-  UpdateLeadInput,
   BriefingInput,
   CreateBriefingInput,
-  UpdateGamificacaoInput,
-  UpdateMetricasInput,
+  CreateLeadInput,
   LeadResponse,
+  UpdateGamificacaoInput,
+  UpdateLeadInput,
+  UpdateMetricasInput,
 } from "@/types/api";
-import type { Gamificacao, MetricasDiarias, Briefing } from "@/types/crm";
+import type { Briefing, Gamificacao, MetricasDiarias } from "@/types/crm";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3333/api";
+const API_URL = ensureHttpsInProduction(
+  import.meta.env.VITE_API_URL || "http://localhost:3333/api"
+);
 
 async function request<T = unknown>(
   endpoint: string,

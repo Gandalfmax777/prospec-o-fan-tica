@@ -1,7 +1,9 @@
+import { ensureHttpsInProduction } from "@/lib/utils";
 import type { LoginInput, RegisterInput, Session, User } from "@/types/auth";
 
-const AUTH_URL =
-  import.meta.env.VITE_BETTER_AUTH_URL || "http://localhost:3333/api/auth";
+const AUTH_URL = ensureHttpsInProduction(
+  import.meta.env.VITE_BETTER_AUTH_URL || "http://localhost:3333/api/auth"
+);
 
 /**
  * Faz uma requisição para a API de autenticação
@@ -30,11 +32,11 @@ async function authRequest<T = unknown>(
 
   try {
     const response = await fetch(url, config);
-    
+
     // Lê o texto primeiro para verificar se é null
     const text = await response.text();
-    let responseData: any;
-    
+    let responseData: unknown;
+
     // Tenta fazer parse do JSON
     if (text.trim() === "" || text.trim() === "null") {
       responseData = null;
@@ -42,22 +44,29 @@ async function authRequest<T = unknown>(
       try {
         responseData = JSON.parse(text);
       } catch (e) {
-        console.error("Erro ao fazer parse do JSON:", text);
+        // Não loga o texto da resposta para evitar expor dados sensíveis
+        console.error("Erro ao fazer parse do JSON da resposta");
         responseData = null;
       }
     }
 
     if (!response.ok) {
-      const error =
-        responseData?.error ||
-        responseData?.message ||
-        `HTTP error! status: ${response.status}`;
-      throw new Error(
-        typeof error === "string" ? error : error.message || "Erro desconhecido"
-      );
+      const errorData = responseData as {
+        error?: string | { message: string };
+        message?: string;
+      } | null;
+      const errorMessage =
+        (errorData && typeof errorData === "object" && "error" in errorData
+          ? typeof errorData.error === "string"
+            ? errorData.error
+            : errorData.error?.message
+          : errorData && typeof errorData === "object" && "message" in errorData
+          ? errorData.message
+          : undefined) || `HTTP error! status: ${response.status}`;
+      throw new Error(errorMessage || "Erro desconhecido");
     }
 
-    return responseData;
+    return responseData as T;
   } catch (error) {
     console.error("Auth Error:", error);
     if (error instanceof Error) {
@@ -111,31 +120,25 @@ export const auth = {
     const sessionFromResponse = response.data?.session || response.session;
 
     if (!userRaw) {
-      console.error("Resposta completa do sign-in:", response);
+      // Não loga a resposta completa para evitar expor dados sensíveis (tokens, etc)
+      console.error(
+        "Resposta inválida do servidor: usuário não encontrado no sign-in"
+      );
       throw new Error("Resposta inválida do servidor: usuário não encontrado");
     }
 
     // Converte as datas de string para Date
     const user: User = {
       ...userRaw,
-      createdAt:
-        userRaw.createdAt instanceof Date
-          ? userRaw.createdAt
-          : new Date(userRaw.createdAt),
-      updatedAt:
-        userRaw.updatedAt instanceof Date
-          ? userRaw.updatedAt
-          : new Date(userRaw.updatedAt),
+      createdAt: new Date(userRaw.createdAt),
+      updatedAt: new Date(userRaw.updatedAt),
     };
 
     // Se já tiver session na resposta, usa ela (convertendo datas se necessário)
     if (sessionFromResponse) {
       const session: Session = {
         ...sessionFromResponse,
-        expiresAt:
-          sessionFromResponse.expiresAt instanceof Date
-            ? sessionFromResponse.expiresAt
-            : new Date(sessionFromResponse.expiresAt),
+        expiresAt: new Date(sessionFromResponse.expiresAt),
         user: user,
       };
       return {
@@ -218,21 +221,18 @@ export const auth = {
     const token = response.data?.token || response.token;
 
     if (!userRaw) {
-      console.error("Resposta completa:", response);
+      // Não loga a resposta completa para evitar expor dados sensíveis (tokens, etc)
+      console.error(
+        "Resposta inválida do servidor: usuário não encontrado no sign-up"
+      );
       throw new Error("Resposta inválida do servidor: usuário não encontrado");
     }
 
     // Converte as datas de string para Date
     const user: User = {
       ...userRaw,
-      createdAt:
-        userRaw.createdAt instanceof Date
-          ? userRaw.createdAt
-          : new Date(userRaw.createdAt),
-      updatedAt:
-        userRaw.updatedAt instanceof Date
-          ? userRaw.updatedAt
-          : new Date(userRaw.updatedAt),
+      createdAt: new Date(userRaw.createdAt),
+      updatedAt: new Date(userRaw.updatedAt),
     };
 
     // Se não houver token, tenta obter a sessão
@@ -306,12 +306,11 @@ export const auth = {
         method: "GET",
       });
 
-      // Log para debug
-      console.log("get-session response:", response);
-
       // Se a resposta for null, retorna null
       if (response === null || response === undefined) {
-        console.warn("get-session: resposta é null/undefined - cookies podem não estar sendo enviados");
+        console.warn(
+          "get-session: resposta é null/undefined - cookies podem não estar sendo enviados"
+        );
         return null;
       }
 
@@ -320,21 +319,16 @@ export const auth = {
       const sessionRaw = response.data?.session || response.session;
 
       if (!userRaw) {
-        console.warn("get-session: usuário não encontrado na resposta", response);
+        // Não loga a resposta completa para evitar expor dados sensíveis
+        console.warn("get-session: usuário não encontrado na resposta");
         return null;
       }
 
       // Converte as datas de string para Date
       const user: User = {
         ...userRaw,
-        createdAt:
-          userRaw.createdAt instanceof Date
-            ? userRaw.createdAt
-            : new Date(userRaw.createdAt),
-        updatedAt:
-          userRaw.updatedAt instanceof Date
-            ? userRaw.updatedAt
-            : new Date(userRaw.updatedAt),
+        createdAt: new Date(userRaw.createdAt),
+        updatedAt: new Date(userRaw.updatedAt),
       };
 
       // Se não tiver session na resposta, constrói uma básica
@@ -342,10 +336,7 @@ export const auth = {
       if (sessionRaw) {
         session = {
           ...sessionRaw,
-          expiresAt:
-            sessionRaw.expiresAt instanceof Date
-              ? sessionRaw.expiresAt
-              : new Date(sessionRaw.expiresAt),
+          expiresAt: new Date(sessionRaw.expiresAt),
           user: user,
         };
       } else {
