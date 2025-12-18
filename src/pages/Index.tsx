@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CRMProvider } from '@/context/CRMContext';
+import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DashboardHeader } from '@/components/crm/DashboardHeader';
 import { LeadTable } from '@/components/crm/LeadTable';
@@ -9,10 +11,32 @@ import { MetricasTab } from '@/components/crm/MetricasTab';
 import { PendenciasTab } from '@/components/crm/PendenciasTab';
 import { GamificacaoTab } from '@/components/crm/GamificacaoTab';
 import { AlertaBanner } from '@/components/crm/AlertaBanner';
-import { LayoutDashboard, Table, Kanban, CheckCircle, BarChart3, AlertTriangle, Trophy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { LayoutDashboard, Table, Kanban, CheckCircle, BarChart3, AlertTriangle, Trophy, LogOut } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const CRMDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso",
+      });
+      navigate("/login", { replace: true });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao fazer logout";
+      toast({
+        title: "Erro ao fazer logout",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -22,6 +46,22 @@ const CRMDashboard = () => {
             <div>
               <h1 className="text-2xl font-bold text-foreground">CRM de Prospecção</h1>
               <p className="text-sm text-muted-foreground">Gestão inteligente de leads</p>
+            </div>
+            <div className="flex items-center gap-4">
+              {user && (
+                <div className="text-sm text-muted-foreground hidden sm:block">
+                  <span className="font-medium text-foreground">{user.name || user.email}</span>
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Sair</span>
+              </Button>
             </div>
           </div>
         </div>
