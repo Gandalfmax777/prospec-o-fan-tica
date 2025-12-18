@@ -44,19 +44,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = useCallback(async (input: LoginInput) => {
     const result = await auth.signIn(input);
+    // Define o usuário e sessão imediatamente com os dados do login
     setUser(result.user);
     setSession(result.session);
-    // Atualiza a sessão para garantir que está sincronizada com o servidor
-    await refreshSession();
-  }, [refreshSession]);
+    // Aguarda um pouco para garantir que os cookies foram processados
+    // antes de tentar atualizar a sessão do servidor
+    setTimeout(async () => {
+      try {
+        const sessionData = await auth.getSession();
+        if (sessionData) {
+          setUser(sessionData.user);
+          setSession(sessionData.session);
+        }
+      } catch (error) {
+        console.warn("Não foi possível atualizar a sessão após login:", error);
+        // Mantém os dados do login mesmo se não conseguir atualizar
+      }
+    }, 500);
+  }, []);
 
   const signUp = useCallback(async (input: RegisterInput) => {
     const result = await auth.signUp(input);
+    // Define o usuário e sessão imediatamente com os dados do registro
     setUser(result.user);
     setSession(result.session);
-    // Atualiza a sessão para garantir que está sincronizada com o servidor
-    await refreshSession();
-  }, [refreshSession]);
+    // Aguarda um pouco para garantir que os cookies foram processados
+    // antes de tentar atualizar a sessão do servidor
+    setTimeout(async () => {
+      try {
+        const sessionData = await auth.getSession();
+        if (sessionData) {
+          setUser(sessionData.user);
+          setSession(sessionData.session);
+        }
+      } catch (error) {
+        console.warn("Não foi possível atualizar a sessão após registro:", error);
+        // Mantém os dados do registro mesmo se não conseguir atualizar
+      }
+    }, 500);
+  }, []);
 
   const signOut = useCallback(async () => {
     await auth.signOut();

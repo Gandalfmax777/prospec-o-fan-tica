@@ -30,12 +30,27 @@ async function authRequest<T = unknown>(
 
   try {
     const response = await fetch(url, config);
-    const responseData = await response.json();
+    
+    // Lê o texto primeiro para verificar se é null
+    const text = await response.text();
+    let responseData: any;
+    
+    // Tenta fazer parse do JSON
+    if (text.trim() === "" || text.trim() === "null") {
+      responseData = null;
+    } else {
+      try {
+        responseData = JSON.parse(text);
+      } catch (e) {
+        console.error("Erro ao fazer parse do JSON:", text);
+        responseData = null;
+      }
+    }
 
     if (!response.ok) {
       const error =
-        responseData.error ||
-        responseData.message ||
+        responseData?.error ||
+        responseData?.message ||
         `HTTP error! status: ${response.status}`;
       throw new Error(
         typeof error === "string" ? error : error.message || "Erro desconhecido"
@@ -272,21 +287,80 @@ export const auth = {
     try {
       const response = await authRequest<{
         data?: {
-          user: User;
-          session: Session;
+          user: Omit<User, "createdAt" | "updatedAt"> & {
+            createdAt: string;
+            updatedAt: string;
+          };
+          session?: Omit<Session, "expiresAt" | "user"> & {
+            expiresAt: string;
+          };
         };
-        user?: User;
-        session?: Session;
+        user?: Omit<User, "createdAt" | "updatedAt"> & {
+          createdAt: string;
+          updatedAt: string;
+        };
+        session?: Omit<Session, "expiresAt" | "user"> & {
+          expiresAt: string;
+        };
       }>("/get-session", {
         method: "GET",
       });
 
-      // Better Auth pode retornar data.user/session ou diretamente user/session
-      const user = response.data?.user || response.user;
-      const session = response.data?.session || response.session;
+      // Log para debug
+      console.log("get-session response:", response);
 
-      if (!user || !session) {
+      // Se a resposta for null, retorna null
+      if (response === null || response === undefined) {
+        console.warn("get-session: resposta é null/undefined - cookies podem não estar sendo enviados");
         return null;
+      }
+
+      // Better Auth pode retornar data.user/session ou diretamente user/session
+      const userRaw = response.data?.user || response.user;
+      const sessionRaw = response.data?.session || response.session;
+
+      if (!userRaw) {
+        console.warn("get-session: usuário não encontrado na resposta", response);
+        return null;
+      }
+
+      // Converte as datas de string para Date
+      const user: User = {
+        ...userRaw,
+        createdAt:
+          userRaw.createdAt instanceof Date
+            ? userRaw.createdAt
+            : new Date(userRaw.createdAt),
+        updatedAt:
+          userRaw.updatedAt instanceof Date
+            ? userRaw.updatedAt
+            : new Date(userRaw.updatedAt),
+      };
+
+      // Se não tiver session na resposta, constrói uma básica
+      let session: Session;
+      if (sessionRaw) {
+        session = {
+          ...sessionRaw,
+          expiresAt:
+            sessionRaw.expiresAt instanceof Date
+              ? sessionRaw.expiresAt
+              : new Date(sessionRaw.expiresAt),
+          user: user,
+        };
+      } else {
+        // Se não tiver session, cria uma básica (o Better Auth pode não retornar session em get-session)
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        session = {
+          id: user.id,
+          userId: user.id,
+          expiresAt: expiresAt,
+          token: "",
+          ipAddress: null,
+          userAgent: null,
+          user: user,
+        };
       }
 
       return {
@@ -294,6 +368,7 @@ export const auth = {
         session,
       };
     } catch (error) {
+      console.error("Erro ao obter sessão:", error);
       // Se não houver sessão, retorna null
       return null;
     }
