@@ -4,6 +4,8 @@ export interface User {
   name: string | null;
   emailVerified: boolean;
   image: string | null;
+  role?: string;
+  managerId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,4 +40,3 @@ export interface AuthError {
   error: string;
   message?: string;
 }
-

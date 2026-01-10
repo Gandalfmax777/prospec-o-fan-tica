@@ -1,9 +1,24 @@
-export type Cadencia = 'Semanal' | 'Quinzenal' | 'Mensal';
-export type Status = 'Atrasado' | 'Falar Hoje' | 'Em Dia' | 'Convertido';
-export type Temperatura = 'Frio' | 'Morno' | 'Quente';
-export type Prioridade = 'Urgente' | 'Alerta' | 'Atenção' | 'Normal';
-export type Origem = 'Instagram' | 'Indicação' | 'Anúncio' | 'Evento' | 'WhatsApp' | 'Orgânico' | 'LinkedIn' | 'Site' | 'Outro';
-export type TipoContato = 'Ligação' | 'WhatsApp' | 'Email' | 'Reunião' | 'Visita' | 'Outro';
+export type Cadencia = "Semanal" | "Quinzenal" | "Mensal";
+export type Status = "Atrasado" | "Falar Hoje" | "Em Dia" | "Convertido";
+export type Temperatura = "Frio" | "Morno" | "Quente";
+export type Prioridade = "Urgente" | "Alerta" | "Atenção" | "Normal";
+export type Origem =
+  | "Instagram"
+  | "Indicação"
+  | "Anúncio"
+  | "Evento"
+  | "WhatsApp"
+  | "Orgânico"
+  | "LinkedIn"
+  | "Site"
+  | "Outro";
+export type TipoContato =
+  | "Ligação"
+  | "WhatsApp"
+  | "Email"
+  | "Reunião"
+  | "Visita"
+  | "Outro";
 
 export interface HistoricoContato {
   id: string;
@@ -46,10 +61,14 @@ export interface Lead {
   temperatura: Temperatura;
   observacao: string;
   prioridade: Prioridade;
+  estimatedValueCents: number | null;
+  statedValueCents: number | null;
+  currency: string;
   score: number;
   dataEntrada: Date;
   dataConversao: Date | null;
   historico: HistoricoContato[];
+  briefings?: Briefing[];
   pontos: number;
   nivel: string;
   conquistas: string[];
@@ -65,6 +84,7 @@ export interface Gamificacao {
   conquistas: string[];
   missoesDiarias: MissaoDiaria[];
   progressoDiario: number;
+  ultimaAtividade: Date | null;
 }
 
 export interface MissaoDiaria {

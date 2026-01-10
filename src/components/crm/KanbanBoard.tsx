@@ -10,35 +10,31 @@ import {
   MapPin,
   MessageSquare,
   Phone,
+  PanelsTopLeft,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { BriefingDialog } from "./BriefingDialog";
 import { PrioridadeBadge, StatusBadge } from "./StatusBadge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const KanbanBoard = () => {
   const { leads, moverTemperatura, registrarContato, converterLead } = useCRM();
   const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
-  const [dragOverColumn, setDragOverColumn] = useState<Temperatura | null>(
-    null
-  );
+  const [dragOverColumn, setDragOverColumn] = useState<Temperatura | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showBriefing, setShowBriefing] = useState(false);
   const dragElementRef = useRef<HTMLElement | null>(null);
 
-  const activeLeads = leads.filter((l) => l.status !== "Convertido");
+  const activeLeads = leads.filter((lead) => lead.status !== "Convertido");
 
-  const leadsFrios = activeLeads.filter((l) => l.temperatura === "Frio");
-  const leadsMornos = activeLeads.filter((l) => l.temperatura === "Morno");
-  const leadsQuentes = activeLeads.filter((l) => l.temperatura === "Quente");
+  const leadsFrios = activeLeads.filter((lead) => lead.temperatura === "Frio");
+  const leadsMornos = activeLeads.filter((lead) => lead.temperatura === "Morno");
+  const leadsQuentes = activeLeads.filter((lead) => lead.temperatura === "Quente");
 
   const handleDragStart = (e: React.DragEvent, lead: Lead) => {
     const target = e.currentTarget as HTMLElement;
     dragElementRef.current = target;
-
-    // Aplica opacidade diretamente no elemento sem causar re-render
     target.style.opacity = "0.5";
-
-    // Atualiza o estado imediatamente
     setDraggedLead(lead);
 
     e.dataTransfer.effectAllowed = "move";
@@ -46,7 +42,6 @@ export const KanbanBoard = () => {
   };
 
   const handleDragEnd = () => {
-    // Restaura a opacidade do elemento arrastado
     if (dragElementRef.current) {
       dragElementRef.current.style.opacity = "1";
       dragElementRef.current = null;
@@ -74,7 +69,6 @@ export const KanbanBoard = () => {
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    // Verifica se realmente saiu da coluna (não apenas de um elemento filho)
     const currentTarget = e.currentTarget as HTMLElement;
     const relatedTarget = e.relatedTarget as HTMLElement;
 
@@ -100,9 +94,8 @@ export const KanbanBoard = () => {
   const KanbanCard = ({ lead }: { lead: Lead }) => {
     return (
       <div
-        draggable={true}
+        draggable
         onDragStart={(e) => {
-          // Previne drag se estiver clicando em um botão
           const target = e.target as HTMLElement;
           if (target.closest("button")) {
             e.preventDefault();
@@ -132,7 +125,7 @@ export const KanbanBoard = () => {
             {lead.telefone}
           </div>
           <div className="flex items-center gap-1 text-muted-foreground/70">
-            Código: {lead.codigo}
+            Codigo: {lead.codigo}
           </div>
           <div className="flex items-center gap-1 text-muted-foreground/70">
             Origem: {lead.origem}
@@ -141,17 +134,15 @@ export const KanbanBoard = () => {
 
         <div className="mt-3 pt-3 border-t border-border">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Cadência:</span>
+            <span className="text-muted-foreground">Cadencia:</span>
             <span className="font-medium">{lead.cadencia}</span>
           </div>
           <div className="flex items-center justify-between text-xs mt-1">
-            <span className="text-muted-foreground">Último:</span>
-            <span>
-              {lead.ultimoContato ? format(lead.ultimoContato, "dd/MM") : "-"}
-            </span>
+            <span className="text-muted-foreground">Ultimo:</span>
+            <span>{lead.ultimoContato ? format(lead.ultimoContato, "dd/MM") : "-"}</span>
           </div>
           <div className="flex items-center justify-between text-xs mt-1">
-            <span className="text-muted-foreground">Próximo:</span>
+            <span className="text-muted-foreground">Proximo:</span>
             <span
               className={cn(
                 lead.status === "Atrasado" &&
@@ -280,7 +271,7 @@ export const KanbanBoard = () => {
                 isDragOver && canDrop && "text-primary font-semibold"
               )}
             >
-              {isDragOver && canDrop ? "Solte aqui!" : "Arraste leads para cá"}
+              {isDragOver && canDrop ? "Solte aqui!" : "Arraste leads para ca"}
             </div>
           )}
         </div>
@@ -289,37 +280,41 @@ export const KanbanBoard = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Kanban de Prospecção</h2>
+    <Card>
+      <CardHeader className="flex flex-row items-center gap-2">
+        <PanelsTopLeft className="h-5 w-5 text-primary" />
+        <CardTitle>Kanban de prospeccao</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          <KanbanColumn
+            title="Frio"
+            leads={leadsFrios}
+            temperatura="Frio"
+            colorClass="bg-[hsl(var(--temp-frio-bg))] border border-[hsl(var(--temp-frio)/0.3)]"
+          />
+          <KanbanColumn
+            title="Morno"
+            leads={leadsMornos}
+            temperatura="Morno"
+            colorClass="bg-[hsl(var(--temp-morno-bg))] border border-[hsl(var(--temp-morno)/0.3)]"
+          />
+          <KanbanColumn
+            title="Quente"
+            leads={leadsQuentes}
+            temperatura="Quente"
+            colorClass="bg-[hsl(var(--temp-quente-bg))] border border-[hsl(var(--temp-quente)/0.3)]"
+          />
+        </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        <KanbanColumn
-          title="❄️ Frio"
-          leads={leadsFrios}
-          temperatura="Frio"
-          colorClass="bg-[hsl(var(--temp-frio-bg))] border border-[hsl(var(--temp-frio)/0.3)]"
-        />
-        <KanbanColumn
-          title="🌤️ Morno"
-          leads={leadsMornos}
-          temperatura="Morno"
-          colorClass="bg-[hsl(var(--temp-morno-bg))] border border-[hsl(var(--temp-morno)/0.3)]"
-        />
-        <KanbanColumn
-          title="🔥 Quente"
-          leads={leadsQuentes}
-          temperatura="Quente"
-          colorClass="bg-[hsl(var(--temp-quente-bg))] border border-[hsl(var(--temp-quente)/0.3)]"
-        />
-      </div>
-
-      {selectedLead && (
-        <BriefingDialog
-          open={showBriefing}
-          onOpenChange={setShowBriefing}
-          lead={selectedLead}
-        />
-      )}
-    </div>
+        {selectedLead && (
+          <BriefingDialog
+            open={showBriefing}
+            onOpenChange={setShowBriefing}
+            lead={selectedLead}
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 };

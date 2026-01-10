@@ -6,11 +6,32 @@ const AUTH_URL = ensureHttpsInProduction(
 );
 
 /**
- * Faz uma requisição para a API de autenticação
+ * Helper para verificar se erro é de sessão inválida
+ */
+function isSessionInvalidError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    return (
+      message.includes("sessão inválida") ||
+      message.includes("sessao invalida") ||
+      message.includes("não autenticado") ||
+      message.includes("nao autenticado") ||
+      message.includes("not authenticated") ||
+      message.includes("unauthorized") ||
+      message.includes("401")
+    );
+  }
+  return false;
+}
+
+/**
+ * Faz uma requisição para a API de autenticação com retry logic
  */
 async function authRequest<T = unknown>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retryCount = 0,
+  maxRetries = 1
 ): Promise<T> {
   const url = `${AUTH_URL}${endpoint}`;
   const config: RequestInit = {
@@ -63,11 +84,30 @@ async function authRequest<T = unknown>(
           : errorData && typeof errorData === "object" && "message" in errorData
           ? errorData.message
           : undefined) || `HTTP error! status: ${response.status}`;
-      throw new Error(errorMessage || "Erro desconhecido");
+      
+      const error = new Error(errorMessage || "Erro desconhecido");
+      
+      // Se for erro de sessão inválida e ainda há retries disponíveis, tenta novamente
+      // Isso é especialmente útil no Safari iOS onde cookies podem demorar a ser processados
+      if (isSessionInvalidError(error) && retryCount < maxRetries) {
+        console.warn(`Sessão inválida detectada, tentando novamente (${retryCount + 1}/${maxRetries})...`);
+        // Aguarda um pouco antes de tentar novamente (dá tempo para cookies serem processados)
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return authRequest<T>(endpoint, options, retryCount + 1, maxRetries);
+      }
+      
+      throw error;
     }
 
     return responseData as T;
   } catch (error) {
+    // Se for erro de sessão inválida e ainda há retries disponíveis, tenta novamente
+    if (isSessionInvalidError(error) && retryCount < maxRetries) {
+      console.warn(`Erro de sessão inválida, tentando novamente (${retryCount + 1}/${maxRetries})...`);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return authRequest<T>(endpoint, options, retryCount + 1, maxRetries);
+    }
+    
     console.error("Auth Error:", error);
     if (error instanceof Error) {
       throw error;
@@ -282,6 +322,7 @@ export const auth = {
 
   /**
    * Obter sessão atual
+   * Usa mais retries pois é crítico e cookies podem demorar no Safari iOS
    */
   async getSession(): Promise<{ user: User; session: Session } | null> {
     try {
@@ -304,7 +345,7 @@ export const auth = {
         };
       }>("/get-session", {
         method: "GET",
-      });
+      }, 0, 2); // 2 retries para getSession (crítico)
 
       // Se a resposta for null, retorna null
       if (response === null || response === undefined) {

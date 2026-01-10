@@ -1,4 +1,5 @@
 import { api } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 import {
   Briefing,
   Gamificacao,
@@ -14,6 +15,7 @@ import React, {
   useContext,
   useEffect,
   useState,
+  useRef,
 } from "react";
 
 interface CRMContextType {
@@ -82,6 +84,7 @@ const gerarMissoesDiarias = (): MissaoDiaria[] => [
 export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { refreshSession, isSessionInvalidError } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [gamificacao, setGamificacao] = useState<Gamificacao>({
     id: "",
@@ -106,17 +109,34 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const retryAttemptsRef = useRef(0);
+  const MAX_RETRY_ATTEMPTS = 1;
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (isRetry = false) => {
     try {
       setError(null);
+      
+      // Se for retry, tenta refresh da sessão primeiro
+      if (isRetry && retryAttemptsRef.current < MAX_RETRY_ATTEMPTS) {
+        retryAttemptsRef.current += 1;
+        console.log(`Tentativa ${retryAttemptsRef.current} de refresh de sessão antes de recarregar dados`);
+        try {
+          await refreshSession(true);
+          // Aguarda um pouco para garantir que cookies foram processados
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        } catch (refreshError) {
+          console.warn("Erro ao fazer refresh de sessão:", refreshError);
+        }
+      } else {
+        retryAttemptsRef.current = 0;
+      }
+
       const [leadsData, gamificacaoData, metricasData] = await Promise.all([
         api.getLeads(),
         api.getGamificacao(),
         api.getMetricas(),
       ]);
 
-      // Converter datas de string para Date
       const leadsFormatados = leadsData.map((lead) => ({
         ...lead,
         ultimoContato: lead.ultimoContato ? new Date(lead.ultimoContato) : null,
@@ -125,46 +145,62 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
           : null,
         dataEntrada: new Date(lead.dataEntrada),
         dataConversao: lead.dataConversao ? new Date(lead.dataConversao) : null,
-        historico:
-          lead.historico?.map((h) => ({
-            ...h,
-            data: new Date(h.data),
-          })) || [],
+        historico: Array.isArray(lead.historico)
+          ? lead.historico.map((item) => ({
+              ...item,
+              data: new Date(item.data),
+            }))
+          : [],
+        briefings: Array.isArray(lead.briefings)
+          ? lead.briefings.map((item) => ({
+              ...item,
+              data: new Date(item.data),
+              proximoFollowUp: item.proximoFollowUp
+                ? new Date(item.proximoFollowUp)
+                : null,
+            }))
+          : [],
       }));
 
       setLeads(leadsFormatados);
       setGamificacao({
         ...gamificacaoData,
+        ultimaAtividade: gamificacaoData.ultimaAtividade 
+          ? new Date(gamificacaoData.ultimaAtividade) 
+          : null,
         missoesDiarias: gamificacaoData.missoesDiarias || gerarMissoesDiarias(),
       });
       setMetricasDiarias(metricasData);
+      retryAttemptsRef.current = 0; // Reset contador em caso de sucesso
     } catch (err) {
       console.error("Erro ao carregar dados:", err);
-      const errorMessage = err instanceof Error ? err.message : "Erro ao carregar dados";
+      
+      // Verifica se é erro de sessão inválida
+      if (isSessionInvalidError(err) && !isRetry && retryAttemptsRef.current < MAX_RETRY_ATTEMPTS) {
+        // Tenta refresh e recarregar uma vez
+        console.log("Sessão inválida detectada, tentando refresh e recarregar dados...");
+        return refreshData(true);
+      }
+      
+      // Determina mensagem de erro mais clara
+      let errorMessage: string;
+      if (isSessionInvalidError(err)) {
+        errorMessage = "Sessão inválida. Por favor, faça login novamente.";
+      } else if (err instanceof Error) {
+        errorMessage = err.message || "Erro ao carregar dados";
+      } else {
+        errorMessage = "Erro ao carregar dados";
+      }
+      
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshSession, isSessionInvalidError]);
 
   useEffect(() => {
     refreshData();
   }, [refreshData]);
-
-  const adicionarPontos = useCallback(async (pontos: number) => {
-    try {
-      const updated = await api.adicionarPontos(pontos);
-      setGamificacao((prev) => ({
-        ...prev,
-        ...updated,
-        missoesDiarias: updated.missoesDiarias || prev.missoesDiarias,
-      }));
-    } catch (err) {
-      console.error("Erro ao adicionar pontos:", err);
-      const errorMessage = err instanceof Error ? err.message : "Erro ao adicionar pontos";
-      setError(errorMessage);
-    }
-  }, []);
 
   const addLead = useCallback(
     async (
@@ -186,42 +222,32 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         const novoLead = await api.createLead({
           ...leadData,
           ultimoContato: leadData.ultimoContato?.toISOString() || null,
-          dataEntrada:
-            leadData.dataEntrada?.toISOString() || new Date().toISOString(),
+          dataEntrada: leadData.dataEntrada?.toISOString() || new Date().toISOString(),
         });
 
-        // Converter datas
         const leadFormatado = {
           ...novoLead,
-          ultimoContato: novoLead.ultimoContato
-            ? new Date(novoLead.ultimoContato)
-            : null,
-          proximoContato: novoLead.proximoContato
-            ? new Date(novoLead.proximoContato)
-            : null,
+          ultimoContato: novoLead.ultimoContato ? new Date(novoLead.ultimoContato) : null,
+          proximoContato: novoLead.proximoContato ? new Date(novoLead.proximoContato) : null,
           dataEntrada: new Date(novoLead.dataEntrada),
-          dataConversao: novoLead.dataConversao
-            ? new Date(novoLead.dataConversao)
-            : null,
-          historico:
-            novoLead.historico?.map((h) => ({
-              ...h,
-              data: new Date(h.data),
-            })) || [],
+          dataConversao: novoLead.dataConversao ? new Date(novoLead.dataConversao) : null,
+          historico: Array.isArray(novoLead.historico)
+            ? novoLead.historico.map((item) => ({
+                ...item,
+                data: new Date(item.data),
+              }))
+            : [],
+          briefings: Array.isArray(novoLead.briefings)
+            ? novoLead.briefings.map((item) => ({
+                ...item,
+                data: new Date(item.data),
+                proximoFollowUp: item.proximoFollowUp ? new Date(item.proximoFollowUp) : null,
+              }))
+            : [],
         };
 
         setLeads((prev) => [...prev, leadFormatado]);
-        await adicionarPontos(2);
-
-        const metricas = await api.getMetricas();
-        await api.updateMetricas({
-          ...metricas,
-          novosLeads: metricas.novosLeads + 1,
-        });
-        setMetricasDiarias((prev) => ({
-          ...prev,
-          novosLeads: prev.novosLeads + 1,
-        }));
+        await refreshData();
       } catch (err) {
         console.error("Erro ao adicionar lead:", err);
         const errorMessage = err instanceof Error ? err.message : "Erro ao adicionar lead";
@@ -229,7 +255,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         throw err;
       }
     },
-    [adicionarPontos]
+    [refreshData]
   );
 
   const updateLead = useCallback(async (id: string, updates: Partial<Lead>) => {
@@ -237,41 +263,35 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
       setError(null);
       const updateData: UpdateLeadInput = { ...updates };
 
-      // Converter datas para ISO string
-      if (updates.ultimoContato)
-        updateData.ultimoContato = updates.ultimoContato.toISOString();
-      if (updates.proximoContato)
-        updateData.proximoContato = updates.proximoContato.toISOString();
-      if (updates.dataEntrada)
-        updateData.dataEntrada = updates.dataEntrada.toISOString();
-      if (updates.dataConversao)
-        updateData.dataConversao = updates.dataConversao.toISOString();
+      if (updates.ultimoContato) updateData.ultimoContato = updates.ultimoContato.toISOString();
+      if (updates.proximoContato) updateData.proximoContato = updates.proximoContato.toISOString();
+      if (updates.dataEntrada) updateData.dataEntrada = updates.dataEntrada.toISOString();
+      if (updates.dataConversao) updateData.dataConversao = updates.dataConversao.toISOString();
 
       const leadAtualizado = await api.updateLead(id, updateData);
 
-      // Converter datas
       const leadFormatado = {
         ...leadAtualizado,
-        ultimoContato: leadAtualizado.ultimoContato
-          ? new Date(leadAtualizado.ultimoContato)
-          : null,
-        proximoContato: leadAtualizado.proximoContato
-          ? new Date(leadAtualizado.proximoContato)
-          : null,
+        ultimoContato: leadAtualizado.ultimoContato ? new Date(leadAtualizado.ultimoContato) : null,
+        proximoContato: leadAtualizado.proximoContato ? new Date(leadAtualizado.proximoContato) : null,
         dataEntrada: new Date(leadAtualizado.dataEntrada),
-        dataConversao: leadAtualizado.dataConversao
-          ? new Date(leadAtualizado.dataConversao)
-          : null,
-        historico:
-          leadAtualizado.historico?.map((h) => ({
-            ...h,
-            data: new Date(h.data),
-          })) || [],
+        dataConversao: leadAtualizado.dataConversao ? new Date(leadAtualizado.dataConversao) : null,
+        historico: Array.isArray(leadAtualizado.historico)
+          ? leadAtualizado.historico.map((item) => ({
+              ...item,
+              data: new Date(item.data),
+            }))
+          : [],
+        briefings: Array.isArray(leadAtualizado.briefings)
+          ? leadAtualizado.briefings.map((item) => ({
+              ...item,
+              data: new Date(item.data),
+              proximoFollowUp: item.proximoFollowUp ? new Date(item.proximoFollowUp) : null,
+            }))
+          : [],
       };
 
-      setLeads((prev) =>
-        prev.map((lead) => (lead.id === id ? leadFormatado : lead))
-      );
+      setLeads((prev) => prev.map((lead) => (lead.id === id ? leadFormatado : lead)));
     } catch (err) {
       console.error("Erro ao atualizar lead:", err);
       const errorMessage = err instanceof Error ? err.message : "Erro ao atualizar lead";
@@ -297,54 +317,34 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
     async (id: string, briefing?: Partial<Briefing>) => {
       try {
         setError(null);
-        const lead = leads.find((l) => l.id === id);
+        const lead = leads.find((item) => item.id === id);
         if (!lead) return;
 
-        const wasAtrasado = lead.status === "Atrasado";
         const leadAtualizado = await api.registrarContato(id, briefing);
 
-        // Converter datas
         const leadFormatado = {
           ...leadAtualizado,
-          ultimoContato: leadAtualizado.ultimoContato
-            ? new Date(leadAtualizado.ultimoContato)
-            : null,
-          proximoContato: leadAtualizado.proximoContato
-            ? new Date(leadAtualizado.proximoContato)
-            : null,
+          ultimoContato: leadAtualizado.ultimoContato ? new Date(leadAtualizado.ultimoContato) : null,
+          proximoContato: leadAtualizado.proximoContato ? new Date(leadAtualizado.proximoContato) : null,
           dataEntrada: new Date(leadAtualizado.dataEntrada),
-          dataConversao: leadAtualizado.dataConversao
-            ? new Date(leadAtualizado.dataConversao)
-            : null,
-          historico:
-            leadAtualizado.historico?.map((h) => ({
-              ...h,
-              data: new Date(h.data),
-            })) || [],
+          dataConversao: leadAtualizado.dataConversao ? new Date(leadAtualizado.dataConversao) : null,
+          historico: Array.isArray(leadAtualizado.historico)
+            ? leadAtualizado.historico.map((item) => ({
+                ...item,
+                data: new Date(item.data),
+              }))
+            : [],
+          briefings: Array.isArray(leadAtualizado.briefings)
+            ? leadAtualizado.briefings.map((item) => ({
+                ...item,
+                data: new Date(item.data),
+                proximoFollowUp: item.proximoFollowUp ? new Date(item.proximoFollowUp) : null,
+              }))
+            : [],
         };
 
-        setLeads((prev) => prev.map((l) => (l.id === id ? leadFormatado : l)));
-        await adicionarPontos(3);
-
-        const metricas = await api.getMetricas();
-        await api.updateMetricas({
-          ...metricas,
-          contatosFeitos: metricas.contatosFeitos + 1,
-          atrasosResolvidos: wasAtrasado
-            ? metricas.atrasosResolvidos + 1
-            : metricas.atrasosResolvidos,
-        });
-        setMetricasDiarias((prev) => ({
-          ...prev,
-          contatosFeitos: prev.contatosFeitos + 1,
-          atrasosResolvidos: wasAtrasado
-            ? prev.atrasosResolvidos + 1
-            : prev.atrasosResolvidos,
-        }));
-
-        if (wasAtrasado) {
-          await adicionarPontos(5);
-        }
+        setLeads((prev) => prev.map((item) => (item.id === id ? leadFormatado : item)));
+        await refreshData();
       } catch (err) {
         console.error("Erro ao registrar contato:", err);
         const errorMessage = err instanceof Error ? err.message : "Erro ao registrar contato";
@@ -352,39 +352,18 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         throw err;
       }
     },
-    [leads, adicionarPontos]
+    [leads, refreshData]
   );
 
   const moverTemperatura = useCallback(
     async (id: string, novaTemperatura: Temperatura) => {
       try {
         setError(null);
-        const lead = leads.find((l) => l.id === id);
+        const lead = leads.find((item) => item.id === id);
         if (!lead) return;
 
-        const pontosGanhos =
-          novaTemperatura === "Quente"
-            ? 5
-            : novaTemperatura === "Morno"
-            ? 3
-            : 0;
-
         await updateLead(id, { temperatura: novaTemperatura });
-
-        if (pontosGanhos > 0) {
-          await adicionarPontos(pontosGanhos);
-          if (novaTemperatura === "Quente") {
-            const metricas = await api.getMetricas();
-            await api.updateMetricas({
-              ...metricas,
-              leadsQuentesTrabalhados: metricas.leadsQuentesTrabalhados + 1,
-            });
-            setMetricasDiarias((prev) => ({
-              ...prev,
-              leadsQuentesTrabalhados: prev.leadsQuentesTrabalhados + 1,
-            }));
-          }
-        }
+        await refreshData();
       } catch (err) {
         console.error("Erro ao mover temperatura:", err);
         const errorMessage = err instanceof Error ? err.message : "Erro ao mover temperatura";
@@ -392,7 +371,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         throw err;
       }
     },
-    [leads, updateLead, adicionarPontos]
+    [leads, updateLead, refreshData]
   );
 
   const converterLead = useCallback(
@@ -403,7 +382,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
           status: "Convertido",
           dataConversao: new Date(),
         });
-        await adicionarPontos(10);
+        await refreshData();
       } catch (err) {
         console.error("Erro ao converter lead:", err);
         const errorMessage = err instanceof Error ? err.message : "Erro ao converter lead";
@@ -411,7 +390,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         throw err;
       }
     },
-    [updateLead, adicionarPontos]
+    [updateLead, refreshData]
   );
 
   const retornarAoFunil = useCallback(
@@ -434,10 +413,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const adicionarBriefing = useCallback(
-    async (
-      leadId: string,
-      briefingData: Omit<Briefing, "id" | "leadId" | "data">
-    ) => {
+    async (leadId: string, briefingData: Omit<Briefing, "id" | "leadId" | "data">) => {
       try {
         setError(null);
         await api.createBriefing({
@@ -446,9 +422,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
           proximoFollowUp: briefingData.proximoFollowUp?.toISOString() || null,
         });
 
-        // Atualizar lead localmente
         await refreshData();
-        await adicionarPontos(2);
       } catch (err) {
         console.error("Erro ao adicionar briefing:", err);
         const errorMessage = err instanceof Error ? err.message : "Erro ao adicionar briefing";
@@ -456,7 +430,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         throw err;
       }
     },
-    [refreshData, adicionarPontos]
+    [refreshData]
   );
 
   const completarMissao = useCallback(async (missaoId: string) => {
@@ -469,8 +443,8 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         missoesDiarias: updated.missoesDiarias || prev.missoesDiarias,
       }));
     } catch (err) {
-      console.error("Erro ao completar missão:", err);
-      const errorMessage = err instanceof Error ? err.message : "Erro ao completar missão";
+      console.error("Erro ao completar missao:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro ao completar missao";
       setError(errorMessage);
       throw err;
     }
@@ -478,8 +452,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const meta = 10;
-    const progresso =
-      metricasDiarias.contatosFeitos + metricasDiarias.atrasosResolvidos;
+    const progresso = metricasDiarias.contatosFeitos + metricasDiarias.atrasosResolvidos;
     setGamificacao((prev) => ({
       ...prev,
       progressoDiario: Math.min((progresso / meta) * 100, 100),

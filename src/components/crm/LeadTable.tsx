@@ -1,417 +1,475 @@
-import { useState } from 'react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { useCRM } from '@/context/CRMContext';
-import { Lead, Cadencia, Temperatura, Origem } from '@/types/crm';
-import { StatusBadge, TemperaturaBadge, PrioridadeBadge } from './StatusBadge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { cn } from '@/lib/utils';
-import { formatPhone } from '@/lib/phoneMask';
-import { CalendarIcon, Phone, Edit, Trash2, History, Plus, CheckCircle, MessageSquare } from 'lucide-react';
-import { BriefingDialog } from './BriefingDialog';
-import { HistoricoDialog } from './HistoricoDialog';
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useCRM } from "@/context/CRMContext";
+import { cn } from "@/lib/utils";
+import { Cadencia, Lead, Origem, Status, Temperatura } from "@/types/crm";
+import { ORIGENS } from "@/lib/origemConstants";
+import { format } from "date-fns";
+import {
+  CalendarIcon,
+  CheckCircle,
+  History,
+  MessageSquare,
+  Phone,
+  Trash2,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { BriefingDialog } from "./BriefingDialog";
+import { HistoricoDialog } from "./HistoricoDialog";
+import { NewLeadDialog } from "./NewLeadDialog";
+import { PrioridadeBadge, StatusBadge } from "./StatusBadge";
 
 export const LeadTable = () => {
-  const { leads, updateLead, deleteLead, registrarContato, addLead, loading, error } = useCRM();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showAddDialog, setShowAddDialog] = useState(false);
+  const { leads, updateLead, deleteLead, registrarContato, loading, error } =
+    useCRM();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showBriefing, setShowBriefing] = useState(false);
   const [showHistorico, setShowHistorico] = useState(false);
-  const [newLead, setNewLead] = useState({
-    nome: '',
-    cidade: '',
-    origem: 'Instagram' as Origem,
-    telefone: '',
-    codigo: '',
-    cadencia: 'Semanal' as Cadencia,
-    ultimoContato: null as Date | null,
-    temperatura: 'Frio' as Temperatura,
-    observacao: '',
-    dataEntrada: new Date(),
-    dataConversao: null as Date | null,
-  });
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [origemFilter, setOrigemFilter] = useState<Origem | "Todas">("Todas");
+  const [statusFilter, setStatusFilter] = useState<Status | "Todas">("Todas");
 
-  const activeLeads = leads.filter(l => l.status !== 'Convertido');
-
-  const handleAddLead = async () => {
-    try {
-      await addLead(newLead);
-      setShowAddDialog(false);
-      setNewLead({
-        nome: '',
-        cidade: '',
-        origem: 'Instagram',
-        telefone: '',
-        codigo: '',
-        cadencia: 'Semanal',
-        ultimoContato: null,
-        temperatura: 'Frio',
-        observacao: '',
-        dataEntrada: new Date(),
-        dataConversao: null,
-      });
-    } catch (err) {
-      console.error('Erro ao adicionar lead:', err);
-    }
+  const formatCurrency = (
+    value: number | null | undefined,
+    currency = "BRL"
+  ) => {
+    if (value == null) return "-";
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency,
+    }).format(value / 100);
   };
+
+  const activeLeads = useMemo(
+    () => leads.filter((lead) => lead.status !== "Convertido"),
+    [leads]
+  );
+  const filteredLeads = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return activeLeads.filter((lead) => {
+      const matchesText =
+        !term ||
+        lead.nome.toLowerCase().includes(term) ||
+        lead.cidade.toLowerCase().includes(term);
+      const matchesOrigem =
+        origemFilter === "Todas" || lead.origem === origemFilter;
+      const matchesStatus =
+        statusFilter === "Todas" || lead.status === statusFilter;
+      return matchesText && matchesOrigem && matchesStatus;
+    });
+  }, [activeLeads, origemFilter, searchTerm, statusFilter]);
+  const sortedLeads = useMemo(
+    () => [...filteredLeads].sort((a, b) => b.score - a.score),
+    [filteredLeads]
+  );
 
   const handleRegistrarContatoHoje = async (lead: Lead) => {
     try {
       await registrarContato(lead.id);
     } catch (err) {
-      console.error('Erro ao registrar contato:', err);
+      console.error("Erro ao registrar contato:", err);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <p className="text-muted-foreground">Carregando leads...</p>
-      </div>
+      <Card className="border-border/50 shadow-sm">
+        <CardContent className="flex items-center justify-center p-12">
+          <div className="text-center space-y-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground">Carregando leads...</p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-2">
-          <p className="text-destructive font-medium">Erro ao carregar dados</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-        </div>
-      </div>
+      <Card className="border-border/50 shadow-sm">
+        <CardContent className="flex items-center justify-center p-12">
+          <div className="text-center space-y-2">
+            <p className="text-destructive font-semibold">
+              Erro ao carregar dados
+            </p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Leads Ativos</h2>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              Novo Lead
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Adicionar Novo Lead</DialogTitle>
-            </DialogHeader>
-            <div className="grid grid-cols-2 gap-4 py-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Nome</label>
-                <Input
-                  value={newLead.nome}
-                  onChange={e => setNewLead({ ...newLead, nome: e.target.value })}
-                  placeholder="Nome do lead"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Cidade</label>
-                <Input
-                  value={newLead.cidade}
-                  onChange={e => setNewLead({ ...newLead, cidade: e.target.value })}
-                  placeholder="Cidade"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Origem</label>
-                <Select value={newLead.origem} onValueChange={(v: Origem) => setNewLead({ ...newLead, origem: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {['Instagram', 'Indicação', 'Anúncio', 'Evento', 'WhatsApp', 'Orgânico', 'LinkedIn', 'Site', 'Outro'].map(o => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Telefone</label>
-                <Input
-                  value={newLead.telefone}
-                  onChange={e => {
-                    const formatted = formatPhone(e.target.value);
-                    setNewLead({ ...newLead, telefone: formatted });
-                  }}
-                  placeholder="(00) 00000-0000"
-                  maxLength={15}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Código</label>
-                <Input
-                  value={newLead.codigo}
-                  onChange={e => setNewLead({ ...newLead, codigo: e.target.value })}
-                  placeholder="Código do lead"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Cadência</label>
-                <Select value={newLead.cadencia} onValueChange={(v: Cadencia) => setNewLead({ ...newLead, cadencia: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Semanal">Semanal</SelectItem>
-                    <SelectItem value="Quinzenal">Quinzenal</SelectItem>
-                    <SelectItem value="Mensal">Mensal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Temperatura</label>
-                <Select value={newLead.temperatura} onValueChange={(v: Temperatura) => setNewLead({ ...newLead, temperatura: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Frio">❄️ Frio</SelectItem>
-                    <SelectItem value="Morno">🌤️ Morno</SelectItem>
-                    <SelectItem value="Quente">🔥 Quente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Último Contato</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !newLead.ultimoContato && 'text-muted-foreground')}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newLead.ultimoContato ? format(newLead.ultimoContato, 'PPP', { locale: ptBR }) : 'Selecione'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={newLead.ultimoContato || undefined}
-                      onSelect={(date) => setNewLead({ ...newLead, ultimoContato: date || null })}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="col-span-2 space-y-2">
-                <label className="text-sm font-medium">Observação</label>
-                <Input
-                  value={newLead.observacao}
-                  onChange={e => setNewLead({ ...newLead, observacao: e.target.value })}
-                  placeholder="Observações sobre o lead"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancelar</Button>
-              <Button onClick={handleAddLead}>Adicionar Lead</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
+        <CardTitle className="text-lg font-semibold">Leads ativos</CardTitle>
+        <NewLeadDialog />
+      </CardHeader>
+      <CardContent className="space-y-4 pt-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[2fr_1fr_1fr]">
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar por nome ou cidade"
+            className="border-border/50 focus:border-primary focus:ring-primary/20 transition-colors"
+          />
+          <Select
+            value={origemFilter}
+            onValueChange={(v: Origem | "Todas") => setOrigemFilter(v)}
+          >
+            <SelectTrigger className="border-border/50 focus:border-primary focus:ring-primary/20 transition-colors">
+              <SelectValue placeholder="Origem" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Todas">Todas</SelectItem>
+              {ORIGENS.map((origem) => (
+                <SelectItem key={origem} value={origem}>
+                  {origem}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={statusFilter}
+            onValueChange={(v: Status | "Todas") => setStatusFilter(v)}
+          >
+            <SelectTrigger className="border-border/50 focus:border-primary focus:ring-primary/20 transition-colors">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Todas">Todos</SelectItem>
+              <SelectItem value="Atrasado">Atrasado</SelectItem>
+              <SelectItem value="Falar Hoje">Falar Hoje</SelectItem>
+              <SelectItem value="Em Dia">Em Dia</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="bg-card rounded-xl border overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="font-semibold">Prioridade</TableHead>
-                <TableHead className="font-semibold">Nome</TableHead>
-                <TableHead className="font-semibold">Cidade</TableHead>
-                <TableHead className="font-semibold">Origem</TableHead>
-                <TableHead className="font-semibold">Telefone</TableHead>
-                <TableHead className="font-semibold">Código</TableHead>
-                <TableHead className="font-semibold">Cadência</TableHead>
-                <TableHead className="font-semibold">Último Contato</TableHead>
-                <TableHead className="font-semibold">Próximo Contato</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
-                <TableHead className="font-semibold">Temperatura</TableHead>
-                <TableHead className="font-semibold">Score</TableHead>
-                <TableHead className="font-semibold">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {activeLeads.sort((a, b) => b.score - a.score).map(lead => (
-                <TableRow key={lead.id} className="hover:bg-muted/30">
-                  <TableCell>
-                    <PrioridadeBadge prioridade={lead.prioridade} />
-                  </TableCell>
-                  <TableCell className="font-medium">{lead.nome}</TableCell>
-                  <TableCell>{lead.cidade}</TableCell>
-                  <TableCell>
-                    <span className="metric-badge bg-muted text-muted-foreground">{lead.origem}</span>
-                  </TableCell>
-                  <TableCell>
-                    <a href={`tel:${lead.telefone}`} className="flex items-center gap-1 text-primary hover:underline">
-                      <Phone className="w-3 h-3" />
-                      {lead.telefone}
-                    </a>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{lead.codigo}</TableCell>
-                  <TableCell>
-                    <Select
-                      value={lead.cadencia}
-                      onValueChange={async (v: Cadencia) => {
-                        try {
-                          await updateLead(lead.id, { cadencia: v });
-                        } catch (err) {
-                          console.error('Erro ao atualizar lead:', err);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-[120px] h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Semanal">Semanal</SelectItem>
-                        <SelectItem value="Quinzenal">Quinzenal</SelectItem>
-                        <SelectItem value="Mensal">Mensal</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className={cn('w-[130px] justify-start text-left font-normal', !lead.ultimoContato && 'text-muted-foreground')}>
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {lead.ultimoContato ? format(lead.ultimoContato, 'dd/MM/yyyy') : 'Selecione'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={lead.ultimoContato || undefined}
-                          onSelect={async (date) => {
-                            try {
-                              await updateLead(lead.id, { ultimoContato: date || null });
-                            } catch (err) {
-                              console.error('Erro ao atualizar lead:', err);
-                            }
-                          }}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </TableCell>
-                  <TableCell>
-                    {lead.proximoContato ? (
-                      <span className={cn(
-                        'font-medium',
-                        lead.status === 'Atrasado' && 'text-[hsl(var(--status-atrasado))]',
-                        lead.status === 'Falar Hoje' && 'text-[hsl(var(--status-falar-hoje))]'
-                      )}>
-                        {format(lead.proximoContato, 'dd/MM/yyyy')}
+        <div className="rounded-xl border border-border/50 bg-card overflow-hidden shadow-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+            <Table className="min-w-[1200px]">
+              <TableHeader>
+                <TableRow className="bg-muted/40 hover:bg-muted/50 transition-colors">
+                  <TableHead className="font-semibold hidden lg:table-cell min-w-[100px]">
+                    Prioridade
+                  </TableHead>
+                  <TableHead className="font-semibold min-w-[150px]">
+                    Nome
+                  </TableHead>
+                  <TableHead className="font-semibold min-w-[120px]">
+                    Cidade
+                  </TableHead>
+                  <TableHead className="font-semibold hidden md:table-cell min-w-[100px]">
+                    Origem
+                  </TableHead>
+                  <TableHead className="font-semibold min-w-[140px]">
+                    Telefone
+                  </TableHead>
+                  <TableHead className="font-semibold hidden md:table-cell min-w-[110px]">
+                    Valor
+                  </TableHead>
+                  <TableHead className="font-semibold hidden xl:table-cell min-w-[120px] max-w-[150px]">
+                    Código
+                  </TableHead>
+                  <TableHead className="font-semibold hidden lg:table-cell min-w-[110px]">
+                    Cadência
+                  </TableHead>
+                  <TableHead className="font-semibold hidden xl:table-cell min-w-[130px]">
+                    Último contato
+                  </TableHead>
+                  <TableHead className="font-semibold hidden md:table-cell min-w-[130px]">
+                    Próximo contato
+                  </TableHead>
+                  <TableHead className="font-semibold min-w-[100px]">
+                    Status
+                  </TableHead>
+                  <TableHead className="font-semibold hidden md:table-cell min-w-[110px]">
+                    Temperatura
+                  </TableHead>
+                  <TableHead className="font-semibold hidden lg:table-cell min-w-[70px] text-center">
+                    Score
+                  </TableHead>
+                  <TableHead className="font-semibold min-w-[140px] sticky right-0 bg-background">
+                    Ações
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedLeads.map((lead) => (
+                  <TableRow 
+                    key={lead.id} 
+                    className="hover:bg-muted/40 transition-colors duration-150 border-b border-border/30"
+                  >
+                    <TableCell className="hidden lg:table-cell">
+                      <PrioridadeBadge prioridade={lead.prioridade} />
+                    </TableCell>
+                    <TableCell className="font-medium">{lead.nome}</TableCell>
+                    <TableCell>{lead.cidade}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <span className="metric-badge bg-muted text-muted-foreground">
+                        {lead.origem}
                       </span>
-                    ) : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={lead.status} />
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={lead.temperatura}
-                      onValueChange={async (v: Temperatura) => {
-                        try {
-                          await updateLead(lead.id, { temperatura: v });
-                        } catch (err) {
-                          console.error('Erro ao atualizar lead:', err);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-[120px] h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Frio">❄️ Frio</SelectItem>
-                        <SelectItem value="Morno">🌤️ Morno</SelectItem>
-                        <SelectItem value="Quente">🔥 Quente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-bold text-primary">{lead.score}</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-[hsl(var(--status-em-dia))]"
-                        onClick={() => handleRegistrarContatoHoje(lead)}
-                        title="Registrar contato hoje"
+                    </TableCell>
+                    <TableCell>
+                      <a
+                        href={`tel:${lead.telefone}`}
+                        className="flex items-center gap-1 text-primary hover:underline whitespace-nowrap"
                       >
-                        <CheckCircle className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => {
-                          setSelectedLead(lead);
-                          setShowBriefing(true);
-                        }}
-                        title="Adicionar briefing"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => {
-                          setSelectedLead(lead);
-                          setShowHistorico(true);
-                        }}
-                        title="Ver histórico"
-                      >
-                        <History className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={async () => {
+                        <Phone className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{lead.telefone}</span>
+                      </a>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell whitespace-nowrap">
+                      {formatCurrency(
+                        lead.statedValueCents ?? lead.estimatedValueCents,
+                        lead.currency || "BRL"
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell font-mono text-xs max-w-[150px]">
+                      <span className="truncate block" title={lead.codigo}>
+                        {lead.codigo}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <Select
+                        value={lead.cadencia}
+                        onValueChange={async (v: Cadencia) => {
                           try {
-                            await deleteLead(lead.id);
+                            await updateLead(lead.id, { cadencia: v });
                           } catch (err) {
-                            console.error('Erro ao deletar lead:', err);
+                            console.error("Erro ao atualizar lead:", err);
                           }
                         }}
-                        title="Excluir lead"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                        <SelectTrigger className="h-8 min-w-[100px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Semanal">Semanal</SelectItem>
+                          <SelectItem value="Quinzenal">Quinzenal</SelectItem>
+                          <SelectItem value="Mensal">Mensal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={cn(
+                              "justify-start text-left font-normal min-w-[120px]",
+                              !lead.ultimoContato && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">
+                              {lead.ultimoContato
+                                ? format(lead.ultimoContato, "dd/MM/yyyy")
+                                : "Selecione"}
+                            </span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={lead.ultimoContato || undefined}
+                            onSelect={async (date) => {
+                              try {
+                                await updateLead(lead.id, {
+                                  ultimoContato: date || null,
+                                });
+                              } catch (err) {
+                                console.error("Erro ao atualizar lead:", err);
+                              }
+                            }}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell whitespace-nowrap">
+                      {lead.proximoContato ? (
+                        <span
+                          className={cn(
+                            "font-medium",
+                            lead.status === "Atrasado" &&
+                              "text-[hsl(var(--status-atrasado))]",
+                            lead.status === "Falar Hoje" &&
+                              "text-[hsl(var(--status-falar-hoje))]"
+                          )}
+                        >
+                          {format(lead.proximoContato, "dd/MM/yyyy")}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={lead.status} />
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <Select
+                        value={lead.temperatura}
+                        onValueChange={async (v: Temperatura) => {
+                          try {
+                            await updateLead(lead.id, { temperatura: v });
+                          } catch (err) {
+                            console.error("Erro ao atualizar lead:", err);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-8 min-w-[100px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Frio">Frio</SelectItem>
+                          <SelectItem value="Morno">Morno</SelectItem>
+                          <SelectItem value="Quente">Quente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-center">
+                      <span className="font-bold text-primary">
+                        {lead.score}
+                      </span>
+                    </TableCell>
+                    <TableCell className="sticky right-0 bg-background z-10 border-l border-border/30">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-[hsl(var(--status-em-dia))] hover:bg-[hsl(var(--status-em-dia-bg))] hover:text-[hsl(var(--status-em-dia))] transition-colors"
+                          onClick={() => handleRegistrarContatoHoje(lead)}
+                          title="Registrar contato hoje"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
+                          onClick={() => {
+                            setSelectedLead(lead);
+                            setShowBriefing(true);
+                          }}
+                          title="Adicionar briefing"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-muted transition-colors"
+                          onClick={() => {
+                            setSelectedLead(lead);
+                            setShowHistorico(true);
+                          }}
+                          title="Ver histórico"
+                        >
+                          <History className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
+                          onClick={() => {
+                            setLeadToDelete(lead);
+                            setShowDeleteDialog(true);
+                          }}
+                          title="Excluir lead"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
-      </div>
 
-      {selectedLead && (
-        <>
-          <BriefingDialog
-            open={showBriefing}
-            onOpenChange={setShowBriefing}
-            lead={selectedLead}
-          />
-          <HistoricoDialog
-            open={showHistorico}
-            onOpenChange={setShowHistorico}
-            lead={selectedLead}
-          />
-        </>
-      )}
-    </div>
+        {selectedLead && (
+          <>
+            <BriefingDialog
+              open={showBriefing}
+              onOpenChange={setShowBriefing}
+              lead={selectedLead}
+            />
+            <HistoricoDialog
+              open={showHistorico}
+              onOpenChange={setShowHistorico}
+              lead={selectedLead}
+            />
+          </>
+        )}
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir o lead "{leadToDelete?.nome}"? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  if (leadToDelete) {
+                    try {
+                      await deleteLead(leadToDelete.id);
+                      setShowDeleteDialog(false);
+                      setLeadToDelete(null);
+                    } catch (err) {
+                      console.error("Erro ao deletar lead:", err);
+                    }
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </CardContent>
+    </Card>
   );
 };

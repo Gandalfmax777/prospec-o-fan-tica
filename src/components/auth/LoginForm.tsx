@@ -50,15 +50,15 @@ export const LoginForm = () => {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Login</CardTitle>
-        <CardDescription>Entre com sua conta para continuar</CardDescription>
+    <Card className="w-full max-w-md mx-auto border-border/50 shadow-lg">
+      <CardHeader className="space-y-2 pb-4">
+        <CardTitle className="text-2xl font-semibold">Login</CardTitle>
+        <CardDescription className="text-sm">Entre com sua conta para continuar</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-sm font-medium">Email</Label>
             <Input
               id="email"
               type="email"
@@ -67,10 +67,11 @@ export const LoginForm = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={loading}
+              className="border-border/50 focus:border-primary focus:ring-primary/20 transition-colors"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
+            <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
             <Input
               id="password"
               type="password"
@@ -79,9 +80,14 @@ export const LoginForm = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={loading}
+              className="border-border/50 focus:border-primary focus:ring-primary/20 transition-colors"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button 
+            type="submit" 
+            className="w-full bg-primary hover:bg-primary/90 transition-colors shadow-sm" 
+            disabled={loading}
+          >
             {loading ? "Entrando..." : "Entrar"}
           </Button>
         </form>

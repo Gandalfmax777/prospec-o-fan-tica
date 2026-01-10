@@ -1,4 +1,4 @@
-import { Lead, Gamificacao, MetricasDiarias, Briefing, Temperatura } from './crm';
+import { Lead, Gamificacao, MetricasDiarias, Briefing } from './crm';
 
 export interface CreateLeadInput {
   nome: string;
@@ -10,6 +10,9 @@ export interface CreateLeadInput {
   ultimoContato?: string | Date | null;
   observacao?: string;
   temperatura?: string;
+  estimatedValueCents?: number | null;
+  statedValueCents?: number | null;
+  currency?: string;
 }
 
 export interface UpdateLeadInput {
@@ -26,6 +29,9 @@ export interface UpdateLeadInput {
   observacao?: string;
   prioridade?: string;
   dataConversao?: string | Date | null;
+  estimatedValueCents?: number | null;
+  statedValueCents?: number | null;
+  currency?: string;
 }
 
 export interface BriefingInput {
@@ -70,6 +76,50 @@ export interface UpdateMetricasInput {
   taxaRitmo?: number;
 }
 
+export interface LeaderSummary {
+  totals: {
+    leadsCount: number;
+    convertedCount: number;
+    totalEstimatedValueCents: number;
+    totalStatedValueCents: number;
+  };
+  breakdown: Array<{
+    sellerId: string;
+    sellerName: string;
+    leadsCount: number;
+    convertedCount: number;
+    totalStatedValueCents: number;
+  }>;
+}
+
+export interface LeaderTeamMember {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+}
+
+export interface MeResponse {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+  managerId: string | null;
+}
+
+export interface AdminUser {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  managerId: string | null;
+}
+
+export interface UpdateUserRoleInput {
+  role: string;
+  managerId?: string | null;
+}
+
 export interface LeadResponse extends Lead {
   historico: Array<{
     id: string;
@@ -96,3 +146,35 @@ export interface LeadResponse extends Lead {
   }>;
 }
 
+export interface SellerDetails {
+  seller: {
+    id: string;
+    name: string | null;
+    email: string;
+    role: string;
+  };
+  metrics: {
+    totalLeads: number;
+    convertedLeads: number;
+    conversionRate: number;
+    totalStatedValueCents: number;
+    totalEstimatedValueCents: number;
+    leadsByStatus: Record<string, number>;
+    leadsByOrigin: Array<{ origin: string; count: number }>;
+    leadsByCity: Array<{ city: string; count: number }>;
+    leadsByCadence: Array<{ cadence: string; count: number }>;
+  };
+  leads: LeadResponse[];
+  timelineData: Array<{
+    date: string;
+    leadsCount: number;
+    convertedCount: number;
+  }>;
+  recentActivity: Array<{
+    type: 'contact' | 'briefing' | 'conversion';
+    date: string;
+    leadId: string;
+    leadName: string;
+    description: string;
+  }>;
+}

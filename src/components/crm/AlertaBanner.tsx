@@ -1,7 +1,9 @@
-import { useCRM } from '@/context/CRMContext';
-import { AlertTriangle, X } from 'lucide-react';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useCRM } from "@/context/CRMContext";
+import { AlertTriangle, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 interface AlertaBannerProps {
   onNavigate: (tab: string) => void;
@@ -11,29 +13,38 @@ export const AlertaBanner = ({ onNavigate }: AlertaBannerProps) => {
   const { leads } = useCRM();
   const [dismissed, setDismissed] = useState(false);
 
-  const atrasados = leads.filter(l => l.status === 'Atrasado').length;
+  const atrasados = leads.filter((lead) => lead.status === "Atrasado").length;
 
   if (atrasados === 0 || dismissed) return null;
 
   return (
-    <div className="bg-[hsl(var(--status-atrasado))] text-[hsl(var(--status-atrasado-foreground,0_0%_100%))] px-4 py-3 flex items-center justify-between rounded-lg mb-4">
+    <Alert
+      variant="destructive"
+      className={cn(
+        "bg-[hsl(var(--status-atrasado))] text-[hsl(var(--status-atrasado-foreground,0_0%_100%))] border-[hsl(var(--status-atrasado))]",
+        "flex items-center justify-between pr-2"
+      )}
+    >
       <button
-        onClick={() => onNavigate('pendencias')}
-        className="flex items-center gap-2 hover:underline"
+        onClick={() => onNavigate("pendencias")}
+        className="flex items-center gap-2 hover:underline flex-1"
       >
         <AlertTriangle className="w-5 h-5" />
-        <span className="font-medium">
-          Você tem {atrasados} lead{atrasados > 1 ? 's' : ''} atrasado{atrasados > 1 ? 's' : ''} hoje
-        </span>
+        <div>
+          <AlertTitle className="mb-0">
+            Voce tem {atrasados} lead{atrasados > 1 ? "s" : ""} atrasado{atrasados > 1 ? "s" : ""} hoje
+          </AlertTitle>
+        </div>
       </button>
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8 text-white hover:bg-white/20"
+        className="h-8 w-8 text-current hover:bg-white/20 shrink-0"
         onClick={() => setDismissed(true)}
+        aria-label="Fechar alerta"
       >
         <X className="w-4 h-4" />
       </Button>
-    </div>
+    </Alert>
   );
 };
