@@ -153,7 +153,7 @@ export const ConvertidosTab = () => {
           <CardTitle>Leads convertidos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <KPICard
               title="Total convertidos"
               value={convertidos.length}
@@ -185,7 +185,7 @@ export const ConvertidosTab = () => {
           <CardHeader>
             <CardTitle>Conversao por cadencia</CardTitle>
           </CardHeader>
-          <CardContent className="h-[260px]">
+          <CardContent className="h-[200px] md:h-[250px] lg:h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -194,7 +194,7 @@ export const ConvertidosTab = () => {
                   nameKey="cadencia"
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
+                  outerRadius={60}
                   label={({ cadencia, quantidade }) =>
                     `${cadencia}: ${quantidade}`
                   }
@@ -217,14 +217,14 @@ export const ConvertidosTab = () => {
           <CardHeader>
             <CardTitle>Conversao por cidade</CardTitle>
           </CardHeader>
-          <CardContent className="h-[260px]">
+          <CardContent className="h-[200px] md:h-[250px] lg:h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={conversaoPorCidade}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="hsl(var(--border))"
                 />
-                <XAxis dataKey="cidade" tick={{ fontSize: 12 }} />
+                <XAxis dataKey="cidade" tick={{ fontSize: 10 }} />
                 <YAxis />
                 <Tooltip />
                 <Bar

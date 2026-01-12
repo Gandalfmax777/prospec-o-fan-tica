@@ -185,7 +185,7 @@ const CRMDashboard = () => {
 
       <SidebarInset className="bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.08),_transparent_55%),_linear-gradient(180deg,_hsl(var(--background)),_hsl(var(--muted)/0.4))]">
         <header className="sticky top-0 z-30 border-b border-border/50 bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/80 shadow-sm">
-          <div className="flex items-center justify-between px-4 md:px-6 py-4">
+          <div className="flex items-center justify-between px-2 sm:px-4 md:px-6 py-4">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="md:hidden" />
               <div>
@@ -226,7 +226,7 @@ const CRMDashboard = () => {
           </div>
         </header>
 
-        <main className="px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6 min-w-0 transition-all duration-300">
+        <main className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6 space-y-3 sm:space-y-4 md:space-y-6 min-w-0 transition-all duration-300">
           <AlertaBanner onNavigate={setActiveView} />
           <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
             {renderView()}

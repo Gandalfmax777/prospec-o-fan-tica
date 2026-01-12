@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Popover,
   PopoverContent,
@@ -44,11 +45,15 @@ import {
   MessageSquare,
   Phone,
   Trash2,
+  Edit2,
+  Loader2,
+  X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { BriefingDialog } from "./BriefingDialog";
 import { HistoricoDialog } from "./HistoricoDialog";
 import { NewLeadDialog } from "./NewLeadDialog";
+import { EditLeadDialog } from "./EditLeadDialog";
 import { PrioridadeBadge, StatusBadge } from "./StatusBadge";
 
 export const LeadTable = () => {
@@ -57,11 +62,19 @@ export const LeadTable = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showBriefing, setShowBriefing] = useState(false);
   const [showHistorico, setShowHistorico] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [leadToEdit, setLeadToEdit] = useState<Lead | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [origemFilter, setOrigemFilter] = useState<Origem | "Todas">("Todas");
   const [statusFilter, setStatusFilter] = useState<Status | "Todas">("Todas");
+  const [editingValue, setEditingValue] = useState<{
+    leadId: string;
+    field: "estimatedValueCents" | "statedValueCents";
+    value: number | null;
+  } | null>(null);
+  const [savingValue, setSavingValue] = useState<string | null>(null);
 
   const formatCurrency = (
     value: number | null | undefined,
@@ -103,6 +116,46 @@ export const LeadTable = () => {
     } catch (err) {
       console.error("Erro ao registrar contato:", err);
     }
+  };
+
+  const handleValueEdit = (
+    leadId: string,
+    field: "estimatedValueCents" | "statedValueCents",
+    currentValue: number | null
+  ) => {
+    setEditingValue({
+      leadId,
+      field,
+      value: currentValue,
+    });
+  };
+
+  const handleValueSave = async () => {
+    if (!editingValue) return;
+
+    try {
+      setSavingValue(editingValue.leadId);
+      await updateLead(editingValue.leadId, {
+        [editingValue.field]: editingValue.value,
+      });
+      setEditingValue(null);
+    } catch (err) {
+      console.error("Erro ao atualizar valor:", err);
+    } finally {
+      setSavingValue(null);
+    }
+  };
+
+  const handleValueCancel = () => {
+    setEditingValue(null);
+  };
+
+  const handleValueChange = (value: number | null) => {
+    if (!editingValue) return;
+    setEditingValue({
+      ...editingValue,
+      value,
+    });
   };
 
   if (loading) {
@@ -180,8 +233,8 @@ export const LeadTable = () => {
         </div>
 
         <div className="rounded-xl border border-border/50 bg-card overflow-hidden shadow-sm">
-          <div className="overflow-x-auto -mx-1 px-1">
-            <Table className="min-w-[1200px]">
+          <div className="overflow-x-auto scrollbar-thin -mx-2 px-2">
+            <Table className="min-w-[800px] md:min-w-[1000px] lg:min-w-[1200px]">
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/50 transition-colors">
                   <TableHead className="font-semibold hidden lg:table-cell min-w-[100px]">
@@ -253,10 +306,68 @@ export const LeadTable = () => {
                         <span className="truncate">{lead.telefone}</span>
                       </a>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell whitespace-nowrap">
-                      {formatCurrency(
-                        lead.statedValueCents ?? lead.estimatedValueCents,
-                        lead.currency || "BRL"
+                    <TableCell className="hidden md:table-cell">
+                      {editingValue?.leadId === lead.id &&
+                      (editingValue.field === "estimatedValueCents" ||
+                        editingValue.field === "statedValueCents") ? (
+                        <div className="flex items-center gap-2 min-w-[150px]">
+                          <CurrencyInput
+                            value={editingValue.value}
+                            onChange={handleValueChange}
+                            className="h-8 flex-1"
+                            placeholder="0,00"
+                          />
+                          <div className="flex items-center gap-1">
+                            {savingValue === lead.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                            ) : (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-primary hover:bg-primary/10"
+                                  onClick={handleValueSave}
+                                  title="Salvar"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-muted-foreground hover:bg-muted"
+                                  onClick={handleValueCancel}
+                                  title="Cancelar"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className="flex items-center gap-2 group cursor-pointer hover:bg-muted/50 rounded px-2 py-1 -mx-2 transition-colors"
+                          onClick={() =>
+                            handleValueEdit(
+                              lead.id,
+                              lead.statedValueCents != null
+                                ? "statedValueCents"
+                                : "estimatedValueCents",
+                              lead.statedValueCents ??
+                                lead.estimatedValueCents ??
+                                null
+                            )
+                          }
+                          title="Clique para editar o valor"
+                        >
+                          <span className="whitespace-nowrap">
+                            {formatCurrency(
+                              lead.statedValueCents ?? lead.estimatedValueCents,
+                              lead.currency || "BRL"
+                            )}
+                          </span>
+                          <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="hidden xl:table-cell font-mono text-xs max-w-[150px]">
@@ -407,6 +518,18 @@ export const LeadTable = () => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
+                          onClick={() => {
+                            setLeadToEdit(lead);
+                            setShowEditDialog(true);
+                          }}
+                          title="Editar lead"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
                           onClick={() => {
                             setLeadToDelete(lead);
@@ -438,6 +561,14 @@ export const LeadTable = () => {
               lead={selectedLead}
             />
           </>
+        )}
+
+        {leadToEdit && (
+          <EditLeadDialog
+            open={showEditDialog}
+            onOpenChange={setShowEditDialog}
+            lead={leadToEdit}
+          />
         )}
 
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

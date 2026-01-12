@@ -74,7 +74,7 @@ export const GamificacaoTab = () => {
   const estaInativo = gamificacao.pontosHoje === 0 && !ultimaAtividadeHoje;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-0">
       {estaInativo && (
         <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
           <AlertTriangle className="h-4 w-4" />
@@ -94,7 +94,7 @@ export const GamificacaoTab = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-4">
             <div className="text-center">
               <p className="text-3xl font-bold">{metricasDiarias.contatosFeitos}</p>
               <p className="text-sm text-muted-foreground">Contatos feitos</p>
@@ -129,7 +129,7 @@ export const GamificacaoTab = () => {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -241,71 +241,71 @@ export const GamificacaoTab = () => {
               Missoes do dia
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {gamificacao.missoesDiarias.map((missao) => (
-              <div key={missao.id} className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className={`text-sm ${missao.concluida ? "line-through text-muted-foreground" : ""}`}>
-                    {missao.descricao}
-                  </span>
-                  <Badge variant={missao.concluida ? "default" : "secondary"}>+{missao.pontos} pts</Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Progress value={(missao.progresso / missao.meta) * 100} className="h-1.5 flex-1" />
-                  <span className="text-xs text-muted-foreground">
-                    {missao.progresso}/{missao.meta}
-                  </span>
-                </div>
-              </div>
-            ))}
-
-            <div className="pt-4 border-t">
-              <p className="text-sm text-muted-foreground text-center">
-                Complete todas para ganhar <strong>+20 pontos</strong> de bonus!
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="w-5 h-5" />
-              Conquistas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              {Object.entries(CONQUISTAS_CONFIG).map(([nome, config]) => {
-                const conquistada = conquistasUnicas.includes(nome);
-                const Icon = config.icon;
-                return (
-                  <div
-                    key={nome}
-                    className={`p-3 rounded-lg border text-center transition-all ${
-                      conquistada ? "bg-primary/10 border-primary" : "bg-muted/30 border-border opacity-50"
-                    }`}
-                  >
-                    <Icon className={`w-8 h-8 mx-auto ${conquistada ? "text-primary" : "text-muted-foreground"}`} />
-                    <p className="text-xs font-medium mt-1">{nome}</p>
-                    <p className="text-[10px] text-muted-foreground">{config.descricao}</p>
+          <CardContent className="space-y-4">
+            {/* Seção de Missões */}
+            <div className="space-y-3">
+              {gamificacao.missoesDiarias.map((missao) => (
+                <div key={missao.id} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-sm ${missao.concluida ? "line-through text-muted-foreground" : ""}`}>
+                      {missao.descricao}
+                    </span>
+                    <Badge variant={missao.concluida ? "default" : "secondary"}>+{missao.pontos} pts</Badge>
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-2">
+                    <Progress value={(missao.progresso / missao.meta) * 100} className="h-1.5 flex-1" />
+                    <span className="text-xs text-muted-foreground">
+                      {missao.progresso}/{missao.meta}
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+              <div className="pt-2 border-t">
+                <p className="text-sm text-muted-foreground text-center">
+                  Complete todas para ganhar <strong>+20 pontos</strong> de bonus!
+                </p>
+              </div>
+            </div>
+
+            {/* Separador visual e Seção de Conquistas */}
+            <div className="pt-4 border-t">
+              <CardTitle className="flex items-center gap-2 text-base mb-3">
+                <Award className="w-5 h-5" />
+                Conquistas
+              </CardTitle>
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(CONQUISTAS_CONFIG).map(([nome, config]) => {
+                  const conquistada = conquistasUnicas.includes(nome);
+                  const Icon = config.icon;
+                  return (
+                    <div
+                      key={nome}
+                      className={`p-3 rounded-lg border text-center transition-all ${
+                        conquistada ? "bg-primary/10 border-primary" : "bg-muted/30 border-border opacity-50"
+                      }`}
+                    >
+                      <Icon className={`w-8 h-8 mx-auto ${conquistada ? "text-primary" : "text-muted-foreground"}`} />
+                      <p className="text-xs font-medium mt-1">{nome}</p>
+                      <p className="text-[10px] text-muted-foreground">{config.descricao}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="mb-0">
         <CardHeader>
           <CardTitle>Como ganhar e perder pontos</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pb-6">
           <div className="space-y-4">
             <div>
               <h4 className="text-sm font-semibold mb-2 text-primary">Ganhar Pontos</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-3 bg-muted/50 rounded-lg border border-primary/20">
                   <p className="font-bold text-lg text-primary">+3 pts</p>
                   <p className="text-sm">Registrar contato</p>

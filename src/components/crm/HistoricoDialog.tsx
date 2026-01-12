@@ -3,7 +3,7 @@ import { ptBR } from 'date-fns/locale';
 import { Lead } from '@/types/crm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TemperaturaBadge, StatusBadge } from './StatusBadge';
-import { Phone, MessageSquare, Mail, Users, MapPin, MoreHorizontal } from 'lucide-react';
+import { Phone, MessageSquare, Mail, Users, MapPin, MoreHorizontal, MapPin as MapPinIcon, FileText } from 'lucide-react';
 
 interface HistoricoDialogProps {
   open: boolean;
@@ -36,12 +36,53 @@ export const HistoricoDialog = ({ open, onOpenChange, lead }: HistoricoDialogPro
           <DialogTitle>Histórico de Contatos - {lead.nome}</DialogTitle>
         </DialogHeader>
 
-        <div className="py-4">
-          {lead.historico.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum histórico de contato registrado.
+        <div className="py-4 space-y-6">
+          {/* Seção de Informações do Lead */}
+          <div className="bg-muted/30 rounded-lg p-4 border border-border">
+            <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+              <MapPinIcon className="w-4 h-4" />
+              Informações do Lead
+            </h3>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="text-muted-foreground">Cidade:</span>
+                <span className="ml-2 font-medium">{lead.cidade}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Telefone:</span>
+                <a 
+                  href={`tel:${lead.telefone}`}
+                  className="ml-2 font-medium text-primary hover:underline"
+                >
+                  {lead.telefone}
+                </a>
+              </div>
             </div>
-          ) : (
+            {lead.observacao && lead.observacao.trim() !== '' && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="flex items-start gap-2">
+                  <FileText className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <span className="text-muted-foreground text-xs font-medium block mb-1">
+                      Observação Inicial:
+                    </span>
+                    <p className="text-sm italic text-foreground leading-relaxed">
+                      {lead.observacao}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Timeline de Histórico */}
+          <div>
+            <h3 className="font-semibold text-sm mb-3">Histórico de Contatos</h3>
+            {lead.historico.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhum histórico de contato registrado.
+              </div>
+            ) : (
             <div className="relative">
               <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
               <div className="space-y-6">
@@ -79,7 +120,8 @@ export const HistoricoDialog = ({ open, onOpenChange, lead }: HistoricoDialogPro
                 ))}
               </div>
             </div>
-          )}
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

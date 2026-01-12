@@ -62,11 +62,11 @@ export const KPICard = ({
       )}
     >
       <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2 flex-shrink-0">
-        <div className="space-y-1 flex-1 min-w-0">
-          <CardDescription className="text-xs uppercase tracking-[0.18em] text-muted-foreground/80 line-clamp-2 break-words">
+        <div className="space-y-1 flex-1 min-w-0 overflow-hidden">
+          <CardDescription className="text-xs uppercase tracking-[0.18em] text-muted-foreground/80 line-clamp-1 truncate">
             {title}
           </CardDescription>
-          <p className="text-3xl font-semibold tabular-nums leading-tight break-words">{value}</p>
+          <p className="text-2xl sm:text-3xl font-semibold tabular-nums leading-none whitespace-nowrap overflow-hidden text-ellipsis">{value}</p>
         </div>
         {showIcon && (
           <div className={cn("p-2.5 rounded-xl flex-shrink-0 shadow-sm transition-transform duration-200 hover:scale-110", getIconBg())}>

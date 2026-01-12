@@ -199,16 +199,32 @@ export const MetricasTab = () => {
           <CardTitle>Metricas de desempenho</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <KPICard title="Leads hoje" value={metricas.leadsHoje} icon={Calendar} variant="primary" />
-            <KPICard title="Leads semana" value={metricas.leadsSemana} icon={Calendar} variant="primary" />
-            <KPICard title="Leads mes" value={metricas.leadsMes} icon={Users} variant="primary" />
-            <KPICard title="Taxa conversao" value={`${metricas.taxaConversaoGeral.toFixed(1)}%`} icon={TrendingUp} variant="success" />
-            <KPICard title="Convertidos" value={metricas.convertidos} icon={Target} variant="success" />
-            <KPICard title="Ativos no funil" value={metricas.ativos} icon={Zap} variant="default" />
+          <div className="relative -mx-2 px-2">
+            <div className="overflow-x-auto scrollbar-thin pb-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard title="Leads hoje" value={metricas.leadsHoje} icon={Calendar} variant="primary" />
+                </div>
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard title="Leads semana" value={metricas.leadsSemana} icon={Calendar} variant="primary" />
+                </div>
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard title="Leads mes" value={metricas.leadsMes} icon={Users} variant="primary" />
+                </div>
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard title="Taxa conversao" value={`${metricas.taxaConversaoGeral.toFixed(1)}%`} icon={TrendingUp} variant="success" />
+                </div>
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard title="Convertidos" value={metricas.convertidos} icon={Target} variant="success" />
+                </div>
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard title="Ativos no funil" value={metricas.ativos} icon={Zap} variant="primary" />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <KPICard title="Atrasados" value={metricas.atrasados} icon={AlertTriangle} variant="danger" />
             <KPICard title="Tempo medio conversao" value={`${metricas.tempoMedioConversao} dias`} icon={Clock} variant="default" />
             <KPICard title="Total de leads" value={metricas.totalLeads} icon={Users} variant="default" />
@@ -222,7 +238,7 @@ export const MetricasTab = () => {
           <CardHeader>
             <CardTitle>Leads por cadencia</CardTitle>
           </CardHeader>
-          <CardContent className="h-[250px]">
+          <CardContent className="h-[200px] md:h-[250px] lg:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -231,7 +247,7 @@ export const MetricasTab = () => {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
+                  outerRadius={60}
                   label={({ name, value }) => `${name}: ${value}`}
                 >
                   {cadenciaData.map((_, index) => (
@@ -249,12 +265,12 @@ export const MetricasTab = () => {
           <CardHeader>
             <CardTitle>Funil de vendas</CardTitle>
           </CardHeader>
-          <CardContent className="h-[250px]">
+          <CardContent className="h-[200px] md:h-[250px] lg:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={funilData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={80} />
+                <YAxis dataKey="name" type="category" width={60} />
                 <Tooltip />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                   {funilData.map((entry, index) => (
@@ -270,12 +286,12 @@ export const MetricasTab = () => {
           <CardHeader>
             <CardTitle>Taxa de conversao por cadencia</CardTitle>
           </CardHeader>
-          <CardContent className="h-[250px]">
+          <CardContent className="h-[200px] md:h-[250px] lg:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={taxaConversaoCadenciaData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="cadencia" />
-                <YAxis unit="%" />
+                <XAxis dataKey="cadencia" tick={{ fontSize: 10 }} />
+                <YAxis unit="%" tick={{ fontSize: 10 }} />
                 <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
                 <Bar dataKey="taxa" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -287,11 +303,11 @@ export const MetricasTab = () => {
           <CardHeader>
             <CardTitle>Leads por origem</CardTitle>
           </CardHeader>
-          <CardContent className="h-[250px]">
+          <CardContent className="h-[200px] md:h-[250px] lg:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={metricas.porOrigem}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="origem" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" height={60} />
+                <XAxis dataKey="origem" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={50} />
                 <YAxis />
                 <Tooltip />
                 <Legend />
@@ -306,11 +322,11 @@ export const MetricasTab = () => {
           <CardHeader>
             <CardTitle>Performance por cidade</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[250px] md:h-[280px] lg:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={metricas.porCidade}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="cidade" />
+                <XAxis dataKey="cidade" tick={{ fontSize: 10 }} />
                 <YAxis />
                 <Tooltip />
                 <Legend />

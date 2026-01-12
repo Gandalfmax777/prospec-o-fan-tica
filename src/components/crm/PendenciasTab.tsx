@@ -148,7 +148,7 @@ export const PendenciasTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-[hsl(var(--status-atrasado))]" />

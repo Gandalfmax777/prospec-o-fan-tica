@@ -186,18 +186,34 @@ export const DashboardHeader = () => {
           <CardTitle className="text-lg font-semibold">Indicadores principais</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-            <KPICard title="Total Prospects" value={leadsArray.length} icon={Users} variant="primary" />
-            <KPICard title="Atrasados" value={atrasados} icon={AlertTriangle} variant="danger" />
-            <KPICard title="Falar Hoje" value={falarHoje} icon={MessageSquare} variant="warning" />
-            <KPICard title="Em Dia" value={emDia} icon={CheckCircle} variant="success" />
-            <KPICard title="Convertidos" value={convertidos} icon={TrendingUp} variant="success" />
-            <KPICard
-              title="Quentes"
-              value={ativos.filter((lead) => lead.temperatura === "Quente").length}
-              icon={Flame}
-              variant="default"
-            />
+          <div className="relative -mx-2 px-2">
+            <div className="overflow-x-auto scrollbar-thin pb-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard title="Total Prospects" value={leadsArray.length} icon={Users} variant="primary" />
+                </div>
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard title="Atrasados" value={atrasados} icon={AlertTriangle} variant="danger" />
+                </div>
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard title="Falar Hoje" value={falarHoje} icon={MessageSquare} variant="warning" />
+                </div>
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard title="Em Dia" value={emDia} icon={CheckCircle} variant="success" />
+                </div>
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard title="Convertidos" value={convertidos} icon={TrendingUp} variant="success" />
+                </div>
+                <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
+                  <KPICard
+                    title="Quentes"
+                    value={ativos.filter((lead) => lead.temperatura === "Quente").length}
+                    icon={Flame}
+                    variant="default"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <KPICard title="Valor ativo" value={formatCurrency(totalStatedAtivos)} icon={DollarSign} variant="primary" />
@@ -225,7 +241,7 @@ export const DashboardHeader = () => {
             </span>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
               <div className="rounded-lg border border-border/50 bg-muted/40 p-4 shadow-sm hover:shadow-md transition-all duration-200">
                 <p className="text-xs text-muted-foreground mb-1">Atrasados</p>
                 <p className="text-2xl font-bold text-foreground">{atrasados}</p>
@@ -288,7 +304,7 @@ export const DashboardHeader = () => {
             </div>
             <CardTitle className="text-lg font-semibold">Cadencia dos leads</CardTitle>
           </CardHeader>
-          <CardContent className="h-[320px]">
+          <CardContent className="h-[250px] md:h-[300px] lg:h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie

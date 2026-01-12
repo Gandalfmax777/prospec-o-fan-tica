@@ -166,7 +166,7 @@ export const LeaderDashboard = ({ onSellerClick }: LeaderDashboardProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
@@ -228,7 +228,7 @@ export const LeaderDashboard = ({ onSellerClick }: LeaderDashboardProps) => {
           <CardTitle>Volume por vendedor</CardTitle>
           {error && <span className="text-sm text-destructive">{error}</span>}
         </CardHeader>
-        <CardContent className="h-[280px]">
+        <CardContent className="h-[250px] md:h-[280px]">
           {loading ? (
             <div className="space-y-3">
               <Skeleton className="h-6 w-full" />
@@ -243,7 +243,7 @@ export const LeaderDashboard = ({ onSellerClick }: LeaderDashboardProps) => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="sellerName" tick={{ fontSize: 12 }} />
+                <XAxis dataKey="sellerName" tick={{ fontSize: 10 }} />
                 <YAxis tickFormatter={(value) => formatCurrency(value).replace("R$\u00a0", "")} />
                 <Tooltip
                   formatter={(value: number) => formatCurrency(value)}
