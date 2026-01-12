@@ -1,8 +1,18 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -23,37 +33,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useCRM } from "@/context/CRMContext";
+import { ORIGENS } from "@/lib/origemConstants";
 import { cn } from "@/lib/utils";
 import { Cadencia, Lead, Origem, Status, Temperatura } from "@/types/crm";
-import { ORIGENS } from "@/lib/origemConstants";
 import { format } from "date-fns";
 import {
   CalendarIcon,
   CheckCircle,
+  Edit2,
   History,
+  Loader2,
   MessageSquare,
   Phone,
   Trash2,
-  Edit2,
-  Loader2,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { BriefingDialog } from "./BriefingDialog";
+import { EditLeadDialog } from "./EditLeadDialog";
 import { HistoricoDialog } from "./HistoricoDialog";
 import { NewLeadDialog } from "./NewLeadDialog";
-import { EditLeadDialog } from "./EditLeadDialog";
 import { PrioridadeBadge, StatusBadge } from "./StatusBadge";
 
 export const LeadTable = () => {
@@ -97,7 +97,7 @@ export const LeadTable = () => {
       const matchesText =
         !term ||
         lead.nome.toLowerCase().includes(term) ||
-        lead.cidade.toLowerCase().includes(term);
+        (lead.cidade && lead.cidade.toLowerCase().includes(term));
       const matchesOrigem =
         origemFilter === "Todas" || lead.origem === origemFilter;
       const matchesStatus =
@@ -109,6 +109,36 @@ export const LeadTable = () => {
     () => [...filteredLeads].sort((a, b) => b.score - a.score),
     [filteredLeads]
   );
+
+  // Detectar quais colunas devem ser exibidas baseado nos leads visíveis
+  const visibleColumns = useMemo(() => {
+    if (sortedLeads.length === 0) {
+      // Se não há leads, mostrar todas as colunas
+      return {
+        cidade: true,
+        telefone: true,
+        valor: true,
+        codigo: true,
+        proximoContato: true,
+      };
+    }
+
+    return {
+      cidade: sortedLeads.some(
+        (lead) => lead.cidade && lead.cidade.trim().length > 0
+      ),
+      telefone: sortedLeads.some(
+        (lead) => lead.telefone && lead.telefone.trim().length > 0
+      ),
+      valor:
+        sortedLeads.some((lead) => lead.estimatedValueCents != null) ||
+        sortedLeads.some((lead) => lead.statedValueCents != null),
+      codigo: sortedLeads.some(
+        (lead) => lead.codigo && lead.codigo.trim().length > 0
+      ),
+      proximoContato: sortedLeads.some((lead) => lead.proximoContato != null),
+    };
+  }, [sortedLeads]);
 
   const handleRegistrarContatoHoje = async (lead: Lead) => {
     try {
@@ -243,30 +273,40 @@ export const LeadTable = () => {
                   <TableHead className="font-semibold min-w-[150px]">
                     Nome
                   </TableHead>
-                  <TableHead className="font-semibold min-w-[120px]">
-                    Cidade
-                  </TableHead>
+                  {visibleColumns.cidade && (
+                    <TableHead className="font-semibold min-w-[120px]">
+                      Cidade
+                    </TableHead>
+                  )}
                   <TableHead className="font-semibold hidden md:table-cell min-w-[100px]">
                     Origem
                   </TableHead>
-                  <TableHead className="font-semibold min-w-[140px]">
-                    Telefone
-                  </TableHead>
-                  <TableHead className="font-semibold hidden md:table-cell min-w-[110px]">
-                    Valor
-                  </TableHead>
-                  <TableHead className="font-semibold hidden xl:table-cell min-w-[120px] max-w-[150px]">
-                    Código
-                  </TableHead>
+                  {visibleColumns.telefone && (
+                    <TableHead className="font-semibold min-w-[140px]">
+                      Telefone
+                    </TableHead>
+                  )}
+                  {visibleColumns.valor && (
+                    <TableHead className="font-semibold hidden md:table-cell min-w-[110px]">
+                      Valor
+                    </TableHead>
+                  )}
+                  {visibleColumns.codigo && (
+                    <TableHead className="font-semibold hidden xl:table-cell min-w-[120px] max-w-[150px]">
+                      Código
+                    </TableHead>
+                  )}
                   <TableHead className="font-semibold hidden lg:table-cell min-w-[110px]">
                     Cadência
                   </TableHead>
                   <TableHead className="font-semibold hidden xl:table-cell min-w-[130px]">
                     Último contato
                   </TableHead>
-                  <TableHead className="font-semibold hidden md:table-cell min-w-[130px]">
-                    Próximo contato
-                  </TableHead>
+                  {visibleColumns.proximoContato && (
+                    <TableHead className="font-semibold hidden md:table-cell min-w-[130px]">
+                      Próximo contato
+                    </TableHead>
+                  )}
                   <TableHead className="font-semibold min-w-[100px]">
                     Status
                   </TableHead>
@@ -283,98 +323,119 @@ export const LeadTable = () => {
               </TableHeader>
               <TableBody>
                 {sortedLeads.map((lead) => (
-                  <TableRow 
-                    key={lead.id} 
+                  <TableRow
+                    key={lead.id}
                     className="hover:bg-muted/40 transition-colors duration-150 border-b border-border/30"
                   >
                     <TableCell className="hidden lg:table-cell">
                       <PrioridadeBadge prioridade={lead.prioridade} />
                     </TableCell>
                     <TableCell className="font-medium">{lead.nome}</TableCell>
-                    <TableCell>{lead.cidade}</TableCell>
+                    {visibleColumns.cidade &&
+                      (lead.cidade ? (
+                        <TableCell>{lead.cidade}</TableCell>
+                      ) : (
+                        <TableCell>
+                          <span className="text-muted-foreground">N/A</span>
+                        </TableCell>
+                      ))}
                     <TableCell className="hidden md:table-cell">
                       <span className="metric-badge bg-muted text-muted-foreground">
                         {lead.origem}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      <a
-                        href={`tel:${lead.telefone}`}
-                        className="flex items-center gap-1 text-primary hover:underline whitespace-nowrap"
-                      >
-                        <Phone className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">{lead.telefone}</span>
-                      </a>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {editingValue?.leadId === lead.id &&
-                      (editingValue.field === "estimatedValueCents" ||
-                        editingValue.field === "statedValueCents") ? (
-                        <div className="flex items-center gap-2 min-w-[150px]">
-                          <CurrencyInput
-                            value={editingValue.value}
-                            onChange={handleValueChange}
-                            className="h-8 flex-1"
-                            placeholder="0,00"
-                          />
-                          <div className="flex items-center gap-1">
-                            {savingValue === lead.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                            ) : (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 text-primary hover:bg-primary/10"
-                                  onClick={handleValueSave}
-                                  title="Salvar"
-                                >
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 text-muted-foreground hover:bg-muted"
-                                  onClick={handleValueCancel}
-                                  title="Cancelar"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="flex items-center gap-2 group cursor-pointer hover:bg-muted/50 rounded px-2 py-1 -mx-2 transition-colors"
-                          onClick={() =>
-                            handleValueEdit(
-                              lead.id,
-                              lead.statedValueCents != null
-                                ? "statedValueCents"
-                                : "estimatedValueCents",
-                              lead.statedValueCents ??
-                                lead.estimatedValueCents ??
-                                null
-                            )
-                          }
-                          title="Clique para editar o valor"
+                    {visibleColumns.telefone && (
+                      <TableCell>
+                        <a
+                          href={`tel:${lead.telefone}`}
+                          className="flex items-center gap-1 text-primary hover:underline whitespace-nowrap"
                         >
-                          <span className="whitespace-nowrap">
-                            {formatCurrency(
-                              lead.statedValueCents ?? lead.estimatedValueCents,
-                              lead.currency || "BRL"
-                            )}
-                          </span>
-                          <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell font-mono text-xs max-w-[150px]">
-                      <span className="truncate block" title={lead.codigo}>
-                        {lead.codigo}
-                      </span>
-                    </TableCell>
+                          {lead.telefone && (
+                            <>
+                              <Phone className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{lead.telefone}</span>
+                            </>
+                          )}
+                          {!lead.telefone && (
+                            <span className="text-muted-foreground">N/A</span>
+                          )}
+                        </a>
+                      </TableCell>
+                    )}
+                    {visibleColumns.valor && (
+                      <TableCell className="hidden md:table-cell">
+                        {editingValue?.leadId === lead.id &&
+                        (editingValue.field === "estimatedValueCents" ||
+                          editingValue.field === "statedValueCents") ? (
+                          <div className="flex items-center gap-2 min-w-[150px]">
+                            <CurrencyInput
+                              value={editingValue.value}
+                              onChange={handleValueChange}
+                              className="h-8 flex-1"
+                              placeholder="0,00"
+                            />
+                            <div className="flex items-center gap-1">
+                              {savingValue === lead.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-primary hover:bg-primary/10"
+                                    onClick={handleValueSave}
+                                    title="Salvar"
+                                  >
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-muted-foreground hover:bg-muted"
+                                    onClick={handleValueCancel}
+                                    title="Cancelar"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="flex items-center gap-2 group cursor-pointer hover:bg-muted/50 rounded px-2 py-1 -mx-2 transition-colors"
+                            onClick={() =>
+                              handleValueEdit(
+                                lead.id,
+                                lead.statedValueCents != null
+                                  ? "statedValueCents"
+                                  : "estimatedValueCents",
+                                lead.statedValueCents ??
+                                  lead.estimatedValueCents ??
+                                  null
+                              )
+                            }
+                            title="Clique para editar o valor"
+                          >
+                            <span className="whitespace-nowrap">
+                              {formatCurrency(
+                                lead.statedValueCents ??
+                                  lead.estimatedValueCents,
+                                lead.currency || "BRL"
+                              )}
+                            </span>
+                            <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        )}
+                      </TableCell>
+                    )}
+                    {visibleColumns.codigo && (
+                      <TableCell className="hidden xl:table-cell font-mono text-xs max-w-[150px]">
+                        <span className="truncate block" title={lead.codigo}>
+                          {lead.codigo ? lead.codigo : "N/A"}
+                        </span>
+                      </TableCell>
+                    )}
                     <TableCell className="hidden lg:table-cell">
                       <Select
                         value={lead.cadencia}
@@ -434,23 +495,25 @@ export const LeadTable = () => {
                         </PopoverContent>
                       </Popover>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell whitespace-nowrap">
-                      {lead.proximoContato ? (
-                        <span
-                          className={cn(
-                            "font-medium",
-                            lead.status === "Atrasado" &&
-                              "text-[hsl(var(--status-atrasado))]",
-                            lead.status === "Falar Hoje" &&
-                              "text-[hsl(var(--status-falar-hoje))]"
-                          )}
-                        >
-                          {format(lead.proximoContato, "dd/MM/yyyy")}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
+                    {visibleColumns.proximoContato && (
+                      <TableCell className="hidden md:table-cell whitespace-nowrap">
+                        {lead.proximoContato ? (
+                          <span
+                            className={cn(
+                              "font-medium",
+                              lead.status === "Atrasado" &&
+                                "text-[hsl(var(--status-atrasado))]",
+                              lead.status === "Falar Hoje" &&
+                                "text-[hsl(var(--status-falar-hoje))]"
+                            )}
+                          >
+                            {format(lead.proximoContato, "dd/MM/yyyy")}
+                          </span>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <StatusBadge status={lead.status} />
                     </TableCell>
@@ -576,7 +639,8 @@ export const LeadTable = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja excluir o lead "{leadToDelete?.nome}"? Esta ação não pode ser desfeita.
+                Tem certeza que deseja excluir o lead "{leadToDelete?.nome}"?
+                Esta ação não pode ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

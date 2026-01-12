@@ -105,18 +105,6 @@ export const NewLeadDialog = () => {
       errors.nome = "Nome é obrigatório";
     }
 
-    if (!newLead.cidade || newLead.cidade.trim().length === 0) {
-      errors.cidade = "Cidade é obrigatória";
-    }
-
-    if (!newLead.telefone || newLead.telefone.trim().length === 0) {
-      errors.telefone = "Telefone é obrigatório";
-    }
-
-    if (!newLead.codigo || newLead.codigo.trim().length === 0) {
-      errors.codigo = "Código é obrigatório";
-    }
-
     // Validar enums
     const origensValidas: Origem[] = [
       "Instagram",
@@ -152,9 +140,6 @@ export const NewLeadDialog = () => {
       const errorFields = Object.keys(validation.errors);
       const fieldNames: Record<string, string> = {
         nome: "Nome",
-        cidade: "Cidade",
-        telefone: "Telefone",
-        codigo: "Código",
         origem: "Origem",
         cadencia: "Cadência",
       };
@@ -258,9 +243,7 @@ export const NewLeadDialog = () => {
             )}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Cidade <span className="text-destructive">*</span>
-            </label>
+            <label className="text-sm font-medium">Cidade</label>
             <Input
               value={newLead.cidade}
               onChange={(e) => handleFieldChange("cidade", e.target.value)}
@@ -299,9 +282,7 @@ export const NewLeadDialog = () => {
             )}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Telefone <span className="text-destructive">*</span>
-            </label>
+            <label className="text-sm font-medium">Telefone</label>
             <Input
               value={newLead.telefone}
               onChange={(e) => {
@@ -347,9 +328,7 @@ export const NewLeadDialog = () => {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Código <span className="text-destructive">*</span>
-            </label>
+            <label className="text-sm font-medium">Código</label>
             <Input
               value={newLead.codigo}
               onChange={(e) => handleFieldChange("codigo", e.target.value)}

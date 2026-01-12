@@ -90,18 +90,6 @@ export const EditLeadDialog = ({ open, onOpenChange, lead }: EditLeadDialogProps
       errors.nome = "Nome é obrigatório";
     }
 
-    if (!editedLead.cidade || editedLead.cidade.trim().length === 0) {
-      errors.cidade = "Cidade é obrigatória";
-    }
-
-    if (!editedLead.telefone || editedLead.telefone.trim().length === 0) {
-      errors.telefone = "Telefone é obrigatório";
-    }
-
-    if (!editedLead.codigo || editedLead.codigo.trim().length === 0) {
-      errors.codigo = "Código é obrigatório";
-    }
-
     // Validar enums
     const origensValidas: Origem[] = [
       "Instagram",
@@ -137,9 +125,6 @@ export const EditLeadDialog = ({ open, onOpenChange, lead }: EditLeadDialogProps
       const errorFields = Object.keys(validation.errors);
       const fieldNames: Record<string, string> = {
         nome: "Nome",
-        cidade: "Cidade",
-        telefone: "Telefone",
-        codigo: "Código",
         origem: "Origem",
         cadencia: "Cadência",
       };
@@ -221,9 +206,7 @@ export const EditLeadDialog = ({ open, onOpenChange, lead }: EditLeadDialogProps
             )}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Cidade <span className="text-destructive">*</span>
-            </label>
+            <label className="text-sm font-medium">Cidade</label>
             <Input
               value={editedLead.cidade}
               onChange={(e) => handleFieldChange("cidade", e.target.value)}
@@ -262,9 +245,7 @@ export const EditLeadDialog = ({ open, onOpenChange, lead }: EditLeadDialogProps
             )}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Telefone <span className="text-destructive">*</span>
-            </label>
+            <label className="text-sm font-medium">Telefone</label>
             <Input
               value={editedLead.telefone}
               onChange={(e) => {
@@ -310,9 +291,7 @@ export const EditLeadDialog = ({ open, onOpenChange, lead }: EditLeadDialogProps
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Código <span className="text-destructive">*</span>
-            </label>
+            <label className="text-sm font-medium">Código</label>
             <Input
               value={editedLead.codigo}
               onChange={(e) => handleFieldChange("codigo", e.target.value)}
