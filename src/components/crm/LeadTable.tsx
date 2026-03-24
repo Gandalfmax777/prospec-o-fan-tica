@@ -47,10 +47,12 @@ import {
   MessageSquare,
   Phone,
   Trash2,
+  Trophy,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { BriefingDialog } from "./BriefingDialog";
+import { ConvertLeadDialog } from "./ConvertLeadDialog";
 import { EditLeadDialog } from "./EditLeadDialog";
 import { HistoricoDialog } from "./HistoricoDialog";
 import { NewLeadDialog } from "./NewLeadDialog";
@@ -66,6 +68,8 @@ export const LeadTable = () => {
   const [leadToEdit, setLeadToEdit] = useState<Lead | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
+  const [showConvertDialog, setShowConvertDialog] = useState(false);
+  const [leadToConvert, setLeadToConvert] = useState<Lead | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [origemFilter, setOrigemFilter] = useState<Origem | "Todas">("Todas");
   const [statusFilter, setStatusFilter] = useState<Status | "Todas">("Todas");
@@ -593,6 +597,18 @@ export const LeadTable = () => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                          onClick={() => {
+                            setLeadToConvert(lead);
+                            setShowConvertDialog(true);
+                          }}
+                          title="Converter lead"
+                        >
+                          <Trophy className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
                           onClick={() => {
                             setLeadToDelete(lead);
@@ -633,6 +649,12 @@ export const LeadTable = () => {
             lead={leadToEdit}
           />
         )}
+
+        <ConvertLeadDialog
+          lead={leadToConvert}
+          open={showConvertDialog}
+          onOpenChange={setShowConvertDialog}
+        />
 
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent>

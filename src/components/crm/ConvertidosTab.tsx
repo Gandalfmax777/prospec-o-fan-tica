@@ -506,18 +506,19 @@ export const ConvertidosTab = () => {
                             {/* Botão de transferência para o CRM */}
                             {!lead.crmDealId && (
                               <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 gap-1.5 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400"
                                 onClick={() => handleTransfer(lead)}
                                 disabled={transferringId === lead.id}
-                                title="Transferir para corretor no CRM"
+                                title="Enviar este lead ao CRM"
                               >
                                 {transferringId === lead.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                 ) : (
-                                  <ArrowUpRight className="w-4 h-4" />
+                                  <ArrowUpRight className="w-3.5 h-3.5" />
                                 )}
+                                Enviar ao CRM
                               </Button>
                             )}
                             <Button
