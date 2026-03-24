@@ -83,13 +83,7 @@ export default function Login() {
         <div className="relative z-10 w-full max-w-sm">
           <LoginForm />
           <p className="text-center text-sm mt-8 text-muted-foreground">
-            Não tem uma conta?{" "}
-            <Link
-              to="/register"
-              className="text-primary hover:text-primary/80 transition-colors font-medium"
-            >
-              Criar conta
-            </Link>
+            Acesso exclusivo por convite.
           </p>
         </div>
       </div>

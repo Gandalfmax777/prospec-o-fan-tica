@@ -1,9 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/services/api";
 import { toast } from "@/hooks/use-toast";
+import { AlertCircle } from "lucide-react";
+
+const labelClass =
+  "block text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
 
 export const RegisterForm = () => {
   const [name, setName] = useState("");
@@ -14,15 +19,46 @@ export const RegisterForm = () => {
   const navigate = useNavigate();
   const { signUp } = useAuth();
 
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
+
+  // ── Sem token: acesso bloqueado ─────────────────────────────────────────────
+  if (!token) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-[28px] font-bold text-foreground tracking-[-0.02em] leading-tight">
+            Acesso restrito
+          </h2>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            O registro está disponível apenas por convite.
+          </p>
+        </div>
+
+        <div className="flex items-start gap-3 p-4 rounded-md border border-destructive/30 bg-destructive/5 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>
+            Você precisa de um convite válido para criar uma conta. Entre em contato com o
+            administrador da sua organização.
+          </span>
+        </div>
+
+        <Link
+          to="/login"
+          className="block text-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+        >
+          ← Ir para o login
+        </Link>
+      </div>
+    );
+  }
+
+  // ── Com token: formulário de registro ──────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "As senhas não coincidem",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "As senhas não coincidem", variant: "destructive" });
       return;
     }
 
@@ -38,21 +74,35 @@ export const RegisterForm = () => {
     setLoading(true);
 
     try {
+      // 1. Criar conta
       await signUp({ email, password, name: name || undefined });
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // 2. Aceitar o convite automaticamente
+      await api.joinOrg({ token });
+
       toast({
         title: "Conta criada com sucesso!",
         description: "Bem-vindo ao sistema!",
       });
+
       setTimeout(() => {
         navigate("/", { replace: true });
       }, 100);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Erro ao criar conta";
+      const raw = error instanceof Error ? error.message : "Erro ao criar conta";
+
+      // Tratar erro específico de convite inválido / e-mail não convidado
+      const isInviteError =
+        raw.toLowerCase().includes("invite") ||
+        raw.toLowerCase().includes("convite") ||
+        raw.toLowerCase().includes("forbidden");
+
       toast({
-        title: "Erro ao criar conta",
-        description: errorMessage,
+        title: isInviteError ? "Convite inválido" : "Erro ao criar conta",
+        description: isInviteError
+          ? "Este e-mail não possui um convite válido ou o convite expirou."
+          : raw,
         variant: "destructive",
       });
     } finally {
@@ -60,12 +110,8 @@ export const RegisterForm = () => {
     }
   };
 
-  const labelClass =
-    "block text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
-
   return (
     <div className="space-y-7">
-      {/* Heading */}
       <div className="space-y-2">
         <h2 className="text-[28px] font-bold text-foreground tracking-[-0.02em] leading-tight">
           Criar conta
@@ -75,7 +121,6 @@ export const RegisterForm = () => {
         </p>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
           <label htmlFor="name" className={labelClass}>
