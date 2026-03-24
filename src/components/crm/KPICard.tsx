@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 
 interface KPICardProps {
   title: string;
@@ -13,6 +12,34 @@ interface KPICardProps {
   className?: string;
 }
 
+const variantConfig = {
+  default: {
+    iconBg: "bg-muted text-muted-foreground",
+    valuColor: "text-foreground",
+    accentLine: "bg-border",
+  },
+  danger: {
+    iconBg: "bg-destructive/10 text-destructive",
+    valuColor: "text-foreground",
+    accentLine: "bg-destructive",
+  },
+  warning: {
+    iconBg: "bg-[hsl(38_92%_50%/0.1)] text-[hsl(38_92%_46%)]",
+    valuColor: "text-foreground",
+    accentLine: "bg-[hsl(38_92%_50%)]",
+  },
+  success: {
+    iconBg: "bg-[hsl(142_71%_42%/0.1)] text-[hsl(142_71%_36%)] dark:text-[hsl(142_71%_55%)]",
+    valuColor: "text-foreground",
+    accentLine: "bg-[hsl(142_71%_42%)]",
+  },
+  primary: {
+    iconBg: "bg-primary/10 text-primary",
+    valuColor: "text-foreground",
+    accentLine: "bg-primary",
+  },
+};
+
 export const KPICard = ({
   title,
   value,
@@ -23,72 +50,61 @@ export const KPICard = ({
   variant = "default",
   className,
 }: KPICardProps) => {
-  const getVariantClasses = () => {
-    switch (variant) {
-      case "danger":
-        return "border-l-4 border-l-destructive";
-      case "warning":
-        return "border-l-4 border-l-[hsl(var(--warning))]";
-      case "success":
-        return "border-l-4 border-l-[hsl(var(--success))]";
-      case "primary":
-        return "border-l-4 border-l-primary";
-      default:
-        return "";
-    }
-  };
-
-  const getIconBg = () => {
-    switch (variant) {
-      case "danger":
-        return "bg-destructive/10 text-destructive";
-      case "warning":
-        return "bg-[hsl(var(--warning)/0.1)] text-[hsl(var(--warning))]";
-      case "success":
-        return "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]";
-      case "primary":
-        return "bg-primary/10 text-primary";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
+  const config = variantConfig[variant];
 
   return (
-    <Card
+    <div
       className={cn(
-        "kpi-card bg-gradient-to-br from-background to-muted/40 border-border/50 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden min-h-[120px] flex flex-col",
-        getVariantClasses(),
+        "relative bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group",
         className
       )}
     >
-      <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2 flex-shrink-0">
-        <div className="space-y-1 flex-1 min-w-0 overflow-hidden">
-          <CardDescription className="text-xs uppercase tracking-[0.18em] text-muted-foreground/80 line-clamp-1 truncate">
+      {/* Accent line at top */}
+      <div className={cn("absolute top-0 left-4 right-4 h-[2px] rounded-b-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300", config.accentLine)} />
+
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-2.5 flex-1 min-w-0">
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground truncate">
             {title}
-          </CardDescription>
-          <p className="text-2xl sm:text-3xl font-semibold tabular-nums leading-none whitespace-nowrap overflow-hidden text-ellipsis">{value}</p>
-        </div>
-        {showIcon && (
-          <div className={cn("p-2.5 rounded-xl flex-shrink-0 shadow-sm transition-transform duration-200 hover:scale-110", getIconBg())}>
-            <Icon className="w-5 h-5" />
-          </div>
-        )}
-      </CardHeader>
-      <CardContent className="pt-0 flex-shrink-0">
-        {trend !== undefined && (
+          </p>
           <p
             className={cn(
-              "text-xs flex items-center gap-1",
-              trend >= 0
-                ? "text-[hsl(var(--success))]"
-                : "text-destructive"
+              "text-[26px] leading-none font-bold tabular-nums truncate",
+              config.valuColor
+            )}
+            style={{ fontFamily: "Syne, sans-serif", letterSpacing: "-0.03em" }}
+          >
+            {value}
+          </p>
+          {trend !== undefined && (
+            <p
+              className={cn(
+                "text-[11px] flex items-center gap-1 font-medium",
+                trend >= 0
+                  ? "text-[hsl(142_71%_42%)] dark:text-[hsl(142_71%_55%)]"
+                  : "text-destructive"
+              )}
+            >
+              <span>{trend >= 0 ? "↑" : "↓"}</span>
+              {Math.abs(trend)}%
+              {trendLabel && (
+                <span className="text-muted-foreground font-normal ml-0.5">{trendLabel}</span>
+              )}
+            </p>
+          )}
+        </div>
+
+        {showIcon && (
+          <div
+            className={cn(
+              "p-2 rounded-lg shrink-0 transition-transform duration-200 group-hover:scale-105",
+              config.iconBg
             )}
           >
-            {trend >= 0 ? "Up" : "Down"} {Math.abs(trend)}%
-            {trendLabel && <span className="text-muted-foreground ml-1">{trendLabel}</span>}
-          </p>
+            <Icon className="w-4 h-4" />
+          </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };

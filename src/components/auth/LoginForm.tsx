@@ -1,13 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -26,13 +18,11 @@ export const LoginForm = () => {
 
     try {
       await signIn({ email, password });
-      // Aguarda um pouco para garantir que os cookies foram definidos
       await new Promise((resolve) => setTimeout(resolve, 100));
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
       });
-      // Navega após um pequeno delay para garantir que o estado foi atualizado
       setTimeout(() => {
         navigate("/", { replace: true });
       }, 100);
@@ -50,48 +40,68 @@ export const LoginForm = () => {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto border-border/50 shadow-lg">
-      <CardHeader className="space-y-2 pb-4">
-        <CardTitle className="text-2xl font-semibold">Login</CardTitle>
-        <CardDescription className="text-sm">Entre com sua conta para continuar</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={loading}
-              className="border-border/50 focus:border-primary focus:ring-primary/20 transition-colors"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-              className="border-border/50 focus:border-primary focus:ring-primary/20 transition-colors"
-            />
-          </div>
-          <Button 
-            type="submit" 
-            className="w-full bg-primary hover:bg-primary/90 transition-colors shadow-sm" 
-            disabled={loading}
+    <div className="space-y-8">
+      {/* Heading */}
+      <div className="space-y-2">
+        <h2
+          className="text-[28px] font-bold text-[hsl(214_28%_93%)] tracking-[-0.02em] leading-tight"
+          style={{ fontFamily: "Syne, sans-serif" }}
+        >
+          Bem-vindo de volta
+        </h2>
+        <p className="text-[hsl(215_14%_52%)] text-sm leading-relaxed">
+          Entre com sua conta para continuar
+        </p>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-1.5">
+          <label
+            htmlFor="email"
+            className="block text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[hsl(215_14%_50%)]"
           >
-            {loading ? "Entrando..." : "Entrar"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            Email
+          </label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={loading}
+            className="h-11 bg-[hsl(234_16%_14%)] border-[hsl(233_12%,22%)] text-[hsl(214_28%_92%)] placeholder:text-[hsl(215_14%_32%)] focus-visible:ring-[hsl(158_64%_52%/0.2)] focus-visible:border-[hsl(158_64%_52%/0.5)] transition-colors rounded-lg"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label
+            htmlFor="password"
+            className="block text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[hsl(215_14%_50%)]"
+          >
+            Senha
+          </label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={loading}
+            className="h-11 bg-[hsl(234_16%_14%)] border-[hsl(233_12%,22%)] text-[hsl(214_28%_92%)] placeholder:text-[hsl(215_14%_32%)] focus-visible:ring-[hsl(158_64%_52%/0.2)] focus-visible:border-[hsl(158_64%_52%/0.5)] transition-colors rounded-lg"
+          />
+        </div>
+
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full h-11 mt-1 bg-[hsl(158_64%_52%)] hover:bg-[hsl(158_64%_46%)] text-[hsl(158_30%_8%)] font-semibold text-[14px] tracking-tight transition-all duration-200 shadow-md hover:shadow-lg rounded-lg"
+        >
+          {loading ? "Entrando..." : "Entrar"}
+        </Button>
+      </form>
+    </div>
   );
 };
