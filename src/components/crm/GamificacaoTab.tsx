@@ -6,11 +6,36 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Trophy, Star, Target, Zap, Award, TrendingUp, CheckCircle, Flame, AlertTriangle } from "lucide-react";
 
 const NIVEL_CONFIG = {
-  "Prospectador Iniciante": { icon: Star, color: "text-[hsl(var(--silver))]", minPontos: 0 },
-  "Persistente": { icon: Zap, color: "text-[hsl(var(--bronze))]", minPontos: 51 },
-  "Consistente": { icon: Target, color: "text-[hsl(var(--gold))]", minPontos: 151 },
-  "Cadencia Master": { icon: Award, color: "text-primary", minPontos: 301 },
-  "Closer": { icon: Trophy, color: "text-[hsl(var(--status-em-dia))]", minPontos: 600 },
+  "Prospectador Iniciante": {
+    icon: Star,
+    color: "text-[hsl(var(--silver))]",
+    badgeClass: "bg-slate-500 dark:bg-slate-400 text-white dark:text-slate-900",
+    minPontos: 0,
+  },
+  "Persistente": {
+    icon: Zap,
+    color: "text-[hsl(var(--bronze))]",
+    badgeClass: "bg-amber-700 dark:bg-amber-600 text-white",
+    minPontos: 51,
+  },
+  "Consistente": {
+    icon: Target,
+    color: "text-[hsl(var(--gold))]",
+    badgeClass: "bg-amber-500 dark:bg-amber-400 text-white dark:text-amber-900",
+    minPontos: 151,
+  },
+  "Cadencia Master": {
+    icon: Award,
+    color: "text-primary",
+    badgeClass: "bg-primary text-primary-foreground",
+    minPontos: 301,
+  },
+  "Closer": {
+    icon: Trophy,
+    color: "text-[hsl(var(--status-em-dia))]",
+    badgeClass: "bg-[hsl(var(--status-em-dia))] text-white",
+    minPontos: 600,
+  },
 };
 
 const CONQUISTAS_CONFIG: Record<string, { descricao: string; icon: typeof Trophy }> = {
@@ -141,8 +166,8 @@ export const GamificacaoTab = () => {
             <div className="text-center p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
               <div className="relative inline-block">
                 <NivelIcon className={`w-20 h-20 mx-auto ${nivelColor} drop-shadow-lg`} />
-                <Badge 
-                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 ${nivelColor.replace('text-', 'bg-')} text-white border-2 border-background`}
+                <Badge
+                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 ${NIVEL_CONFIG[nivelAtual]?.badgeClass ?? "bg-muted text-foreground"} border-2 border-background`}
                 >
                   {nivelAtual}
                 </Badge>

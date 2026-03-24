@@ -155,7 +155,6 @@ const CRMDashboard = () => {
             <div className="group-data-[collapsible=icon]:hidden min-w-0">
               <p
                 className="text-[13px] font-bold text-foreground tracking-tight leading-tight truncate"
-                style={{ fontFamily: "Syne, sans-serif" }}
               >
                 Prospecção
               </p>
@@ -264,7 +263,6 @@ const CRMDashboard = () => {
               <div>
                 <h1
                   className="text-[15px] font-bold text-foreground tracking-tight leading-tight"
-                  style={{ fontFamily: "Syne, sans-serif" }}
                 >
                   Central de Prospecção
                 </h1>

@@ -72,7 +72,7 @@ export const KPICard = ({
               "text-[26px] leading-none font-bold tabular-nums truncate",
               config.valuColor
             )}
-            style={{ fontFamily: "Syne, sans-serif", letterSpacing: "-0.03em" }}
+            style={{ letterSpacing: "-0.03em" }}
           >
             {value}
           </p>

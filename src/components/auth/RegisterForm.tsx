@@ -5,15 +5,6 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
-const inputStyle = {
-  backgroundColor: "#FAFAF8",
-  borderColor: "#E2DED6",
-  color: "#1C1A15",
-};
-
-const labelClass =
-  "block text-[10.5px] font-semibold uppercase tracking-[0.12em]";
-
 export const RegisterForm = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -69,17 +60,17 @@ export const RegisterForm = () => {
     }
   };
 
+  const labelClass =
+    "block text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
+
   return (
     <div className="space-y-7">
       {/* Heading */}
       <div className="space-y-2">
-        <h2
-          className="text-[28px] font-bold tracking-[-0.02em] leading-tight"
-          style={{ fontFamily: "Syne, sans-serif", color: "#1C1A15" }}
-        >
+        <h2 className="text-[28px] font-bold text-foreground tracking-[-0.02em] leading-tight">
           Criar conta
         </h2>
-        <p className="text-sm leading-relaxed" style={{ color: "#9C9789" }}>
+        <p className="text-muted-foreground text-sm leading-relaxed">
           Preencha os dados para começar
         </p>
       </div>
@@ -87,7 +78,7 @@ export const RegisterForm = () => {
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <label htmlFor="name" className={labelClass} style={{ color: "#7A7568" }}>
+          <label htmlFor="name" className={labelClass}>
             Nome (opcional)
           </label>
           <Input
@@ -97,13 +88,12 @@ export const RegisterForm = () => {
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={loading}
-            className="h-11 rounded-lg border text-[14px] transition-all duration-200"
-            style={inputStyle}
+            className="h-11 rounded-md transition-colors"
           />
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="email" className={labelClass} style={{ color: "#7A7568" }}>
+          <label htmlFor="email" className={labelClass}>
             Email
           </label>
           <Input
@@ -114,13 +104,12 @@ export const RegisterForm = () => {
             onChange={(e) => setEmail(e.target.value)}
             required
             disabled={loading}
-            className="h-11 rounded-lg border text-[14px] transition-all duration-200"
-            style={inputStyle}
+            className="h-11 rounded-md transition-colors"
           />
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="password" className={labelClass} style={{ color: "#7A7568" }}>
+          <label htmlFor="password" className={labelClass}>
             Senha
           </label>
           <Input
@@ -131,17 +120,12 @@ export const RegisterForm = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={loading}
-            className="h-11 rounded-lg border text-[14px] transition-all duration-200"
-            style={inputStyle}
+            className="h-11 rounded-md transition-colors"
           />
         </div>
 
         <div className="space-y-1.5">
-          <label
-            htmlFor="confirmPassword"
-            className={labelClass}
-            style={{ color: "#7A7568" }}
-          >
+          <label htmlFor="confirmPassword" className={labelClass}>
             Confirmar Senha
           </label>
           <Input
@@ -152,24 +136,14 @@ export const RegisterForm = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             disabled={loading}
-            className="h-11 rounded-lg border text-[14px] transition-all duration-200"
-            style={inputStyle}
+            className="h-11 rounded-md transition-colors"
           />
         </div>
 
         <Button
           type="submit"
           disabled={loading}
-          className="w-full h-11 mt-1 font-semibold text-[14px] tracking-tight rounded-lg transition-all duration-200 border-0"
-          style={{
-            backgroundColor: loading
-              ? "hsl(158, 60%, 46%)"
-              : "hsl(158, 60%, 38%)",
-            color: "#FFFFFF",
-            boxShadow: loading
-              ? "none"
-              : "0 1px 3px hsl(158 60% 30% / 0.25), 0 4px 12px hsl(158 60% 42% / 0.18)",
-          }}
+          className="w-full h-11 mt-1 font-semibold text-[14px] tracking-tight rounded-md transition-all duration-200"
         >
           {loading ? "Criando conta..." : "Criar Conta"}
         </Button>

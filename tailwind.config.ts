@@ -68,7 +68,7 @@ export default {
       },
       fontFamily: {
         sans: [
-          "DM Sans",
+          "IBM Plex Sans",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
@@ -76,14 +76,8 @@ export default {
           "Segoe UI",
           "sans-serif",
         ],
-        display: [
-          "Syne",
-          "ui-sans-serif",
-          "system-ui",
-          "sans-serif",
-        ],
         mono: [
-          "JetBrains Mono",
+          "IBM Plex Mono",
           "ui-monospace",
           "SFMono-Regular",
           "Menlo",
