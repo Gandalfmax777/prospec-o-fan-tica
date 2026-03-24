@@ -1,4 +1,4 @@
-# Prospecção Fantástica - Frontendd
+# Prospecção Fantástica - Frontend
 
 Frontend do sistema CRM de prospecção, construído com Vite, React, TypeScript e shadcn/ui.
 
