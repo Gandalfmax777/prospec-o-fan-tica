@@ -3,15 +3,13 @@ export type Status = "Atrasado" | "Falar Hoje" | "Em Dia" | "Convertido";
 export type Temperatura = "Frio" | "Morno" | "Quente";
 export type Prioridade = "Urgente" | "Alerta" | "Atenção" | "Normal";
 export type Origem =
-  | "Instagram"
-  | "Indicação"
-  | "Anúncio"
-  | "Evento"
-  | "WhatsApp"
-  | "Orgânico"
-  | "LinkedIn"
-  | "Site"
-  | "Outro";
+  | "WEBSITE"
+  | "REFERRAL"
+  | "SOCIAL_MEDIA"
+  | "EMAIL"
+  | "PHONE"
+  | "EVENT"
+  | "OTHER";
 export type TipoContato =
   | "Ligação"
   | "WhatsApp"

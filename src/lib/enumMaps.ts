@@ -1,4 +1,4 @@
-import type { Origem, Prioridade, Status, TipoContato } from "@/types/crm";
+import type { Prioridade, Status, TipoContato } from "@/types/crm";
 
 const createReverseMap = <T extends string>(
   map: Record<T, string>
@@ -17,18 +17,6 @@ export const tipoContatoToApiMap: Record<TipoContato, string> = {
   Outro: "Outro",
 };
 
-export const origemToApiMap: Record<Origem, string> = {
-  Instagram: "Instagram",
-  Indicação: "Indicacao",
-  Anúncio: "Anuncio",
-  Evento: "Evento",
-  WhatsApp: "WhatsApp",
-  Orgânico: "Organico",
-  LinkedIn: "LinkedIn",
-  Site: "Site",
-  Outro: "Outro",
-};
-
 export const statusToApiMap: Record<Status, string> = {
   Atrasado: "Atrasado",
   "Falar Hoje": "FalarHoje",
@@ -44,7 +32,6 @@ export const prioridadeToApiMap: Record<Prioridade, string> = {
 };
 
 export const tipoContatoFromApiMap = createReverseMap(tipoContatoToApiMap);
-export const origemFromApiMap = createReverseMap(origemToApiMap);
 export const statusFromApiMap = createReverseMap(statusToApiMap);
 export const prioridadeFromApiMap = createReverseMap(prioridadeToApiMap);
 
@@ -68,11 +55,6 @@ export const toApiTipoContato = (value?: string | null) =>
   mapToApi(value, tipoContatoToApiMap);
 export const fromApiTipoContato = (value?: string | null) =>
   mapFromApi(value, tipoContatoFromApiMap);
-
-export const toApiOrigem = (value?: string | null) =>
-  mapToApi(value, origemToApiMap);
-export const fromApiOrigem = (value?: string | null) =>
-  mapFromApi(value, origemFromApiMap);
 
 export const toApiStatus = (value?: string | null) =>
   mapToApi(value, statusToApiMap);

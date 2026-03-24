@@ -26,7 +26,7 @@ import { toast } from "@/hooks/use-toast";
 import { formatPhone } from "@/lib/phoneMask";
 import { cn } from "@/lib/utils";
 import { Cadencia, Origem, Temperatura } from "@/types/crm";
-import { ORIGENS } from "@/lib/origemConstants";
+import { ORIGENS, ORIGEM_LABELS } from "@/lib/origemConstants";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Plus } from "lucide-react";
@@ -38,9 +38,8 @@ export const NewLeadDialog = () => {
   const [newLead, setNewLead] = useState({
     nome: "",
     cidade: "",
-    origem: "Instagram" as Origem,
+    origem: "WEBSITE" as Origem,
     telefone: "",
-    codigo: "",
     cadencia: "Semanal" as Cadencia,
     ultimoContato: null as Date | null,
     temperatura: "Frio" as Temperatura,
@@ -61,9 +60,8 @@ export const NewLeadDialog = () => {
       setNewLead({
         nome: "",
         cidade: "",
-        origem: "Instagram" as Origem,
+        origem: "WEBSITE" as Origem,
         telefone: "",
-        codigo: "",
         cadencia: "Semanal" as Cadencia,
         ultimoContato: null,
         temperatura: "Frio" as Temperatura,
@@ -107,15 +105,13 @@ export const NewLeadDialog = () => {
 
     // Validar enums
     const origensValidas: Origem[] = [
-      "Instagram",
-      "Indicação",
-      "Anúncio",
-      "Evento",
-      "WhatsApp",
-      "Orgânico",
-      "LinkedIn",
-      "Site",
-      "Outro",
+      "WEBSITE",
+      "REFERRAL",
+      "SOCIAL_MEDIA",
+      "EMAIL",
+      "PHONE",
+      "EVENT",
+      "OTHER",
     ];
     if (!origensValidas.includes(newLead.origem)) {
       errors.origem = "Origem inválida";
@@ -169,9 +165,8 @@ export const NewLeadDialog = () => {
       setNewLead({
         nome: "",
         cidade: "",
-        origem: "Instagram",
+        origem: "WEBSITE",
         telefone: "",
-        codigo: "",
         cadencia: "Semanal",
         ultimoContato: null,
         temperatura: "Frio",
@@ -270,7 +265,7 @@ export const NewLeadDialog = () => {
               <SelectContent>
                 {ORIGENS.map((origem) => (
                   <SelectItem key={origem} value={origem}>
-                    {origem}
+                    {ORIGEM_LABELS[origem]}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -326,20 +321,6 @@ export const NewLeadDialog = () => {
               }
               placeholder="0,00"
             />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Código</label>
-            <Input
-              value={newLead.codigo}
-              onChange={(e) => handleFieldChange("codigo", e.target.value)}
-              placeholder="Código do lead"
-              className={cn(validationErrors.codigo && "border-destructive")}
-            />
-            {validationErrors.codigo && (
-              <p className="text-xs text-destructive">
-                {validationErrors.codigo}
-              </p>
-            )}
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Cadência</label>

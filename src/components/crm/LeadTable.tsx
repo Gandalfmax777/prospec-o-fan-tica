@@ -34,7 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCRM } from "@/context/CRMContext";
-import { ORIGENS } from "@/lib/origemConstants";
+import { ORIGENS, ORIGEM_LABELS } from "@/lib/origemConstants";
 import { cn } from "@/lib/utils";
 import { Cadencia, Lead, Origem, Status, Temperatura } from "@/types/crm";
 import { format } from "date-fns";
@@ -241,7 +241,7 @@ export const LeadTable = () => {
               <SelectItem value="Todas">Todas</SelectItem>
               {ORIGENS.map((origem) => (
                 <SelectItem key={origem} value={origem}>
-                  {origem}
+                  {ORIGEM_LABELS[origem]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -341,7 +341,7 @@ export const LeadTable = () => {
                       ))}
                     <TableCell className="hidden md:table-cell">
                       <span className="metric-badge bg-muted text-muted-foreground">
-                        {lead.origem}
+                        {ORIGEM_LABELS[lead.origem as Origem] ?? lead.origem}
                       </span>
                     </TableCell>
                     {visibleColumns.telefone && (

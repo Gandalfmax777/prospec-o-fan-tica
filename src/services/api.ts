@@ -1,9 +1,7 @@
 import {
-  fromApiOrigem,
   fromApiPrioridade,
   fromApiStatus,
   fromApiTipoContato,
-  toApiOrigem,
   toApiPrioridade,
   toApiStatus,
   toApiTipoContato,
@@ -39,11 +37,10 @@ const API_URL = ensureHttpsInProduction(
   import.meta.env.VITE_API_URL || "http://localhost:3333/api"
 );
 
-const normalizeLeadInput = <T extends { origem?: string; status?: string; prioridade?: string }>(
+const normalizeLeadInput = <T extends { status?: string; prioridade?: string }>(
   data: T
 ): T => ({
   ...data,
-  origem: toApiOrigem(data.origem),
   status: toApiStatus(data.status),
   prioridade: toApiPrioridade(data.prioridade),
 });
@@ -60,7 +57,6 @@ const normalizeBriefingInput = <T extends { tipoContato?: string }>(
 
 const normalizeLeadResponse = (lead: LeadResponse): LeadResponse => ({
   ...lead,
-  origem: fromApiOrigem(lead.origem) ?? lead.origem,
   status: fromApiStatus(lead.status) ?? lead.status,
   prioridade: fromApiPrioridade(lead.prioridade) ?? lead.prioridade,
   historico:
