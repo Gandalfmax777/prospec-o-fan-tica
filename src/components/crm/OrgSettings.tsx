@@ -3,7 +3,6 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/services/api";
 import type { OrgDetails, OrgInvite, OrgMember } from "@/types/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +23,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -50,8 +48,8 @@ const ROLE_LABELS: Record<string, string> = {
 
 const ROLE_BADGE_CLASS: Record<string, string> = {
   ADMIN: "bg-primary/10 text-primary border-primary/20",
-  LEADER: "bg-amber-100 text-amber-700 border-amber-200",
-  SELLER: "bg-muted text-muted-foreground",
+  LEADER: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/50",
+  SELLER: "bg-muted text-muted-foreground border-border/50",
 };
 
 export const OrgSettings = () => {
@@ -63,24 +61,18 @@ export const OrgSettings = () => {
   const [invites, setInvites] = useState<OrgInvite[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Renomear org
   const [editingName, setEditingName] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
   const [savingName, setSavingName] = useState(false);
 
-  // Remover membro
   const [memberToRemove, setMemberToRemove] = useState<OrgMember | null>(null);
   const [removing, setRemoving] = useState(false);
 
-  // Criar convite
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("SELLER");
   const [creatingInvite, setCreatingInvite] = useState(false);
 
-  // Cancelar convite
   const [cancelingInviteId, setCancelingInviteId] = useState<string | null>(null);
-
-  // Copiar token
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
@@ -187,39 +179,39 @@ export const OrgSettings = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* ─── Info da Organização ─────────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Informações da organização</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <div className="space-y-4">
+      {/* ── Informações da organização ── */}
+      <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="px-5 py-4 border-b border-border/40 bg-muted/20 flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-primary" />
+          <p className="text-sm font-medium text-foreground">Informações</p>
+        </div>
+        <div className="p-5 space-y-4">
           {/* Nome */}
-          <div className="space-y-2">
-            <Label>Nome</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Nome da organização
+            </Label>
             {editingName ? (
               <div className="flex items-center gap-2">
                 <Input
                   value={newOrgName}
                   onChange={(e) => setNewOrgName(e.target.value)}
                   disabled={savingName}
-                  className="flex-1"
+                  className="flex-1 h-9 text-sm"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleRenameOrg();
                     if (e.key === "Escape") { setEditingName(false); setNewOrgName(org?.name ?? ""); }
                   }}
                 />
-                <Button size="icon" variant="ghost" onClick={handleRenameOrg} disabled={savingName} className="h-9 w-9 text-emerald-600">
+                <Button size="icon" variant="ghost" onClick={handleRenameOrg} disabled={savingName} className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
                   {savingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 </Button>
                 <Button size="icon" variant="ghost" onClick={() => { setEditingName(false); setNewOrgName(org?.name ?? ""); }} className="h-9 w-9">
@@ -227,10 +219,15 @@ export const OrgSettings = () => {
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">{org?.name}</span>
+              <div className="flex items-center gap-2 group">
+                <span className="text-sm font-medium text-foreground">{org?.name}</span>
                 {isAdmin && (
-                  <Button size="icon" variant="ghost" onClick={() => setEditingName(true)} className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setEditingName(true)}
+                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                  >
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                 )}
@@ -238,98 +235,98 @@ export const OrgSettings = () => {
             )}
           </div>
 
-          <Separator />
-
           {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">Membros</p>
-              <p className="font-semibold text-foreground">{org?.membersCount ?? members.length}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Leads</p>
-              <p className="font-semibold text-foreground">{org?.leadsCount ?? "—"}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Slug</p>
-              <p className="font-mono text-xs text-muted-foreground">{org?.slug}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ─── Membros ─────────────────────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Membros</CardTitle>
-          </div>
-          <CardDescription>{members.length} membro{members.length !== 1 ? "s" : ""} na organização</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="divide-y divide-border/60">
-            {members.map((member) => (
-              <div key={member.id} className="flex items-center justify-between px-6 py-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase">
-                    {(member.name ?? member.email).slice(0, 2)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{member.name || "—"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{member.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant="secondary" className={`text-xs ${ROLE_BADGE_CLASS[member.role] ?? ""}`}>
-                    {ROLE_LABELS[member.role] ?? member.role}
-                  </Badge>
-                  {isAdmin && member.id !== user?.id && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => setMemberToRemove(member)}
-                      title="Remover membro"
-                    >
-                      <UserMinus className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                  {member.id === user?.id && (
-                    <span className="text-xs text-muted-foreground italic">você</span>
-                  )}
-                </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Membros", value: org?.membersCount ?? members.length },
+              { label: "Leads", value: org?.leadsCount ?? "—" },
+              { label: "Slug", value: org?.slug, mono: true },
+            ].map(({ label, value, mono }) => (
+              <div key={label} className="rounded-lg bg-muted/40 border border-border/40 px-3 py-2.5">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                <p className={`text-sm font-semibold text-foreground mt-0.5 truncate ${mono ? "font-mono text-xs" : ""}`}>
+                  {value}
+                </p>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* ─── Convites (somente ADMIN) ─────────────────────────────────── */}
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <MailPlus className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Convidar membro</CardTitle>
+      {/* ── Membros ── */}
+      <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="px-5 py-4 border-b border-border/40 bg-muted/20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            <p className="text-sm font-medium text-foreground">Membros</p>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {members.length} membro{members.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+        <div className="divide-y divide-border/40">
+          {members.map((member) => (
+            <div key={member.id} className="flex items-center justify-between px-5 py-3 hover:bg-muted/20 transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[11px] font-bold uppercase">
+                  {(member.name ?? member.email).slice(0, 2)}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {member.name || "—"}
+                    {member.id === user?.id && (
+                      <span className="ml-2 text-[11px] font-normal text-muted-foreground italic">você</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge variant="secondary" className={`text-[11px] h-5 px-2 ${ROLE_BADGE_CLASS[member.role] ?? ""}`}>
+                  {ROLE_LABELS[member.role] ?? member.role}
+                </Badge>
+                {isAdmin && member.id !== user?.id && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    onClick={() => setMemberToRemove(member)}
+                    title="Remover membro"
+                  >
+                    <UserMinus className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
             </div>
-            <CardDescription>
-              Gere um token de convite e envie ao novo membro. O link expira em 7 dias.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {/* Formulário de convite */}
-            <form onSubmit={handleCreateInvite} className="flex flex-col sm:flex-row gap-3">
+          ))}
+        </div>
+      </div>
+
+      {/* ── Convites (somente ADMIN) ── */}
+      {isAdmin && (
+        <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-border/40 bg-muted/20">
+            <div className="flex items-center gap-2">
+              <MailPlus className="h-4 w-4 text-primary" />
+              <p className="text-sm font-medium text-foreground">Convidar membro</p>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5 pl-6">
+              O link de convite expira em 7 dias.
+            </p>
+          </div>
+          <div className="p-5 space-y-4">
+            {/* Formulário */}
+            <form onSubmit={handleCreateInvite} className="flex flex-col sm:flex-row gap-2.5">
               <Input
                 type="email"
                 placeholder="email@exemplo.com"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 disabled={creatingInvite}
-                className="flex-1"
+                className="flex-1 h-9 text-sm"
               />
               <Select value={inviteRole} onValueChange={setInviteRole} disabled={creatingInvite}>
-                <SelectTrigger className="w-full sm:w-36">
+                <SelectTrigger className="w-full sm:w-32 h-9 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -338,38 +335,37 @@ export const OrgSettings = () => {
                   <SelectItem value="ADMIN">Admin</SelectItem>
                 </SelectContent>
               </Select>
-              <Button type="submit" disabled={creatingInvite} className="gap-2 shrink-0">
-                {creatingInvite ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailPlus className="h-4 w-4" />}
+              <Button type="submit" disabled={creatingInvite} size="sm" className="gap-2 h-9 px-4 shrink-0">
+                {creatingInvite ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MailPlus className="h-3.5 w-3.5" />}
                 {creatingInvite ? "Gerando..." : "Convidar"}
               </Button>
             </form>
 
-            {/* Lista de convites pendentes */}
+            {/* Convites pendentes */}
             {invites.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Convites pendentes ({invites.length})
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Pendentes ({invites.length})
                 </p>
-                <div className="divide-y divide-border/60 rounded-lg border border-border/60">
+                <div className="rounded-lg border border-border/50 divide-y divide-border/40 overflow-hidden">
                   {invites.map((invite) => (
-                    <div key={invite.id} className="flex items-center justify-between px-4 py-2.5 gap-3">
+                    <div key={invite.id} className="flex items-center justify-between px-4 py-2.5 gap-3 hover:bg-muted/20 transition-colors">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{invite.email}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{invite.email}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <Badge variant="secondary" className={`text-xs ${ROLE_BADGE_CLASS[invite.role] ?? ""}`}>
+                          <Badge variant="secondary" className={`text-[11px] h-4 px-1.5 ${ROLE_BADGE_CLASS[invite.role] ?? ""}`}>
                             {ROLE_LABELS[invite.role] ?? invite.role}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-[11px] text-muted-foreground">
                             expira {format(new Date(invite.expiresAt), "dd/MM", { locale: ptBR })}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        {/* Copiar token */}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
                           onClick={() => handleCopyToken(invite.token)}
                           title="Copiar token"
                         >
@@ -379,11 +375,10 @@ export const OrgSettings = () => {
                             <ClipboardCopy className="h-3.5 w-3.5" />
                           )}
                         </Button>
-                        {/* Cancelar convite */}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                           onClick={() => handleCancelInvite(invite.id)}
                           disabled={cancelingInviteId === invite.id}
                           title="Cancelar convite"
@@ -406,29 +401,28 @@ export const OrgSettings = () => {
                 Nenhum convite pendente.
               </p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
-      {/* ─── Papel do usuário atual ───────────────────────────────────── */}
+      {/* ── Aviso para não-admin ── */}
       {!isAdmin && (
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-5 pb-5">
-            <Shield className="h-5 w-5 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Apenas administradores podem gerenciar membros e convites.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/60 bg-muted/20 px-5 py-4 flex items-center gap-3">
+          <Shield className="h-4 w-4 text-muted-foreground shrink-0" />
+          <p className="text-sm text-muted-foreground">
+            Apenas administradores podem gerenciar membros e convites.
+          </p>
+        </div>
       )}
 
-      {/* ─── Dialog confirmar remoção ────────────────────────────────── */}
+      {/* ── Dialog confirmar remoção ── */}
       <AlertDialog open={!!memberToRemove} onOpenChange={(open) => !open && setMemberToRemove(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remover membro</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover <strong>{memberToRemove?.name || memberToRemove?.email}</strong> da organização?
+              Tem certeza que deseja remover{" "}
+              <strong>{memberToRemove?.name || memberToRemove?.email}</strong> da organização?
               Ele perderá o acesso ao sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>
