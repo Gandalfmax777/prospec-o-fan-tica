@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 import { CRMProvider } from "@/context/CRMContext";
 import { useAuth } from "@/context/AuthContext";
 import { DashboardHeader } from "@/components/crm/DashboardHeader";
@@ -14,7 +15,6 @@ import { LeaderDashboard } from "@/components/crm/LeaderDashboard";
 import { SellerDetails } from "@/components/crm/SellerDetails";
 import { CrmIntegrationSettings } from "@/components/crm/CrmIntegrationSettings";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard,
   Table,
@@ -26,6 +26,8 @@ import {
   LogOut,
   Settings,
   Users,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -52,21 +54,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-const roleColors: Record<string, string> = {
-  ADMIN: "bg-[hsl(var(--primary)/0.12)] text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)]",
-  LEADER: "bg-[hsl(38_92%_50%/0.1)] text-[hsl(38_92%_46%)] border-[hsl(38_92%_50%/0.3)]",
-  SELLER: "bg-muted text-muted-foreground border-border",
-};
-
 const CRMDashboard = () => {
   const [activeView, setActiveView] = useState("dashboard");
   const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
   const { signOut, user } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
   const navigate = useNavigate();
   const isLeader = user?.role === "LEADER" || user?.role === "ADMIN";
   const isAdmin = user?.role === "ADMIN";
+  const isDark = resolvedTheme === "dark";
 
   const roleLabel = (user?.role || "SELLER").toUpperCase();
+  const initials =
+    user?.name?.slice(0, 2).toUpperCase() ||
+    user?.email?.slice(0, 2).toUpperCase() ||
+    "US";
 
   const navItems = useMemo(
     () =>
@@ -114,10 +116,7 @@ const CRMDashboard = () => {
   };
 
   const renderView = () => {
-    if (activeView === "leader" && !isLeader) {
-      return <DashboardHeader />;
-    }
-
+    if (activeView === "leader" && !isLeader) return <DashboardHeader />;
     if (activeView === "sellerDetails" && selectedSellerId) {
       return <SellerDetails sellerId={selectedSellerId} onBack={handleBackToLeader} />;
     }
@@ -130,24 +129,15 @@ const CRMDashboard = () => {
             <LeadTable />
           </div>
         );
-      case "leads":
-        return <LeadTable />;
-      case "kanban":
-        return <KanbanBoard />;
-      case "convertidos":
-        return <ConvertidosTab />;
-      case "metricas":
-        return <MetricasTab />;
-      case "pendencias":
-        return <PendenciasTab />;
-      case "gamificacao":
-        return <GamificacaoTab />;
-      case "leader":
-        return <LeaderDashboard onSellerClick={handleSellerClick} />;
-      case "settings":
-        return <CrmIntegrationSettings />;
-      default:
-        return <DashboardHeader />;
+      case "leads":        return <LeadTable />;
+      case "kanban":       return <KanbanBoard />;
+      case "convertidos":  return <ConvertidosTab />;
+      case "metricas":     return <MetricasTab />;
+      case "pendencias":   return <PendenciasTab />;
+      case "gamificacao":  return <GamificacaoTab />;
+      case "leader":       return <LeaderDashboard onSellerClick={handleSellerClick} />;
+      case "settings":     return <CrmIntegrationSettings />;
+      default:             return <DashboardHeader />;
     }
   };
 
@@ -155,8 +145,10 @@ const CRMDashboard = () => {
     <SidebarProvider>
       {/* ── Sidebar ── */}
       <Sidebar variant="sidebar" collapsible="icon" className="border-r border-sidebar-border/60">
+
+        {/* Logo / brand */}
         <SidebarHeader className="p-4 pb-3">
-          <div className="flex items-center gap-2.5 px-1 group-data-[collapsible=icon]:justify-center">
+          <div className="flex items-center gap-2.5 px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
               <img src="/shield.svg" className="h-4 w-4 opacity-90" alt="Logo" />
             </div>
@@ -172,20 +164,21 @@ const CRMDashboard = () => {
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="px-2 pt-1">
+        {/* Navigation — SidebarGroup already has p-2, so don't add extra px to SidebarContent */}
+        <SidebarContent>
           <SidebarGroup>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-0.5">
+              <SidebarMenu>
                 {navItems.map((item) => (
                   <SidebarMenuItem key={item.key}>
                     <SidebarMenuButton
                       onClick={() => setActiveView(item.key)}
                       isActive={activeView === item.key}
                       tooltip={item.label}
-                      className="h-9 rounded-md text-[13px] font-medium transition-all duration-150 hover:bg-primary/8 hover:text-primary data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
+                      className="rounded-md text-[13px] font-medium transition-colors duration-150 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
                     >
-                      <item.icon className="h-[15px] w-[15px]" />
-                      <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span>{item.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -194,12 +187,13 @@ const CRMDashboard = () => {
           </SidebarGroup>
         </SidebarContent>
 
-        {/* Sidebar footer — user info */}
-        <SidebarFooter className="p-3 border-t border-sidebar-border/50 group-data-[collapsible=icon]:hidden">
-          <div className="flex items-center gap-2.5 rounded-lg px-2 py-2.5">
+        {/* Footer — user info (hidden when collapsed) */}
+        <SidebarFooter className="p-2 border-t border-sidebar-border/50">
+          {/* Expanded: full user info row */}
+          <div className="group-data-[collapsible=icon]:hidden flex items-center gap-2.5 rounded-lg px-2 py-2">
             <Avatar className="h-7 w-7 shrink-0">
               <AvatarFallback className="bg-primary/10 text-primary text-[11px] font-bold">
-                {user?.name?.slice(0, 2).toUpperCase() || user?.email?.slice(0, 2).toUpperCase() || "US"}
+                {initials}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
@@ -213,21 +207,60 @@ const CRMDashboard = () => {
               size="icon"
               onClick={handleLogout}
               className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-              title="Sair"
+              title="Sair da conta"
             >
               <LogOut className="h-3.5 w-3.5" />
             </Button>
+          </div>
+
+          {/* Collapsed: logout icon only, centered */}
+          <div className="hidden group-data-[collapsible=icon]:flex justify-center py-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full hover:bg-muted/60"
+                  title="Conta"
+                >
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="end" className="w-44">
+                <DropdownMenuLabel className="font-normal">
+                  <p className="text-xs font-semibold text-foreground truncate">
+                    {user?.name || user?.email}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">{roleLabel}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10 text-[13px]"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Sair da conta
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </SidebarFooter>
       </Sidebar>
 
       {/* ── Main content ── */}
       <SidebarInset className="bg-background">
-        {/* Header */}
+
+        {/* Header — title + theme toggle only, no duplicate user info */}
         <header className="sticky top-0 z-30 border-b border-border/60 bg-background/95 backdrop-blur-md">
-          <div className="flex items-center justify-between px-4 md:px-6 h-14">
+          <div className="flex items-center justify-between px-4 md:px-5 h-14">
+
+            {/* Left: trigger + title */}
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="md:hidden h-8 w-8" />
+              <SidebarTrigger className="h-8 w-8 text-muted-foreground hover:text-foreground" />
               <div>
                 <h1
                   className="text-[15px] font-bold text-foreground tracking-tight leading-tight"
@@ -235,50 +268,26 @@ const CRMDashboard = () => {
                 >
                   Central de Prospecção
                 </h1>
-                <p className="text-[11.5px] text-muted-foreground hidden sm:block">
+                <p className="text-[11.5px] text-muted-foreground hidden sm:block leading-tight">
                   Visão unificada de vendas e produtividade
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className={`hidden sm:flex text-[11px] font-semibold px-2 py-0.5 ${roleColors[roleLabel] ?? roleColors["SELLER"]}`}
-              >
-                {roleLabel}
-              </Badge>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted/60">
-                    <Avatar className="h-7 w-7">
-                      <AvatarFallback className="bg-primary/10 text-primary text-[11px] font-bold">
-                        {user?.name?.slice(0, 2).toUpperCase() ||
-                          user?.email?.slice(0, 2).toUpperCase() ||
-                          "US"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuLabel className="font-normal">
-                    <p className="text-xs font-semibold text-foreground truncate">
-                      {user?.name || user?.email}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">{roleLabel}</p>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10 text-[13px]"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    Sair da conta
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {/* Right: theme toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+              title={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
+            >
+              {isDark ? (
+                <Sun className="h-[15px] w-[15px]" />
+              ) : (
+                <Moon className="h-[15px] w-[15px]" />
+              )}
+            </Button>
           </div>
         </header>
 
