@@ -1,12 +1,14 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 interface AuthGuardProps {
   children: React.ReactNode;
+  requireOrg?: boolean;
 }
 
-export const AuthGuard = ({ children }: AuthGuardProps) => {
+export const AuthGuard = ({ children, requireOrg = true }: AuthGuardProps) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -23,6 +25,10 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     return <Navigate to="/login" replace />;
   }
 
+  // Redireciona para onboarding se usuário não tem organização
+  if (requireOrg && !user.organizationId && location.pathname !== "/onboarding") {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return <>{children}</>;
 };
-

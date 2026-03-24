@@ -12,12 +12,21 @@ import { ensureHttpsInProduction } from "@/lib/utils";
 import type {
   BriefingInput,
   CreateBriefingInput,
+  CreateInviteInput,
   CreateLeadInput,
+  CreateOrgInput,
+  CrmConfig,
+  JoinOrgInput,
   LeadResponse,
   LeaderTeamMember,
   LeaderSummary,
   MeResponse,
   AdminUser,
+  OrgDetails,
+  OrgInvite,
+  OrgMember,
+  SaveCrmConfigInput,
+  TransferLeadResult,
   UpdateUserRoleInput,
   UpdateGamificacaoInput,
   UpdateLeadInput,
@@ -266,4 +275,45 @@ export const api = {
       method: "PATCH",
       body: input,
     }),
+
+  // Organização
+  createOrg: (data: CreateOrgInput): Promise<OrgDetails> =>
+    request<OrgDetails>("/organizations", { method: "POST", body: data }),
+
+  joinOrg: (data: JoinOrgInput): Promise<{ message: string; organization: { id: string; name: string; slug: string } }> =>
+    request("/organizations/join", { method: "POST", body: data }),
+
+  getOrg: (): Promise<OrgDetails> =>
+    request<OrgDetails>("/organizations/me"),
+
+  renameOrg: (name: string): Promise<{ id: string; name: string; slug: string }> =>
+    request("/organizations/me", { method: "PUT", body: { name } }),
+
+  getOrgMembers: (): Promise<OrgMember[]> =>
+    request<OrgMember[]>("/organizations/me/members"),
+
+  removeOrgMember: (userId: string): Promise<null> =>
+    request<null>(`/organizations/me/members/${userId}`, { method: "DELETE" }),
+
+  getOrgInvites: (): Promise<OrgInvite[]> =>
+    request<OrgInvite[]>("/organizations/me/invites"),
+
+  createOrgInvite: (data: CreateInviteInput): Promise<OrgInvite> =>
+    request<OrgInvite>("/organizations/me/invites", { method: "POST", body: data }),
+
+  cancelOrgInvite: (id: string): Promise<null> =>
+    request<null>(`/organizations/me/invites/${id}`, { method: "DELETE" }),
+
+  // Integração CRM
+  getCrmConfig: (): Promise<CrmConfig | null> =>
+    request<CrmConfig | null>("/organizations/me/crm-config"),
+
+  saveCrmConfig: (data: SaveCrmConfigInput): Promise<CrmConfig> =>
+    request<CrmConfig>("/organizations/me/crm-config", { method: "PUT", body: data }),
+
+  testCrmConnection: (): Promise<{ success: boolean; message: string }> =>
+    request<{ success: boolean; message: string }>("/crm/test", { method: "POST" }),
+
+  transferLeadToCrm: (leadId: string): Promise<TransferLeadResult> =>
+    request<TransferLeadResult>(`/crm/transfer/${leadId}`, { method: "POST" }),
 };

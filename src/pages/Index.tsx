@@ -12,6 +12,7 @@ import { GamificacaoTab } from "@/components/crm/GamificacaoTab";
 import { AlertaBanner } from "@/components/crm/AlertaBanner";
 import { LeaderDashboard } from "@/components/crm/LeaderDashboard";
 import { SellerDetails } from "@/components/crm/SellerDetails";
+import { CrmIntegrationSettings } from "@/components/crm/CrmIntegrationSettings";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -23,6 +24,7 @@ import {
   AlertTriangle,
   Trophy,
   LogOut,
+  Settings,
   Users,
   Shield,
 } from "lucide-react";
@@ -57,6 +59,7 @@ const CRMDashboard = () => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const isLeader = user?.role === "LEADER" || user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN";
 
   const roleLabel = (user?.role || "SELLER").toUpperCase();
 
@@ -71,6 +74,7 @@ const CRMDashboard = () => {
         { key: "pendencias", label: "Pendencias", icon: AlertTriangle },
         { key: "gamificacao", label: "Gamificacao", icon: Trophy },
         ...(isLeader ? [{ key: "leader", label: "Lideranca", icon: Users }] : []),
+        ...(isAdmin ? [{ key: "settings", label: "Configuracoes", icon: Settings }] : []),
       ],
     [isLeader]
   );
@@ -135,6 +139,8 @@ const CRMDashboard = () => {
         return <GamificacaoTab />;
       case "leader":
         return <LeaderDashboard onSellerClick={handleSellerClick} />;
+      case "settings":
+        return <CrmIntegrationSettings />;
       default:
         return <DashboardHeader />;
     }

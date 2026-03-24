@@ -6,6 +6,8 @@ export interface User {
   image: string | null;
   role?: string;
   managerId?: string | null;
+  organizationId?: string | null;
+  organization?: { id: string; name: string; slug: string } | null;
   createdAt: Date;
   updatedAt: Date;
 }

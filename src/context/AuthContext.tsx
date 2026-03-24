@@ -16,10 +16,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const mergeRoleData = (base: User, me?: { role?: string; managerId?: string | null }) => ({
+const mergeRoleData = (
+  base: User,
+  me?: {
+    role?: string;
+    managerId?: string | null;
+    organizationId?: string | null;
+    organization?: { id: string; name: string; slug: string } | null;
+  }
+) => ({
   ...base,
   role: me?.role ?? base.role ?? "SELLER",
   managerId: me?.managerId ?? base.managerId ?? null,
+  organizationId: me?.organizationId ?? base.organizationId ?? null,
+  organization: me?.organization ?? base.organization ?? null,
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

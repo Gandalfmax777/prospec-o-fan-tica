@@ -9,6 +9,8 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Onboarding from "./pages/Onboarding";
+import Join from "./pages/Join";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +26,25 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            {/* Onboarding: requer autenticação, mas não requer org */}
+            <Route
+              path="/onboarding"
+              element={
+                <AuthGuard requireOrg={false}>
+                  <Onboarding />
+                </AuthGuard>
+              }
+            />
+            {/* Join: requer autenticação, mas não requer org */}
+            <Route
+              path="/join"
+              element={
+                <AuthGuard requireOrg={false}>
+                  <Join />
+                </AuthGuard>
+              }
+            />
+            {/* App principal: requer autenticação + org */}
             <Route
               path="/"
               element={

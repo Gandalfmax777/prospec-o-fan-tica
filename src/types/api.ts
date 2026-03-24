@@ -105,6 +105,87 @@ export interface MeResponse {
   name: string | null;
   role: string;
   managerId: string | null;
+  organizationId?: string | null;
+  organization?: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+}
+
+export interface CrmConfig {
+  id: string;
+  crmApiUrl: string;
+  crmApiKey: string | null;
+  defaultPipelineStageId: string | null;
+  autoTransfer: boolean;
+  lastTestedAt: string | null;
+  lastTestSuccess: boolean | null;
+  updatedAt?: string;
+}
+
+export interface SaveCrmConfigInput {
+  crmApiUrl: string;
+  crmApiKey?: string;
+  defaultPipelineStageId?: string | null;
+  autoTransfer?: boolean;
+}
+
+export interface TransferLeadResult {
+  success: boolean;
+  contactId?: string;
+  dealId?: string;
+  dealUrl?: string | null;
+  transferredAt?: string;
+}
+
+// ─── Organização ──────────────────────────────────────────────────────────────
+
+export interface OrgDetails {
+  id: string;
+  name: string;
+  slug: string;
+  membersCount: number;
+  leadsCount: number;
+  crmConfig: {
+    id: string;
+    crmApiUrl: string;
+    autoTransfer: boolean;
+    lastTestedAt: string | null;
+    lastTestSuccess: boolean | null;
+  } | null;
+  createdAt: string;
+}
+
+export interface OrgMember {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  managerId: string | null;
+  createdAt: string;
+}
+
+export interface OrgInvite {
+  id: string;
+  email: string;
+  role: string;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface CreateInviteInput {
+  email: string;
+  role: string;
+}
+
+export interface CreateOrgInput {
+  name: string;
+}
+
+export interface JoinOrgInput {
+  token: string;
 }
 
 export interface AdminUser {

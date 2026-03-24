@@ -49,6 +49,7 @@ interface CRMContextType {
     briefing: Omit<Briefing, "id" | "leadId" | "data">
   ) => Promise<void>;
   completarMissao: (missaoId: string) => Promise<void>;
+  transferLead: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -433,6 +434,34 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
     [refreshData]
   );
 
+  const transferLead = useCallback(async (id: string) => {
+    try {
+      setError(null);
+      const result = await api.transferLeadToCrm(id);
+      setLeads((prev) =>
+        prev.map((lead) =>
+          lead.id === id
+            ? {
+                ...lead,
+                crmContactId: result.contactId ?? null,
+                crmDealId: result.dealId ?? null,
+                crmDealUrl: result.dealUrl ?? null,
+                transferredAt: result.transferredAt
+                  ? new Date(result.transferredAt)
+                  : new Date(),
+              }
+            : lead
+        )
+      );
+    } catch (err) {
+      console.error("Erro ao transferir lead para o CRM:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Erro ao transferir lead para o CRM";
+      setError(errorMessage);
+      throw err;
+    }
+  }, []);
+
   const completarMissao = useCallback(async (missaoId: string) => {
     try {
       setError(null);
@@ -476,6 +505,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         retornarAoFunil,
         adicionarBriefing,
         completarMissao,
+        transferLead,
         refreshData,
       }}
     >

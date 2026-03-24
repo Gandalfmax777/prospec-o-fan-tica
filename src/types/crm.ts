@@ -72,6 +72,11 @@ export interface Lead {
   pontos: number;
   nivel: string;
   conquistas: string[];
+  // Rastreabilidade da transferência para o CRM
+  crmContactId?: string | null;
+  crmDealId?: string | null;
+  crmDealUrl?: string | null;
+  transferredAt?: Date | null;
 }
 
 export interface Gamificacao {
