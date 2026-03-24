@@ -57,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshSession = useCallback(async (retryOnError = false): Promise<void> => {
+    setLoading(true);
     try {
       refreshAttemptsRef.current = 0;
       const sessionData = await auth.getSession();
@@ -107,29 +108,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [refreshSession]);
 
   const signIn = useCallback(async (input: LoginInput) => {
-    const result = await auth.signIn(input);
-    setUser(result.user);
-    setSession(result.session);
-    setTimeout(async () => {
-      try {
-        await refreshSession();
-      } catch (error) {
-        console.warn("Nao foi possivel atualizar a sessao apos login:", error);
-      }
-    }, 500);
+    // Não seta o user do Better Auth diretamente pois ele não contém organizationId.
+    // Mantém loading=true (via refreshSession) para o AuthGuard não redirecionar antes
+    // de termos os dados completos do /me.
+    await auth.signIn(input);
+    // Pequena pausa para garantir que os cookies foram processados pelo browser
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await refreshSession();
   }, [refreshSession]);
 
   const signUp = useCallback(async (input: RegisterInput) => {
-    const result = await auth.signUp(input);
-    setUser(result.user);
-    setSession(result.session);
-    setTimeout(async () => {
-      try {
-        await refreshSession();
-      } catch (error) {
-        console.warn("Nao foi possivel atualizar a sessao apos registro:", error);
-      }
-    }, 500);
+    await auth.signUp(input);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await refreshSession();
   }, [refreshSession]);
 
   const signOut = useCallback(async () => {
