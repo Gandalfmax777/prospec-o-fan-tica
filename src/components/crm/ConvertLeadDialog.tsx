@@ -90,6 +90,7 @@ export function ConvertLeadDialog({
       // O transferLead atualiza o estado local com crmDealUrl
       setCrmDealUrl(lead.crmDealUrl ?? null);
       setStep("success");
+      setLoadingAction(null);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Erro ao enviar ao CRM";
