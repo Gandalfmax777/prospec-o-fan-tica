@@ -56,8 +56,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return false;
   };
 
-  const refreshSession = useCallback(async (retryOnError = false): Promise<void> => {
-    setLoading(true);
+  const refreshSession = useCallback(async (retryOnError = false, silent = false): Promise<void> => {
+    if (!silent) setLoading(true);
     try {
       refreshAttemptsRef.current = 0;
       const sessionData = await auth.getSession();
@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.warn(`Tentativa ${refreshAttemptsRef.current} de refresh de sessão após erro em /me`);
             // Aguarda um pouco antes de tentar novamente
             await new Promise((resolve) => setTimeout(resolve, 500));
-            return refreshSession(false);
+            return refreshSession(false, silent);
           }
           console.warn("Nao foi possivel obter /me:", error);
           setUser(mergeRoleData(sessionData.user));
@@ -85,27 +85,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error("Erro ao atualizar sessao:", error);
-      
+
       // Se for erro de sessão inválida e ainda não excedeu tentativas, tenta refresh
       if (retryOnError && isSessionInvalidError(error) && refreshAttemptsRef.current < MAX_REFRESH_ATTEMPTS) {
         refreshAttemptsRef.current += 1;
         console.warn(`Tentativa ${refreshAttemptsRef.current} de refresh de sessão`);
         // Aguarda um pouco antes de tentar novamente (dá tempo para cookies serem processados)
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        return refreshSession(false);
+        return refreshSession(false, silent);
       }
-      
+
       // Se sessão realmente está inválida, limpa estado
       setUser(null);
       setSession(null);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
+  // Carrega sessão no mount inicial
   useEffect(() => {
     refreshSession();
   }, [refreshSession]);
+
+  // Renova sessão silenciosamente a cada 10 minutos enquanto logado
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      refreshSession(false, true);
+    }, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user, refreshSession]);
+
+  // Revalida sessão quando o usuário retorna à aba após inatividade
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && user) {
+        refreshSession(false, true);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [user, refreshSession]);
 
   const signIn = useCallback(async (input: LoginInput) => {
     // Não seta o user do Better Auth diretamente pois ele não contém organizationId.
