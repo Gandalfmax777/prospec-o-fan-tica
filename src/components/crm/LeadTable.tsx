@@ -597,7 +597,7 @@ export const LeadTable = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                          className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
                           onClick={() => {
                             setLeadToConvert(lead);
                             setShowConvertDialog(true);

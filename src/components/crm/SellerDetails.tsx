@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api } from "@/services/api";
+import { ORIGENS, ORIGEM_LABELS } from "@/lib/origemConstants";
 import { SellerDetails as SellerDetailsType } from "@/types/api";
 import { Origem, Status } from "@/types/crm";
 import { format } from "date-fns";
@@ -249,8 +250,8 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 border rounded-lg hover:border-yellow-500/50 transition-colors">
-              <div className="p-2 bg-yellow-500/10 text-yellow-600 rounded-lg">
+            <div className="flex items-center gap-3 p-4 border rounded-lg hover:border-[hsl(var(--status-falar-hoje)/0.5)] transition-colors">
+              <div className="p-2 bg-[hsl(var(--status-falar-hoje-bg))] text-[hsl(var(--status-falar-hoje))] rounded-lg">
                 <Clock className="h-5 w-5" />
               </div>
               <div>
@@ -260,8 +261,8 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 border rounded-lg hover:border-green-500/50 transition-colors">
-              <div className="p-2 bg-green-500/10 text-green-600 rounded-lg">
+            <div className="flex items-center gap-3 p-4 border rounded-lg hover:border-[hsl(var(--status-em-dia)/0.5)] transition-colors">
+              <div className="p-2 bg-[hsl(var(--status-em-dia-bg))] text-[hsl(var(--status-em-dia))] rounded-lg">
                 <CheckCircle className="h-5 w-5" />
               </div>
               <div>
@@ -271,8 +272,8 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 border rounded-lg hover:border-blue-500/50 transition-colors">
-              <div className="p-2 bg-blue-500/10 text-blue-600 rounded-lg">
+            <div className="flex items-center gap-3 p-4 border rounded-lg hover:border-primary/30 transition-colors">
+              <div className="p-2 bg-primary/10 text-primary rounded-lg">
                 <CheckCircle className="h-5 w-5" />
               </div>
               <div>
@@ -455,17 +456,17 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg border border-primary/20">
               <div>
                 <p className="text-sm text-muted-foreground">Total de Leads</p>
                 <p className="text-2xl font-bold">{metrics.totalLeads}</p>
               </div>
-              <Users className="h-8 w-8 text-blue-600" />
+              <Users className="h-8 w-8 text-primary" />
             </div>
             <div className="flex items-center justify-center">
               <div className="w-1 h-8 bg-muted"></div>
             </div>
-            <div className="flex items-center justify-between p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+            <div className="flex items-center justify-between p-4 bg-[hsl(var(--warning)/0.1)] rounded-lg border border-[hsl(var(--warning)/0.2)]">
               <div>
                 <p className="text-sm text-muted-foreground">Em Andamento</p>
                 <p className="text-2xl font-bold">
@@ -474,17 +475,17 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
                     metrics.leadsByStatus["Em Dia"] || 0}
                 </p>
               </div>
-              <Clock className="h-8 w-8 text-yellow-600" />
+              <Clock className="h-8 w-8 text-[hsl(var(--warning))]" />
             </div>
             <div className="flex items-center justify-center">
               <div className="w-1 h-8 bg-muted"></div>
             </div>
-            <div className="flex items-center justify-between p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+            <div className="flex items-center justify-between p-4 bg-[hsl(var(--success)/0.1)] rounded-lg border border-[hsl(var(--success)/0.2)]">
               <div>
                 <p className="text-sm text-muted-foreground">Convertidos</p>
                 <p className="text-2xl font-bold">{metrics.convertedLeads}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <CheckCircle className="h-8 w-8 text-[hsl(var(--success))]" />
             </div>
             <div className="mt-4 text-center">
               <p className="text-sm text-muted-foreground">
@@ -540,15 +541,9 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todas">Todas as Origens</SelectItem>
-                <SelectItem value="Instagram">Instagram</SelectItem>
-                <SelectItem value="Indicação">Indicação</SelectItem>
-                <SelectItem value="Anúncio">Anúncio</SelectItem>
-                <SelectItem value="Evento">Evento</SelectItem>
-                <SelectItem value="WhatsApp">WhatsApp</SelectItem>
-                <SelectItem value="Orgânico">Orgânico</SelectItem>
-                <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                <SelectItem value="Site">Site</SelectItem>
-                <SelectItem value="Outro">Outro</SelectItem>
+                {ORIGENS.map((o) => (
+                  <SelectItem key={o} value={o}>{ORIGEM_LABELS[o]}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select
@@ -661,11 +656,11 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
                 const getActivityColor = () => {
                   switch (activity.type) {
                     case "contact":
-                      return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+                      return "bg-primary/10 text-primary border-primary/20";
                     case "briefing":
-                      return "bg-purple-500/10 text-purple-600 border-purple-500/20";
+                      return "bg-violet-500/10 text-violet-600 border-violet-500/20 dark:text-violet-400";
                     case "conversion":
-                      return "bg-green-500/10 text-green-600 border-green-500/20";
+                      return "bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))] border-[hsl(var(--success)/0.2)]";
                     default:
                       return "bg-muted text-muted-foreground border-border";
                   }

@@ -48,7 +48,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 const ROLE_BADGE_CLASS: Record<string, string> = {
   ADMIN: "bg-primary/10 text-primary border-primary/20",
-  LEADER: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/50",
+  LEADER: "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-800/50",
   SELLER: "bg-muted text-muted-foreground border-border/50",
 };
 
@@ -211,7 +211,7 @@ export const OrgSettings = () => {
                     if (e.key === "Escape") { setEditingName(false); setNewOrgName(org?.name ?? ""); }
                   }}
                 />
-                <Button size="icon" variant="ghost" onClick={handleRenameOrg} disabled={savingName} className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
+                <Button size="icon" variant="ghost" onClick={handleRenameOrg} disabled={savingName} className="h-9 w-9 text-primary hover:text-primary hover:bg-primary/10">
                   {savingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 </Button>
                 <Button size="icon" variant="ghost" onClick={() => { setEditingName(false); setNewOrgName(org?.name ?? ""); }} className="h-9 w-9">

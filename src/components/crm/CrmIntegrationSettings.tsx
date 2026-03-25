@@ -249,7 +249,7 @@ const CrmConfigForm = () => {
               </Label>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Transfere leads automaticamente ao converter.{" "}
-                <span className="text-amber-500 dark:text-amber-400">Em breve.</span>
+                <span className="text-muted-foreground">Em breve.</span>
               </p>
             </div>
           </div>
