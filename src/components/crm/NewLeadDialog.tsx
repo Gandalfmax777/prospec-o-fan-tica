@@ -182,7 +182,7 @@ export const NewLeadDialog = () => {
       });
       toast({
         title: "Sucesso",
-        description: "Lead cadastrado com sucesso!",
+        description: "Contato cadastrado com sucesso!",
       });
     } catch (err) {
       console.error("Erro ao adicionar lead:", err);
@@ -212,12 +212,12 @@ export const NewLeadDialog = () => {
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="w-4 h-4" />
-          Novo lead
+          Novo contato
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Adicionar novo lead</DialogTitle>
+          <DialogTitle>Adicionar novo contato</DialogTitle>
           <p className="text-sm text-muted-foreground">
             Campos marcados com <span className="text-destructive">*</span> são
             obrigatórios
@@ -231,7 +231,7 @@ export const NewLeadDialog = () => {
             <Input
               value={newLead.nome}
               onChange={(e) => handleFieldChange("nome", e.target.value)}
-              placeholder="Nome do lead"
+              placeholder="Nome do contato"
               className={cn(validationErrors.nome && "border-destructive")}
             />
             {validationErrors.nome && (
@@ -412,7 +412,7 @@ export const NewLeadDialog = () => {
             <Input
               value={newLead.observacao}
               onChange={(e) => handleFieldChange("observacao", e.target.value)}
-              placeholder="Observações sobre o lead"
+              placeholder="Observações sobre o contato"
             />
           </div>
         </div>
@@ -420,7 +420,7 @@ export const NewLeadDialog = () => {
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleAddLead}>Adicionar lead</Button>
+          <Button onClick={handleAddLead}>Adicionar contato</Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 const stats = [
   { value: "100%", label: "dados em tempo real" },
   { value: "3×", label: "mais conversões" },
-  { value: "∞", label: "leads gerenciados" },
+  { value: "∞", label: "contatos gerenciados" },
 ];
 
 export default function Login() {
@@ -45,7 +45,7 @@ export default function Login() {
             Resultados reais.
           </h1>
           <p className="text-[17px] leading-relaxed max-w-[300px] text-muted-foreground">
-            O CRM feito para times de alta performance. Leads, métricas e
+            O CRM feito para times de alta performance. Contatos, métricas e
             gamificação em um só lugar.
           </p>
         </div>

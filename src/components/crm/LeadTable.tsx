@@ -198,7 +198,7 @@ export const LeadTable = () => {
         <CardContent className="flex items-center justify-center p-12">
           <div className="text-center space-y-2">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="text-muted-foreground">Carregando leads...</p>
+            <p className="text-muted-foreground">Carregando contatos...</p>
           </div>
         </CardContent>
       </Card>
@@ -223,7 +223,7 @@ export const LeadTable = () => {
   return (
     <Card className="border-border/50 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
-        <CardTitle className="text-lg font-semibold">Leads ativos</CardTitle>
+        <CardTitle className="text-lg font-semibold">Contatos ativos</CardTitle>
         <NewLeadDialog />
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
@@ -590,7 +590,7 @@ export const LeadTable = () => {
                             setLeadToEdit(lead);
                             setShowEditDialog(true);
                           }}
-                          title="Editar lead"
+                          title="Editar contato"
                         >
                           <Edit2 className="w-4 h-4" />
                         </Button>
@@ -602,7 +602,7 @@ export const LeadTable = () => {
                             setLeadToConvert(lead);
                             setShowConvertDialog(true);
                           }}
-                          title="Converter lead"
+                          title="Converter contato"
                         >
                           <Trophy className="w-4 h-4" />
                         </Button>
@@ -614,7 +614,7 @@ export const LeadTable = () => {
                             setLeadToDelete(lead);
                             setShowDeleteDialog(true);
                           }}
-                          title="Excluir lead"
+                          title="Excluir contato"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

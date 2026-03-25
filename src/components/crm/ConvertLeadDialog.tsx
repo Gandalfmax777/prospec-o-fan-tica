@@ -58,7 +58,7 @@ export function ConvertLeadDialog({
       setLoadingAction("convert");
       await converterLead(lead.id);
       toast({
-        title: "Lead convertido!",
+        title: "Contato convertido!",
         description: `${lead.nome} foi movido para a aba Convertidos. Você pode enviá-lo ao CRM quando desejar.`,
       });
       onOpenChange(false);
@@ -111,7 +111,7 @@ export function ConvertLeadDialog({
             <DialogHeader>
               <div className="flex items-center gap-2">
                 <Trophy className="h-5 w-5 text-primary" />
-                <DialogTitle>Converter Lead</DialogTitle>
+                <DialogTitle>Converter Contato</DialogTitle>
               </div>
               <DialogDescription className="pt-1">
                 <span className="font-medium text-foreground">{lead.nome}</span>
@@ -120,14 +120,14 @@ export function ConvertLeadDialog({
 
             <div className="space-y-3 py-1">
               <p className="text-sm text-muted-foreground">
-                Escolha o que deseja fazer com este lead:
+                Escolha o que deseja fazer com este contato:
               </p>
 
               {/* Opção 1 */}
               <div className="rounded-lg border border-border/60 p-3 space-y-1">
                 <p className="text-sm font-medium">Apenas converter</p>
                 <p className="text-xs text-muted-foreground">
-                  Move o lead para a aba <strong>Convertidos</strong>. Você
+                  Move o contato para a aba <strong>Convertidos</strong>. Você
                   poderá enviá-lo ao CRM depois, quando quiser.
                 </p>
               </div>
@@ -136,8 +136,8 @@ export function ConvertLeadDialog({
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-1">
                 <p className="text-sm font-medium">Converter e Enviar ao CRM</p>
                 <p className="text-xs text-muted-foreground">
-                  Converte o lead e já cria o contato e o negócio no CRM
-                  automaticamente. Você recebe o link direto para acompanhar.
+                  Converte o contato e já o registra no CRM automaticamente.
+                  Você recebe o link direto para acompanhar.
                 </p>
               </div>
             </div>
@@ -179,7 +179,7 @@ export function ConvertLeadDialog({
             <div className="text-center space-y-1">
               <p className="font-medium">Enviando ao CRM...</p>
               <p className="text-sm text-muted-foreground">
-                Criando contato e negócio para{" "}
+                Registrando contato para{" "}
                 <strong>{lead.nome}</strong>
               </p>
             </div>
@@ -192,11 +192,11 @@ export function ConvertLeadDialog({
             <DialogHeader>
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-emerald-500" />
-                <DialogTitle>Lead enviado ao CRM!</DialogTitle>
+                <DialogTitle>Contato enviado ao CRM!</DialogTitle>
               </div>
               <DialogDescription>
                 <span className="font-medium text-foreground">{lead.nome}</span>{" "}
-                foi convertido e criado no CRM como contato e negócio.
+                foi convertido e registrado no CRM com sucesso.
               </DialogDescription>
             </DialogHeader>
 

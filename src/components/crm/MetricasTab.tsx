@@ -203,13 +203,13 @@ export const MetricasTab = () => {
             <div className="overflow-x-auto scrollbar-thin pb-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
-                  <KPICard title="Leads hoje" value={metricas.leadsHoje} icon={Calendar} variant="primary" />
+                  <KPICard title="Contatos hoje" value={metricas.leadsHoje} icon={Calendar} variant="primary" />
                 </div>
                 <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
-                  <KPICard title="Leads semana" value={metricas.leadsSemana} icon={Calendar} variant="primary" />
+                  <KPICard title="Contatos semana" value={metricas.leadsSemana} icon={Calendar} variant="primary" />
                 </div>
                 <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
-                  <KPICard title="Leads mes" value={metricas.leadsMes} icon={Users} variant="primary" />
+                  <KPICard title="Contatos mês" value={metricas.leadsMes} icon={Users} variant="primary" />
                 </div>
                 <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
                   <KPICard title="Taxa conversao" value={`${metricas.taxaConversaoGeral.toFixed(1)}%`} icon={TrendingUp} variant="success" />
@@ -227,8 +227,8 @@ export const MetricasTab = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <KPICard title="Atrasados" value={metricas.atrasados} icon={AlertTriangle} variant="danger" />
             <KPICard title="Tempo medio conversao" value={`${metricas.tempoMedioConversao} dias`} icon={Clock} variant="default" />
-            <KPICard title="Total de leads" value={metricas.totalLeads} icon={Users} variant="default" />
-            <KPICard title="Leads no ano" value={metricas.leadsAno} icon={Calendar} variant="default" />
+            <KPICard title="Total de contatos" value={metricas.totalLeads} icon={Users} variant="default" />
+            <KPICard title="Contatos no ano" value={metricas.leadsAno} icon={Calendar} variant="default" />
           </div>
         </CardContent>
       </Card>
@@ -236,7 +236,7 @@ export const MetricasTab = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Leads por cadencia</CardTitle>
+            <CardTitle>Contatos por cadência</CardTitle>
           </CardHeader>
           <CardContent className="h-[200px] md:h-[250px] lg:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -301,7 +301,7 @@ export const MetricasTab = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Leads por origem</CardTitle>
+            <CardTitle>Contatos por origem</CardTitle>
           </CardHeader>
           <CardContent className="h-[200px] md:h-[250px] lg:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -330,7 +330,7 @@ export const MetricasTab = () => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="quantidade" name="Total leads" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="quantidade" name="Total contatos" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="convertidos" name="Convertidos" fill="hsl(var(--status-em-dia))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

@@ -149,7 +149,7 @@ export const EditLeadDialog = ({ open, onOpenChange, lead }: EditLeadDialogProps
       onOpenChange(false);
       toast({
         title: "Sucesso",
-        description: "Lead atualizado com sucesso!",
+        description: "Contato atualizado com sucesso!",
       });
     } catch (err) {
       console.error("Erro ao atualizar lead:", err);
@@ -178,7 +178,7 @@ export const EditLeadDialog = ({ open, onOpenChange, lead }: EditLeadDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Editar lead</DialogTitle>
+          <DialogTitle>Editar contato</DialogTitle>
           <p className="text-sm text-muted-foreground">
             Campos marcados com <span className="text-destructive">*</span> são
             obrigatórios
@@ -192,7 +192,7 @@ export const EditLeadDialog = ({ open, onOpenChange, lead }: EditLeadDialogProps
             <Input
               value={editedLead.nome}
               onChange={(e) => handleFieldChange("nome", e.target.value)}
-              placeholder="Nome do lead"
+              placeholder="Nome do contato"
               className={cn(validationErrors.nome && "border-destructive")}
             />
             {validationErrors.nome && (
@@ -364,7 +364,7 @@ export const EditLeadDialog = ({ open, onOpenChange, lead }: EditLeadDialogProps
             <Textarea
               value={editedLead.observacao}
               onChange={(e) => handleFieldChange("observacao", e.target.value)}
-              placeholder="Observações sobre o lead"
+              placeholder="Observações sobre o contato"
               rows={3}
             />
           </div>

@@ -239,7 +239,7 @@ export const OrgSettings = () => {
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: "Membros", value: org?.membersCount ?? members.length },
-              { label: "Leads", value: org?.leadsCount ?? "—" },
+              { label: "Contatos", value: org?.leadsCount ?? "—" },
               { label: "Slug", value: org?.slug, mono: true },
             ].map(({ label, value, mono }) => (
               <div key={label} className="rounded-lg bg-muted/40 border border-border/40 px-3 py-2.5">

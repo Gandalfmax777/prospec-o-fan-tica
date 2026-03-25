@@ -58,7 +58,7 @@ const CRMContext = createContext<CRMContextType | undefined>(undefined);
 const gerarMissoesDiarias = (): MissaoDiaria[] => [
   {
     id: "1",
-    descricao: "Falar com 5 leads",
+    descricao: "Falar com 5 contatos",
     meta: 5,
     progresso: 0,
     concluida: false,
@@ -66,7 +66,7 @@ const gerarMissoesDiarias = (): MissaoDiaria[] => [
   },
   {
     id: "2",
-    descricao: "Esquentar 2 leads",
+    descricao: "Esquentar 2 contatos",
     meta: 2,
     progresso: 0,
     concluida: false,

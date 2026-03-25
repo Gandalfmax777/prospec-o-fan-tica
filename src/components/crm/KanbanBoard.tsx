@@ -271,7 +271,7 @@ export const KanbanBoard = () => {
                 isDragOver && canDrop && "text-primary font-semibold"
               )}
             >
-              {isDragOver && canDrop ? "Solte aqui!" : "Arraste leads para ca"}
+              {isDragOver && canDrop ? "Solte aqui!" : "Arraste contatos para cá"}
             </div>
           )}
         </div>

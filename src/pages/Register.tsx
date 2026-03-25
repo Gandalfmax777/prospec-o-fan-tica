@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 const stats = [
   { value: "100%", label: "dados em tempo real" },
   { value: "3×", label: "mais conversões" },
-  { value: "∞", label: "leads gerenciados" },
+  { value: "∞", label: "contatos gerenciados" },
 ];
 
 export default function Register() {
@@ -42,7 +42,7 @@ export default function Register() {
             <br />
             <span className="text-primary">converter</span>
             <br />
-            mais leads.
+            mais contatos.
           </h1>
           <p className="text-[17px] leading-relaxed max-w-[300px] text-muted-foreground">
             Crie sua conta e acesse o CRM de alta performance para times de

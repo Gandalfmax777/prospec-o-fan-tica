@@ -195,13 +195,13 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
       {/* Cards de Métricas Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <KPICard
-          title="Total de Leads"
+          title="Total de Contatos"
           value={metrics.totalLeads}
           icon={Users}
           variant="default"
         />
         <KPICard
-          title="Leads Convertidos"
+          title="Contatos Convertidos"
           value={metrics.convertedLeads}
           icon={CheckCircle}
           variant="success"
@@ -225,8 +225,8 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
           variant="default"
         />
         <KPICard
-          title="Base: Leads Totais"
-          value={`${metrics.totalLeads} leads`}
+          title="Base: Contatos Totais"
+          value={`${metrics.totalLeads} contatos`}
           icon={BarChart3}
           variant="default"
         />
@@ -235,7 +235,7 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
       {/* Cards de Leads por Status */}
       <Card>
         <CardHeader>
-          <CardTitle>Leads por Status</CardTitle>
+          <CardTitle>Contatos por Status</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -290,7 +290,7 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
       {/* Gráfico de Leads ao Longo do Tempo */}
       <Card>
         <CardHeader>
-          <CardTitle>Leads ao Longo do Tempo (Últimos 30 dias)</CardTitle>
+          <CardTitle>Contatos ao Longo do Tempo (Últimos 30 dias)</CardTitle>
         </CardHeader>
         <CardContent className="h-[300px]">
           {details.timelineData && details.timelineData.length > 0 ? (
@@ -321,7 +321,7 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
                   type="monotone"
                   dataKey="leadsCount"
                   stroke="hsl(var(--primary))"
-                  name="Leads"
+                  name="Contatos"
                   strokeWidth={2}
                   dot={{ r: 4 }}
                 />
@@ -458,7 +458,7 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg border border-primary/20">
               <div>
-                <p className="text-sm text-muted-foreground">Total de Leads</p>
+                <p className="text-sm text-muted-foreground">Total de Contatos</p>
                 <p className="text-2xl font-bold">{metrics.totalLeads}</p>
               </div>
               <Users className="h-8 w-8 text-primary" />
@@ -502,7 +502,7 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
       {/* Tabela de Leads do Vendedor */}
       <Card>
         <CardHeader>
-          <CardTitle>Leads do Vendedor ({filteredLeads.length})</CardTitle>
+          <CardTitle>Contatos do Vendedor ({filteredLeads.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {/* Filtros */}
@@ -593,7 +593,7 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
                       colSpan={7}
                       className="text-center py-8 text-muted-foreground"
                     >
-                      Nenhum lead encontrado com os filtros aplicados.
+                      Nenhum contato encontrado com os filtros aplicados.
                     </TableCell>
                   </TableRow>
                 ) : (

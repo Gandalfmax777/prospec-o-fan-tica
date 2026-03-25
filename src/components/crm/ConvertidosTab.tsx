@@ -156,8 +156,8 @@ export const ConvertidosTab = () => {
       setTransferringId(lead.id);
       await transferLead(lead.id);
       toast({
-        title: "Lead transferido!",
-        description: `${lead.nome} foi enviado ao CRM como contato e negócio.`,
+        title: "Contato transferido!",
+        description: `${lead.nome} foi enviado ao CRM com sucesso.`,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao transferir lead";
@@ -511,7 +511,7 @@ export const ConvertidosTab = () => {
                                 className="h-8 gap-1.5 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400"
                                 onClick={() => handleTransfer(lead)}
                                 disabled={transferringId === lead.id}
-                                title="Enviar este lead ao CRM"
+                                title="Enviar este contato ao CRM"
                               >
                                 {transferringId === lead.id ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

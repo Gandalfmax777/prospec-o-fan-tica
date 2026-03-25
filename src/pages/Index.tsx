@@ -75,7 +75,7 @@ const CRMDashboard = () => {
     () =>
       [
         { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { key: "leads", label: "Leads", icon: Table },
+        { key: "leads", label: "Contatos", icon: Table },
         { key: "kanban", label: "Kanban", icon: Kanban },
         { key: "convertidos", label: "Convertidos", icon: CheckCircle },
         { key: "metricas", label: "Métricas", icon: BarChart3 },

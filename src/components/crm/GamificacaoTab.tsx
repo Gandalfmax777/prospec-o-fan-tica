@@ -43,7 +43,7 @@ const CONQUISTAS_CONFIG: Record<string, { descricao: string; icon: typeof Trophy
   "Closer da Semana": { descricao: "3 conversoes na semana", icon: Trophy },
   "Insistente": { descricao: "20 follow-ups realizados", icon: Zap },
   "Zero Atraso": { descricao: "5 dias sem atraso", icon: Star },
-  "Quente!": { descricao: "10 leads esquentados", icon: Flame },
+  "Quente!": { descricao: "10 contatos esquentados", icon: Flame },
   "Ritmo Perfeito": { descricao: "Cadencia feita por 7 dias", icon: Target },
 };
 
@@ -130,11 +130,11 @@ export const GamificacaoTab = () => {
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-primary">{metricasDiarias.novosLeads}</p>
-              <p className="text-sm text-muted-foreground">Novos leads</p>
+              <p className="text-sm text-muted-foreground">Novos contatos</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-[hsl(var(--temp-quente))]">{metricasDiarias.leadsQuentesTrabalhados}</p>
-              <p className="text-sm text-muted-foreground">Leads quentes</p>
+              <p className="text-sm text-muted-foreground">Contatos quentes</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold">{gamificacao.pontosHoje}</p>
@@ -341,7 +341,7 @@ export const GamificacaoTab = () => {
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg border border-primary/20">
                   <p className="font-bold text-lg text-primary">+2 pts</p>
-                  <p className="text-sm">Novo lead</p>
+                  <p className="text-sm">Novo contato</p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg border border-primary/20">
                   <p className="font-bold text-lg text-primary">+3 pts</p>
@@ -353,7 +353,7 @@ export const GamificacaoTab = () => {
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg border border-primary/20">
                   <p className="font-bold text-lg text-primary">+10 pts</p>
-                  <p className="text-sm">Converter lead</p>
+                  <p className="text-sm">Converter contato</p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg border border-primary/20">
                   <p className="font-bold text-lg text-primary">+2 pts</p>
