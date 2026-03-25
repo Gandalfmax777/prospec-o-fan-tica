@@ -1,17 +1,19 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { auth } from "@/services/auth";
 import { api } from "@/services/api";
-import type { User, Session, LoginInput, RegisterInput } from "@/types/auth";
+import type { User, Session, LoginInput, RegisterInput, OrgMembership } from "@/types/auth";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  organizations: OrgMembership[];
   signIn: (input: LoginInput) => Promise<void>;
   signUp: (input: RegisterInput) => Promise<void>;
   signOut: () => Promise<void>;
   refreshSession: (retryOnError?: boolean) => Promise<void>;
   isSessionInvalidError: (error: unknown) => boolean;
+  switchOrganization: (orgId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +25,7 @@ const mergeRoleData = (
     managerId?: string | null;
     organizationId?: string | null;
     organization?: { id: string; name: string; slug: string } | null;
+    organizations?: OrgMembership[];
   }
 ) => ({
   ...base,
@@ -30,12 +33,14 @@ const mergeRoleData = (
   managerId: me?.managerId ?? base.managerId ?? null,
   organizationId: me?.organizationId ?? base.organizationId ?? null,
   organization: me?.organization ?? base.organization ?? null,
+  organizations: me?.organizations ?? base.organizations ?? [],
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [organizations, setOrganizations] = useState<OrgMembership[]>([]);
   const refreshAttemptsRef = useRef(0);
   const MAX_REFRESH_ATTEMPTS = 2;
 
@@ -65,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const me = await api.getMe();
           setUser(mergeRoleData(sessionData.user, me));
+          setOrganizations(me.organizations ?? []);
           setSession(sessionData.session);
         } catch (error) {
           // Se erro ao obter /me e for erro de autenticação, tenta refresh
@@ -148,7 +154,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await auth.signOut();
     setUser(null);
     setSession(null);
+    setOrganizations([]);
   }, []);
+
+  const switchOrganization = useCallback(async (orgId: string) => {
+    await api.switchOrganization(orgId);
+    await refreshSession(false, true);
+  }, [refreshSession]);
 
   // Expor função helper para outros componentes verificarem erros de sessão
   const isSessionInvalidErrorPublic = useCallback((error: unknown): boolean => {
@@ -166,11 +178,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         session,
         loading,
+        organizations,
         signIn,
         signUp,
         signOut,
         refreshSession: refreshSessionPublic,
         isSessionInvalidError: isSessionInvalidErrorPublic,
+        switchOrganization,
       }}
     >
       {children}

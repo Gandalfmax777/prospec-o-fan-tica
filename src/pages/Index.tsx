@@ -14,6 +14,7 @@ import { AlertaBanner } from "@/components/crm/AlertaBanner";
 import { LeaderDashboard } from "@/components/crm/LeaderDashboard";
 import { SellerDetails } from "@/components/crm/SellerDetails";
 import { CrmIntegrationSettings } from "@/components/crm/CrmIntegrationSettings";
+import { OrgSwitcher } from "@/components/crm/OrgSwitcher";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -188,6 +189,11 @@ const CRMDashboard = () => {
 
         {/* Footer — user info (hidden when collapsed) */}
         <SidebarFooter className="p-2 border-t border-sidebar-border/50">
+          {/* Expanded: org switcher */}
+          <div className="group-data-[collapsible=icon]:hidden mb-1">
+            <OrgSwitcher onCreateOrg={() => setActiveView("createOrg")} />
+          </div>
+
           {/* Expanded: full user info row */}
           <div className="group-data-[collapsible=icon]:hidden flex items-center gap-2.5 rounded-lg px-2 py-2">
             <Avatar className="h-7 w-7 shrink-0">
@@ -302,8 +308,9 @@ const CRMDashboard = () => {
 };
 
 const Index = () => {
+  const { user } = useAuth();
   return (
-    <CRMProvider>
+    <CRMProvider key={user?.organizationId ?? "no-org"}>
       <CRMDashboard />
     </CRMProvider>
   );

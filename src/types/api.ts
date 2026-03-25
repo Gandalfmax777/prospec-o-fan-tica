@@ -99,6 +99,13 @@ export interface LeaderTeamMember {
   role: string;
 }
 
+export interface OrgMembership {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+}
+
 export interface MeResponse {
   id: string;
   email: string;
@@ -111,6 +118,7 @@ export interface MeResponse {
     name: string;
     slug: string;
   } | null;
+  organizations: OrgMembership[];
 }
 
 export interface CrmConfig {

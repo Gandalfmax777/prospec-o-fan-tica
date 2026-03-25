@@ -300,6 +300,10 @@ export const api = {
   cancelOrgInvite: (id: string): Promise<null> =>
     request<null>(`/organizations/me/invites/${id}`, { method: "DELETE" }),
 
+  // Org switcher
+  switchOrganization: (organizationId: string): Promise<{ organization: { id: string; name: string; slug: string }; role: string }> =>
+    request("/me/active-organization", { method: "PUT", body: JSON.stringify({ organizationId }) }),
+
   // Integração CRM
   getCrmConfig: (): Promise<CrmConfig | null> =>
     request<CrmConfig | null>("/organizations/me/crm-config"),

@@ -1,3 +1,10 @@
+export interface OrgMembership {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -8,6 +15,7 @@ export interface User {
   managerId?: string | null;
   organizationId?: string | null;
   organization?: { id: string; name: string; slug: string } | null;
+  organizations?: OrgMembership[];
   createdAt: Date;
   updatedAt: Date;
 }
