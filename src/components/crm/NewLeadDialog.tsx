@@ -37,6 +37,7 @@ export const NewLeadDialog = () => {
   const [open, setOpen] = useState(false);
   const [newLead, setNewLead] = useState({
     nome: "",
+    email: "",
     cidade: "",
     origem: "WEBSITE" as Origem,
     telefone: "",
@@ -59,6 +60,7 @@ export const NewLeadDialog = () => {
     if (!open) {
       setNewLead({
         nome: "",
+        email: "",
         cidade: "",
         origem: "WEBSITE" as Origem,
         telefone: "",
@@ -164,6 +166,7 @@ export const NewLeadDialog = () => {
       setValidationErrors({});
       setNewLead({
         nome: "",
+        email: "",
         cidade: "",
         origem: "WEBSITE",
         telefone: "",
@@ -236,6 +239,15 @@ export const NewLeadDialog = () => {
                 {validationErrors.nome}
               </p>
             )}
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">E-mail</label>
+            <Input
+              type="email"
+              value={newLead.email}
+              onChange={(e) => handleFieldChange("email", e.target.value)}
+              placeholder="email@exemplo.com"
+            />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Cidade</label>

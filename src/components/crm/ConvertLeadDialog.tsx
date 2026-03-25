@@ -104,7 +104,7 @@ export function ConvertLeadDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         {/* Etapa 1: Confirmação */}
         {step === "confirm" && (
           <>
@@ -142,10 +142,10 @@ export function ConvertLeadDialog({
               </div>
             </div>
 
-            <DialogFooter className="flex-col sm:flex-row gap-2">
+            <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
               <Button
                 variant="outline"
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto"
                 onClick={handleSoloConvert}
                 disabled={!!loadingAction}
               >
@@ -157,7 +157,7 @@ export function ConvertLeadDialog({
                 Apenas Converter
               </Button>
               <Button
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto"
                 onClick={handleConvertAndSend}
                 disabled={!!loadingAction}
               >

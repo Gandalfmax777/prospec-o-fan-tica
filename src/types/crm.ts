@@ -48,6 +48,7 @@ export interface Lead {
   id: string;
   userId: string;
   nome: string;
+  email?: string | null;
   cidade: string;
   origem: Origem;
   telefone: string;
