@@ -30,6 +30,10 @@ import type {
   UpdateLeadInput,
   UpdateMetricasInput,
   SellerDetails,
+  SysAdminStats,
+  SysAdminOrg,
+  SysAdminMember,
+  SysAdminUser,
 } from "@/types/api";
 import type { Briefing, Gamificacao, MetricasDiarias } from "@/types/crm";
 
@@ -316,4 +320,37 @@ export const api = {
 
   transferLeadToCrm: (leadId: string): Promise<TransferLeadResult> =>
     request<TransferLeadResult>(`/crm/transfer/${leadId}`, { method: "POST" }),
+
+  // Sysadmin
+  sysadmin: {
+    getStats: (): Promise<SysAdminStats> =>
+      request<SysAdminStats>("/sysadmin/stats"),
+
+    getOrgs: (): Promise<SysAdminOrg[]> =>
+      request<SysAdminOrg[]>("/sysadmin/organizations"),
+
+    createOrg: (name: string): Promise<SysAdminOrg> =>
+      request<SysAdminOrg>("/sysadmin/organizations", { method: "POST", body: { name } }),
+
+    deleteOrg: (id: string): Promise<null> =>
+      request<null>(`/sysadmin/organizations/${id}`, { method: "DELETE" }),
+
+    getOrgMembers: (orgId: string): Promise<SysAdminMember[]> =>
+      request<SysAdminMember[]>(`/sysadmin/organizations/${orgId}/members`),
+
+    getOrgInvites: (orgId: string): Promise<OrgInvite[]> =>
+      request<OrgInvite[]>(`/sysadmin/organizations/${orgId}/invites`),
+
+    createOrgInvite: (orgId: string, email: string, role: string): Promise<OrgInvite> =>
+      request<OrgInvite>(`/sysadmin/organizations/${orgId}/invites`, {
+        method: "POST",
+        body: { email, role },
+      }),
+
+    cancelOrgInvite: (orgId: string, inviteId: string): Promise<null> =>
+      request<null>(`/sysadmin/organizations/${orgId}/invites/${inviteId}`, { method: "DELETE" }),
+
+    getUsers: (): Promise<SysAdminUser[]> =>
+      request<SysAdminUser[]>("/sysadmin/users"),
+  },
 };

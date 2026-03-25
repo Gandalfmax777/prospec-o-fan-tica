@@ -235,6 +235,42 @@ export interface LeadResponse extends Lead {
   }>;
 }
 
+// ─── Sysadmin ─────────────────────────────────────────────────────────────────
+
+export interface SysAdminStats {
+  orgCount: number;
+  userCount: number;
+  pendingInvites: number;
+}
+
+export interface SysAdminOrg {
+  id: string;
+  name: string;
+  slug: string;
+  membersCount: number;
+  leadsCount: number;
+  createdAt: string;
+}
+
+export interface SysAdminMember {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  joinedAt: string;
+}
+
+export interface SysAdminUser {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  organizationId: string | null;
+  organizationName: string | null;
+  leadsCount: number;
+  createdAt: string;
+}
+
 export interface SellerDetails {
   seller: {
     id: string;

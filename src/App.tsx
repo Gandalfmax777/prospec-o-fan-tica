@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Onboarding from "./pages/Onboarding";
 import Join from "./pages/Join";
+import SysAdmin from "./pages/SysAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,15 @@ const App = () => (
               element={
                 <AuthGuard requireOrg={false}>
                   <Join />
+                </AuthGuard>
+              }
+            />
+            {/* Painel do sistema: requer autenticação, sem necessidade de org */}
+            <Route
+              path="/sysadmin"
+              element={
+                <AuthGuard requireOrg={false}>
+                  <SysAdmin />
                 </AuthGuard>
               }
             />
