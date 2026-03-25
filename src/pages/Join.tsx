@@ -35,9 +35,9 @@ const Join = () => {
     }
   }, [loading, user, tokenFromUrl, navigate]);
 
-  // Auto-aceita se token vier na URL e usuário não tem org
+  // Auto-aceita se token vier na URL (independente de já ter org — multi-org é suportado)
   useEffect(() => {
-    if (!loading && user && !user.organizationId && tokenFromUrl) {
+    if (!loading && user && tokenFromUrl) {
       setAutoJoining(true);
       api
         .joinOrg({ token: tokenFromUrl })
@@ -84,27 +84,6 @@ const Join = () => {
             {autoJoining ? "Aceitando convite..." : "Carregando..."}
           </p>
         </div>
-      </div>
-    );
-  }
-
-  // Usuário já pertence a uma organização
-  if (user?.organizationId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Você já pertence a uma organização</CardTitle>
-            <CardDescription>
-              Não é possível aceitar um convite enquanto você já faz parte de uma organização.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/", { replace: true })} className="w-full">
-              Ir para o Dashboard
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     );
   }
