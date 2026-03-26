@@ -225,7 +225,7 @@ export const LeaderDashboard = ({ onSellerClick }: LeaderDashboardProps) => {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Volume por vendedor</CardTitle>
+          <CardTitle>Volume por prospector</CardTitle>
           {error && <span className="text-sm text-destructive">{error}</span>}
         </CardHeader>
         <CardContent className="h-[250px] md:h-[280px]">
@@ -270,7 +270,7 @@ export const LeaderDashboard = ({ onSellerClick }: LeaderDashboardProps) => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead>Vendedor</TableHead>
+                  <TableHead>Prospector</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Leads</TableHead>
                   <TableHead>Convertidos</TableHead>
@@ -287,7 +287,7 @@ export const LeaderDashboard = ({ onSellerClick }: LeaderDashboardProps) => {
                 ) : team.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      Nenhum vendedor associado.
+                      Nenhum prospector associado.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -338,7 +338,7 @@ export const LeaderDashboard = ({ onSellerClick }: LeaderDashboardProps) => {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Defina o cargo e, para vendedores, selecione um lider responsavel.
+              Defina o cargo e, para prospectors, selecione um líder responsável.
             </p>
             <div className="overflow-x-auto">
               <Table>

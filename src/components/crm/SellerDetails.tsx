@@ -163,7 +163,7 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
         </div>
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            {error || "Não foi possível carregar os detalhes do vendedor"}
+            {error || "Não foi possível carregar os detalhes do prospector"}
           </CardContent>
         </Card>
       </div>
@@ -502,7 +502,7 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
       {/* Tabela de Leads do Vendedor */}
       <Card>
         <CardHeader>
-          <CardTitle>Contatos do Vendedor ({filteredLeads.length})</CardTitle>
+          <CardTitle>Contatos do Prospector ({filteredLeads.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {/* Filtros */}

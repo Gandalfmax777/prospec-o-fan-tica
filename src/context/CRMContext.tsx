@@ -251,7 +251,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         await refreshData();
       } catch (err) {
         console.error("Erro ao adicionar lead:", err);
-        const errorMessage = err instanceof Error ? err.message : "Erro ao adicionar lead";
+        const errorMessage = err instanceof Error ? err.message : "Erro ao adicionar contato";
         setError(errorMessage);
         throw err;
       }
@@ -295,7 +295,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
       setLeads((prev) => prev.map((lead) => (lead.id === id ? leadFormatado : lead)));
     } catch (err) {
       console.error("Erro ao atualizar lead:", err);
-      const errorMessage = err instanceof Error ? err.message : "Erro ao atualizar lead";
+      const errorMessage = err instanceof Error ? err.message : "Erro ao atualizar contato";
       setError(errorMessage);
       throw err;
     }
@@ -308,7 +308,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
       setLeads((prev) => prev.filter((lead) => lead.id !== id));
     } catch (err) {
       console.error("Erro ao deletar lead:", err);
-      const errorMessage = err instanceof Error ? err.message : "Erro ao deletar lead";
+      const errorMessage = err instanceof Error ? err.message : "Erro ao deletar contato";
       setError(errorMessage);
       throw err;
     }
@@ -386,7 +386,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         await refreshData();
       } catch (err) {
         console.error("Erro ao converter lead:", err);
-        const errorMessage = err instanceof Error ? err.message : "Erro ao converter lead";
+        const errorMessage = err instanceof Error ? err.message : "Erro ao converter contato";
         setError(errorMessage);
         throw err;
       }
@@ -456,7 +456,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (err) {
       console.error("Erro ao transferir lead para o CRM:", err);
       const errorMessage =
-        err instanceof Error ? err.message : "Erro ao transferir lead para o CRM";
+        err instanceof Error ? err.message : "Erro ao transferir contato para o CRM";
       setError(errorMessage);
       throw err;
     }

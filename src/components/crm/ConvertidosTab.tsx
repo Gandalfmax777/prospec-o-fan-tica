@@ -160,7 +160,7 @@ export const ConvertidosTab = () => {
         description: `${lead.nome} foi enviado ao CRM com sucesso.`,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao transferir lead";
+      const message = err instanceof Error ? err.message : "Erro ao transferir contato";
       toast({ title: "Erro ao transferir", description: message, variant: "destructive" });
     } finally {
       setTransferringId(null);
@@ -578,7 +578,7 @@ export const ConvertidosTab = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o lead "{leadToDelete?.nome}"? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o contato "{leadToDelete?.nome}"? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

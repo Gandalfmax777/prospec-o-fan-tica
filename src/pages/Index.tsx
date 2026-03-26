@@ -273,7 +273,7 @@ const CRMDashboard = () => {
                   Central de Prospecção
                 </h1>
                 <p className="text-[11.5px] text-muted-foreground hidden sm:block leading-tight">
-                  Visão unificada de vendas e produtividade
+                  Gestão de prospecção e produtividade
                 </p>
               </div>
             </div>
