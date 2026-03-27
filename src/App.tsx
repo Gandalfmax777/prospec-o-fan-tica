@@ -36,15 +36,8 @@ const App = () => (
                 </AuthGuard>
               }
             />
-            {/* Join: requer autenticação, mas não requer org */}
-            <Route
-              path="/join"
-              element={
-                <AuthGuard requireOrg={false}>
-                  <Join />
-                </AuthGuard>
-              }
-            />
+            {/* Join: público — Join.tsx lida internamente com usuário autenticado ou não */}
+            <Route path="/join" element={<Join />} />
             {/* Painel do sistema: requer autenticação, sem necessidade de org */}
             <Route
               path="/sysadmin"
