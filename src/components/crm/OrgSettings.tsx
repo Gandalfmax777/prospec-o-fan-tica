@@ -170,7 +170,8 @@ export const OrgSettings = () => {
   };
 
   const handleCopyToken = (token: string) => {
-    navigator.clipboard.writeText(token).then(() => {
+    const link = `${window.location.origin}/join?token=${token}`;
+    navigator.clipboard.writeText(link).then(() => {
       setCopiedToken(token);
       setTimeout(() => setCopiedToken(null), 2000);
     });
@@ -367,7 +368,7 @@ export const OrgSettings = () => {
                           size="icon"
                           className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
                           onClick={() => handleCopyToken(invite.token)}
-                          title="Copiar token"
+                          title="Copiar link de convite"
                         >
                           {copiedToken === invite.token ? (
                             <Check className="h-3.5 w-3.5 text-emerald-600" />
