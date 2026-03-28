@@ -304,6 +304,9 @@ export const api = {
   cancelOrgInvite: (id: string): Promise<null> =>
     request<null>(`/organizations/me/invites/${id}`, { method: "DELETE" }),
 
+  getMyPendingInvite: (): Promise<{ token: string; organization: { name: string } } | null> =>
+    request<{ token: string; organization: { name: string } } | null>("/organizations/my-pending-invite"),
+
   // Org switcher
   switchOrganization: (organizationId: string): Promise<{ organization: { id: string; name: string; slug: string }; role: string }> =>
     request("/me/active-organization", { method: "PUT", body: JSON.stringify({ organizationId }) }),

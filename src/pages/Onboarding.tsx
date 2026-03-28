@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/services/api";
@@ -22,6 +22,15 @@ const Onboarding = () => {
   const [inviteToken, setInviteToken] = useState("");
   const [joining, setJoining] = useState(false);
 
+  // Convite pendente detectado automaticamente
+  const [pendingInvite, setPendingInvite] = useState<{ token: string; organization: { name: string } } | null>(null);
+
+  useEffect(() => {
+    api.getMyPendingInvite()
+      .then(invite => setPendingInvite(invite))
+      .catch(() => {});
+  }, []);
+
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!orgName.trim() || orgName.trim().length < 2) {
@@ -42,15 +51,16 @@ const Onboarding = () => {
     }
   };
 
-  const handleJoinOrg = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inviteToken.trim()) {
+  const handleJoinOrg = async (tokenOrEvent: string | React.FormEvent) => {
+    const token = typeof tokenOrEvent === "string" ? tokenOrEvent : inviteToken.trim();
+    if (typeof tokenOrEvent !== "string") tokenOrEvent.preventDefault();
+    if (!token) {
       toast({ title: "Token inválido", description: "Cole o token de convite recebido.", variant: "destructive" });
       return;
     }
     try {
       setJoining(true);
-      const result = await api.joinOrg({ token: inviteToken.trim() });
+      const result = await api.joinOrg({ token });
       toast({ title: "Convite aceito!", description: result.message });
       await refreshSession();
       navigate("/", { replace: true });
@@ -79,6 +89,26 @@ const Onboarding = () => {
             </p>
           </div>
         </div>
+
+        {/* Banner: convite pendente detectado automaticamente */}
+        {pendingInvite && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="pt-4 pb-4 text-center space-y-3">
+              <p className="text-sm font-medium text-foreground">
+                Você tem um convite pendente para{" "}
+                <strong>{pendingInvite.organization.name}</strong>
+              </p>
+              <Button
+                className="w-full gap-2"
+                onClick={() => handleJoinOrg(pendingInvite.token)}
+                disabled={joining}
+              >
+                {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
+                {joining ? "Entrando..." : `Entrar em ${pendingInvite.organization.name}`}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Tabs */}
         <Tabs defaultValue="create" className="w-full">
