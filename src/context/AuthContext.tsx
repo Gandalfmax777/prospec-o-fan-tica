@@ -101,9 +101,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return refreshSession(false, silent);
       }
 
-      // Se sessão realmente está inválida, limpa estado
-      setUser(null);
-      setSession(null);
+      // Em refresh silencioso (background), só derruba a sessão se for erro explícito de auth.
+      // Erros de rede/timeout são transientes (ex: cold start do servidor) — manter usuário logado.
+      if (!silent || isSessionInvalidError(error)) {
+        setUser(null);
+        setSession(null);
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -124,10 +127,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, refreshSession]);
 
   // Revalida sessão quando o usuário retorna à aba após inatividade
+  // retryOnError=true para aguentar cold start do servidor (Render.com dorme após 15 min)
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible" && user) {
-        refreshSession(false, true);
+        refreshSession(true, true);
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
