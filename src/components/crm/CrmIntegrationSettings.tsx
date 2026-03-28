@@ -193,7 +193,7 @@ const CrmConfigForm = () => {
             <Input
               id="crmApiKey"
               type="text"
-              placeholder="bdn_live_..."
+              placeholder="crm_ ou bdn_live_..."
               value={crmApiKey}
               onChange={(e) => setCrmApiKey(e.target.value)}
               autoComplete="off"
