@@ -25,6 +25,32 @@ function isSessionInvalidError(error: unknown): boolean {
 }
 
 /**
+ * Verifica se o erro é de rede/timeout (servidor inacessível)
+ * Diferente de erro de autenticação — nesse caso NÃO devemos deslogar o usuário
+ */
+export function isNetworkError(error: unknown): boolean {
+  if (error instanceof TypeError) {
+    // "Failed to fetch" = servidor inacessível, CORS, timeout, etc.
+    return true;
+  }
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return true;
+  }
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("failed to fetch") ||
+      msg.includes("network") ||
+      msg.includes("timeout") ||
+      msg.includes("aborted") ||
+      msg.includes("err_connection") ||
+      msg.includes("load failed") // Safari
+    );
+  }
+  return false;
+}
+
+/**
  * Faz uma requisição para a API de autenticação com retry logic
  */
 async function authRequest<T = unknown>(
@@ -107,7 +133,15 @@ async function authRequest<T = unknown>(
       await new Promise((resolve) => setTimeout(resolve, 1000));
       return authRequest<T>(endpoint, options, retryCount + 1, maxRetries);
     }
-    
+
+    // Erro de rede (timeout, conexão instável, etc.) — retry com backoff crescente
+    if (isNetworkError(error) && retryCount < maxRetries) {
+      const delay = Math.min(1000 * Math.pow(2, retryCount), 8000); // 1s, 2s, 4s, 8s
+      console.warn(`Erro de rede, tentando novamente em ${delay}ms (${retryCount + 1}/${maxRetries})...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return authRequest<T>(endpoint, options, retryCount + 1, maxRetries);
+    }
+
     console.error("Auth Error:", error);
     if (error instanceof Error) {
       throw error;
@@ -345,7 +379,7 @@ export const auth = {
         };
       }>("/get-session", {
         method: "GET",
-      }, 0, 2); // 2 retries para getSession (crítico)
+      }, 0, 2); // 2 retries para getSession (crítico para manter usuário logado)
 
       // Se a resposta for null, retorna null
       if (response === null || response === undefined) {
@@ -400,8 +434,16 @@ export const auth = {
         session,
       };
     } catch (error) {
+      // Erro de rede (servidor inacessível, timeout, conexão instável) → propaga o erro
+      // para que o caller (AuthContext) possa distinguir "sem sessão" de "servidor fora"
+      // e NÃO deslogue o usuário indevidamente
+      if (isNetworkError(error)) {
+        console.warn("Erro de rede ao obter sessão:", error);
+        throw error;
+      }
+
+      // Erro de autenticação (sessão expirada, cookie inválido) → sem sessão
       console.error("Erro ao obter sessão:", error);
-      // Se não houver sessão, retorna null
       return null;
     }
   },

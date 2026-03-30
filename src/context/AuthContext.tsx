@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
-import { auth } from "@/services/auth";
+import { auth, isNetworkError } from "@/services/auth";
 import { api } from "@/services/api";
 import type { User, Session, LoginInput, RegisterInput, OrgMembership } from "@/types/auth";
 
@@ -77,7 +77,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (retryOnError && isSessionInvalidError(error) && refreshAttemptsRef.current < MAX_REFRESH_ATTEMPTS) {
             refreshAttemptsRef.current += 1;
             console.warn(`Tentativa ${refreshAttemptsRef.current} de refresh de sessão após erro em /me`);
-            // Aguarda um pouco antes de tentar novamente
             await new Promise((resolve) => setTimeout(resolve, 500));
             return refreshSession(false, silent);
           }
@@ -86,6 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(sessionData.session);
         }
       } else {
+        // getSession() retornou null → servidor respondeu que NÃO há sessão válida
+        // (erros de rede são propagados como exceção e caem no catch abaixo)
         setUser(null);
         setSession(null);
       }
@@ -96,13 +97,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (retryOnError && isSessionInvalidError(error) && refreshAttemptsRef.current < MAX_REFRESH_ATTEMPTS) {
         refreshAttemptsRef.current += 1;
         console.warn(`Tentativa ${refreshAttemptsRef.current} de refresh de sessão`);
-        // Aguarda um pouco antes de tentar novamente (dá tempo para cookies serem processados)
         await new Promise((resolve) => setTimeout(resolve, 1000));
         return refreshSession(false, silent);
       }
 
+      // Erro de rede/timeout (conexão instável, restart da VPS, etc.)
+      // → NUNCA desloga o usuário, independente de ser silent ou não.
+      // O usuário pode ter sessão válida mas o servidor está temporariamente inacessível.
+      if (isNetworkError(error)) {
+        console.warn("Servidor inacessível — mantendo sessão atual do usuário");
+        // Se é o mount inicial (silent=false) e não tem user ainda, marca loading como false
+        // mas NÃO seta user como null — vai tentar de novo no visibilitychange ou interval
+        return;
+      }
+
+      // Erro explícito de auth (sessão expirada, cookie inválido) → desloga
       // Em refresh silencioso (background), só derruba a sessão se for erro explícito de auth.
-      // Erros de rede/timeout são transientes (ex: cold start do servidor) — manter usuário logado.
       if (!silent || isSessionInvalidError(error)) {
         setUser(null);
         setSession(null);
@@ -127,11 +137,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, refreshSession]);
 
   // Revalida sessão quando o usuário retorna à aba após inatividade
-  // retryOnError=true para aguentar cold start do servidor (Render.com dorme após 15 min)
+  // retryOnError=true para aguentar falhas temporárias de rede
   useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible" && user) {
-        refreshSession(true, true);
+    const handleVisibility = async () => {
+      if (document.visibilityState !== "visible" || !user) return;
+
+      // Tenta revalidar a sessão. Se falhar por rede (instabilidade, restart da VPS),
+      // faz um retry adicional após 3s.
+      try {
+        await refreshSession(true, true);
+      } catch {
+        // refreshSession já trata erros internamente, mas por segurança:
+        // se houve falha temporária, tenta mais uma vez após 3s
+        if (document.visibilityState !== "visible") return;
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        try {
+          await refreshSession(true, true);
+        } catch {
+          // mantém sessão atual — não desloga
+        }
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);

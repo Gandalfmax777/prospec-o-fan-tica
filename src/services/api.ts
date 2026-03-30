@@ -88,7 +88,7 @@ function isSessionInvalidError(error: unknown, status?: number): boolean {
   if (status === 401) {
     return true;
   }
-  
+
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
     return (
@@ -99,6 +99,26 @@ function isSessionInvalidError(error: unknown, status?: number): boolean {
       message.includes("not authenticated") ||
       message.includes("unauthorized") ||
       message.includes("401")
+    );
+  }
+  return false;
+}
+
+/**
+ * Verifica se o erro é de rede/timeout (servidor inacessível)
+ */
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+  if (error instanceof DOMException && error.name === "AbortError") return true;
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("failed to fetch") ||
+      msg.includes("network") ||
+      msg.includes("timeout") ||
+      msg.includes("aborted") ||
+      msg.includes("err_connection") ||
+      msg.includes("load failed")
     );
   }
   return false;
@@ -163,7 +183,15 @@ async function request<T = unknown>(
       await new Promise((resolve) => setTimeout(resolve, 1000));
       return request<T>(endpoint, options, retryCount + 1, maxRetries);
     }
-    
+
+    // Erro de rede (timeout, conexão instável, etc.) — retry com backoff
+    if (isNetworkError(error) && retryCount < maxRetries) {
+      const delay = Math.min(1000 * Math.pow(2, retryCount), 8000);
+      console.warn(`Erro de rede na API, tentando novamente em ${delay}ms (${retryCount + 1}/${maxRetries})...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return request<T>(endpoint, options, retryCount + 1, maxRetries);
+    }
+
     console.error("API Error:", error);
     throw error;
   }
