@@ -1,17 +1,27 @@
 import { useEffect, useRef, useMemo } from "react";
-import { format, isSameDay, getDay } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { WeeklyEventBlock } from "./WeeklyEventBlock";
 import type { MemberColorEntry } from "./MemberFilter";
 import type { AgendaEvent } from "@/types/crm";
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Constants (match CRM availability.tsx) ──────────────────────────────────
 
 const START_HOUR = 7;
 const END_HOUR = 21;
 const SLOT_MINUTES = 30;
-const SLOT_HEIGHT = 44; // px
+const SLOT_HEIGHT = 44; // px — same as CRM slotHeight={44}
 const TOTAL_SLOTS = ((END_HOUR - START_HOUR) * 60) / SLOT_MINUTES;
+
+const DAYS_PT = [
+  "Domingo",
+  "Segunda",
+  "Terça",
+  "Quarta",
+  "Quinta",
+  "Sexta",
+  "Sábado",
+];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -39,7 +49,6 @@ interface PositionedEvent {
 function positionEvents(events: AgendaEvent[]): PositionedEvent[] {
   if (events.length === 0) return [];
 
-  // Calcular top/height para cada evento
   const withPos = events.map((event) => {
     const startMin = event.startDate
       ? getMinutesFromDate(event.startDate)
@@ -63,10 +72,9 @@ function positionEvents(events: AgendaEvent[]): PositionedEvent[] {
     return { event, top, height, startMin: clampedStart, endMin: clampedEnd };
   });
 
-  // Ordenar por hora de início
   withPos.sort((a, b) => a.startMin - b.startMin);
 
-  // Agrupar overlaps e atribuir colunas
+  // Group overlaps
   const result: PositionedEvent[] = [];
   const groups: (typeof withPos)[] = [];
   let currentGroup: typeof withPos = [];
@@ -100,7 +108,7 @@ function positionEvents(events: AgendaEvent[]): PositionedEvent[] {
   return result;
 }
 
-// ─── Components ──────────────────────────────────────────────────────────────
+// ─── Component ───────────────────────────────────────────────────────────────
 
 interface WeeklyCalendarProps {
   events: AgendaEvent[];
@@ -108,7 +116,7 @@ interface WeeklyCalendarProps {
   memberColorMap: Map<string, MemberColorEntry>;
   onSlotClick: (date: Date, startTime: string, endTime: string) => void;
   onEventClick: (event: AgendaEvent) => void;
-  visibleDayIndex?: number; // mobile: mostra só esse dia
+  visibleDayIndex?: number;
 }
 
 export function WeeklyCalendar({
@@ -122,45 +130,33 @@ export function WeeklyCalendar({
   const bodyRef = useRef<HTMLDivElement>(null);
   const today = new Date();
 
-  // Scroll para hora atual no mount
+  // Scroll to current time on mount
   useEffect(() => {
     if (!bodyRef.current) return;
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const offset =
       ((currentMinutes - START_HOUR * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
-    bodyRef.current.scrollTop = Math.max(0, offset - 100);
+    bodyRef.current.scrollTop = Math.max(0, offset - 120);
   }, []);
 
-  // Agrupar eventos por dia da semana
+  // Group events by day index
   const eventsByDay = useMemo(() => {
     const map = new Map<number, AgendaEvent[]>();
-    for (const day of weekDays) {
-      const dayIndex = weekDays.indexOf(day);
+    for (let i = 0; i < weekDays.length; i++) {
       const dayEvents = events.filter((e) =>
-        isSameDay(new Date(e.date), day)
+        isSameDay(new Date(e.date), weekDays[i])
       );
-      map.set(dayIndex, dayEvents);
+      map.set(i, dayEvents);
     }
     return map;
   }, [events, weekDays]);
 
-  // Dias visíveis
+  // Visible days
   const visibleDays =
     visibleDayIndex !== undefined
       ? [{ day: weekDays[visibleDayIndex], index: visibleDayIndex }]
       : weekDays.map((day, index) => ({ day, index }));
-
-  // Time labels
-  const timeLabels: string[] = [];
-  for (let i = 0; i < TOTAL_SLOTS; i++) {
-    const minutes = START_HOUR * 60 + i * SLOT_MINUTES;
-    if (i % 2 === 0) {
-      timeLabels.push(minutesToTime(minutes));
-    } else {
-      timeLabels.push("");
-    }
-  }
 
   // Current time indicator
   const nowMinutes = today.getHours() * 60 + today.getMinutes();
@@ -170,57 +166,90 @@ export function WeeklyCalendar({
     nowMinutes >= START_HOUR * 60 && nowMinutes <= END_HOUR * 60;
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-card">
-      {/* Header — dias da semana */}
-      <div className="flex border-b bg-muted/30">
-        <div className="w-14 shrink-0" />
-        {visibleDays.map(({ day, index }) => {
-          const isToday = isSameDay(day, today);
-          return (
-            <div
-              key={index}
-              className={`flex-1 min-w-[100px] text-center py-2 border-l first:border-l-0
-                ${isToday ? "bg-primary/5" : ""}`}
-            >
-              <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                {format(day, "EEE", { locale: ptBR })}
-              </div>
+    <div
+      className="flex w-full flex-col overflow-hidden rounded-md border border-border/60 bg-background shadow-sm select-none"
+      style={{ height: "calc(100vh - 220px)", minHeight: "500px" }}
+    >
+      {/* ── Header — matches CRM availability.tsx layout ── */}
+      <div className="flex w-full border-b border-border bg-muted">
+        {/* Time spacer */}
+        <div className="w-16 shrink-0 bg-muted p-2 text-xs font-medium text-muted-foreground" />
+        {/* Day headers */}
+        <div
+          className="flex flex-1"
+          style={{ borderLeft: "1px solid hsl(var(--border))" }}
+        >
+          {visibleDays.map(({ day, index }) => {
+            const isToday = isSameDay(day, today);
+            return (
               <div
-                className={`text-sm font-semibold mt-0.5
-                  ${isToday ? "text-primary" : "text-foreground"}`}
+                key={index}
+                className={`flex-1 min-w-[100px] border-r border-border px-2 py-3 text-center last:border-r-0
+                  ${isToday ? "text-primary font-semibold" : "text-foreground"}`}
               >
-                {format(day, "d")}
+                <div className="text-sm font-medium">
+                  {DAYS_PT[day.getDay()]}
+                </div>
+                <div
+                  className={`text-xs mt-0.5
+                    ${isToday ? "text-primary" : "text-muted-foreground"}`}
+                >
+                  {format(day, "d MMM", { locale: ptBR })}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
-      {/* Body — grid com scroll */}
+      {/* ── Body — scrollable grid ── */}
       <div
         ref={bodyRef}
-        className="overflow-y-auto"
-        style={{ maxHeight: "calc(100vh - 260px)", minHeight: "400px" }}
+        className="relative flex flex-1 overflow-y-auto"
       >
-        <div className="flex relative" style={{ height: TOTAL_SLOTS * SLOT_HEIGHT }}>
-          {/* Coluna de horários */}
-          <div className="w-14 shrink-0">
-            {timeLabels.map((label, i) => (
+        {/* Time Labels column */}
+        <div className="relative z-30 w-16 shrink-0 flex flex-col">
+          {Array.from({ length: TOTAL_SLOTS }).map((_, i) => {
+            const totalMinutes = START_HOUR * 60 + i * SLOT_MINUTES;
+            const hour = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            return (
+              <div
+                key={`${hour}-${minutes}`}
+                style={{
+                  height: `${SLOT_HEIGHT}px`,
+                  backgroundColor: "hsl(var(--muted))",
+                }}
+                className="shrink-0 border-b border-dashed border-border relative flex items-center justify-start pl-3"
+              >
+                <span className="text-xs text-muted-foreground">
+                  {minutesToTime(totalMinutes)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Days Grid */}
+        <div
+          className="flex flex-1 relative overflow-hidden bg-background dark:bg-card"
+          style={{
+            minHeight: `${TOTAL_SLOTS * SLOT_HEIGHT}px`,
+            borderLeft: "1px solid hsl(var(--border))",
+          }}
+        >
+          {/* Horizontal grid lines */}
+          <div className="absolute inset-0 pointer-events-none flex flex-col">
+            {Array.from({ length: TOTAL_SLOTS }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-start justify-end pr-2"
-                style={{ height: SLOT_HEIGHT }}
-              >
-                {label && (
-                  <span className="text-[10px] text-muted-foreground -mt-1.5 select-none">
-                    {label}
-                  </span>
-                )}
-              </div>
+                style={{ height: `${SLOT_HEIGHT}px` }}
+                className="border-b border-dashed border-border w-full"
+              />
             ))}
           </div>
 
-          {/* Colunas dos dias */}
+          {/* Day Columns */}
           {visibleDays.map(({ day, index }) => {
             const dayEvents = eventsByDay.get(index) || [];
             const positioned = positionEvents(dayEvents);
@@ -229,55 +258,68 @@ export function WeeklyCalendar({
             return (
               <div
                 key={index}
-                className={`flex-1 min-w-[100px] border-l relative
-                  ${isToday ? "bg-primary/[0.02]" : ""}`}
+                className="flex-1 relative border-r border-border last:border-r-0 min-w-[100px]"
               >
-                {/* Grid lines (slots) */}
-                {Array.from({ length: TOTAL_SLOTS }).map((_, slotIdx) => (
-                  <div
-                    key={slotIdx}
-                    className="border-b border-border/40 hover:bg-muted/30 cursor-pointer transition-colors"
-                    style={{ height: SLOT_HEIGHT }}
-                    onClick={() => {
-                      const startMinutes =
-                        START_HOUR * 60 + slotIdx * SLOT_MINUTES;
-                      const endMinutes = startMinutes + SLOT_MINUTES;
-                      onSlotClick(
-                        day,
-                        minutesToTime(startMinutes),
-                        minutesToTime(endMinutes)
-                      );
-                    }}
-                  />
-                ))}
+                {/* Hoverable time slots — same as CRM */}
+                <div className="absolute inset-0 flex flex-col z-0 pointer-events-auto cursor-cell">
+                  {Array.from({ length: TOTAL_SLOTS }).map((_, slotIdx) => (
+                    <div
+                      key={slotIdx}
+                      style={{ height: `${SLOT_HEIGHT}px` }}
+                      className="w-full pointer-events-auto cursor-cell transition-all duration-150
+                        hover:bg-primary/25 dark:hover:bg-primary/30
+                        hover:shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.45)]"
+                      onClick={() => {
+                        const startMinutes =
+                          START_HOUR * 60 + slotIdx * SLOT_MINUTES;
+                        const endMinutes = startMinutes + SLOT_MINUTES;
+                        onSlotClick(
+                          day,
+                          minutesToTime(startMinutes),
+                          minutesToTime(endMinutes)
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
 
                 {/* Event blocks */}
-                {positioned.map((pos) => {
-                  const colorEntry = memberColorMap.get(pos.event.userId);
-                  const colorClass = colorEntry
-                    ? colorEntry.bg
-                    : "bg-primary/10 border-primary/30";
+                <div className="absolute inset-0 z-10 pointer-events-none">
+                  {positioned.map((pos) => {
+                    const colorEntry = memberColorMap.get(pos.event.userId);
+                    const colorClass = colorEntry
+                      ? colorEntry.bg
+                      : "bg-primary/10 border-primary/30";
 
-                  const width = `calc(${100 / pos.colCount}% - 2px)`;
-                  const left = `calc(${(pos.colIndex * 100) / pos.colCount}% + 1px)`;
+                    const width =
+                      pos.colCount > 1
+                        ? `calc(${100 / pos.colCount}% - 4px)`
+                        : "calc(100% - 4px)";
+                    const left =
+                      pos.colCount > 1
+                        ? `calc(${(pos.colIndex * 100) / pos.colCount}% + 2px)`
+                        : "2px";
 
-                  return (
-                    <WeeklyEventBlock
-                      key={pos.event.id}
-                      event={pos.event}
-                      colorClass={colorClass}
-                      style={{
-                        top: pos.top,
-                        height: pos.height,
-                        width,
-                        left,
-                      }}
-                      onClick={() => onEventClick(pos.event)}
-                    />
-                  );
-                })}
+                    return (
+                      <WeeklyEventBlock
+                        key={pos.event.id}
+                        event={pos.event}
+                        colorClass={colorClass}
+                        style={{
+                          position: "absolute",
+                          top: pos.top,
+                          height: pos.height,
+                          width,
+                          left,
+                          pointerEvents: "auto",
+                        }}
+                        onClick={() => onEventClick(pos.event)}
+                      />
+                    );
+                  })}
+                </div>
 
-                {/* Linha "agora" */}
+                {/* Current time indicator */}
                 {showNowLine && isToday && (
                   <div
                     className="absolute left-0 right-0 z-20 pointer-events-none"

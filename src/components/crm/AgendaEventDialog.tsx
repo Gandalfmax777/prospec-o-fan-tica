@@ -19,21 +19,20 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { AgendaEvent, TeamMember, TipoEvento } from "@/types/crm";
+import type { TeamMember, TipoEvento } from "@/types/crm";
 import { X } from "lucide-react";
 
 const EVENT_TYPES: { value: TipoEvento; label: string }[] = [
-  { value: "CALL", label: "Ligação" },
-  { value: "EMAIL", label: "E-mail" },
   { value: "MEETING", label: "Reunião" },
   { value: "TASK", label: "Tarefa" },
+  { value: "CALL", label: "Ligação" },
+  { value: "EMAIL", label: "E-mail" },
   { value: "VISIT", label: "Visita" },
 ];
 
 interface AgendaEventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  event?: AgendaEvent | null;
   teamMembers: TeamMember[];
   onSave: (data: {
     title: string;
@@ -44,30 +43,22 @@ interface AgendaEventDialogProps {
     endDate?: string;
     participantEmails?: string[];
   }) => Promise<void>;
-  onDelete?: (id: string) => Promise<void>;
   isPending?: boolean;
-  /** Pré-preencher data ao criar via click no slot */
   defaultDate?: string;
-  /** Pré-preencher hora início ao criar via click no slot */
   defaultStartTime?: string;
-  /** Pré-preencher hora fim ao criar via click no slot */
   defaultEndTime?: string;
 }
 
 export function AgendaEventDialog({
   open,
   onOpenChange,
-  event,
   teamMembers,
   onSave,
-  onDelete,
   isPending = false,
   defaultDate,
   defaultStartTime,
   defaultEndTime,
 }: AgendaEventDialogProps) {
-  const isEditing = !!event;
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<TipoEvento>("MEETING");
@@ -76,47 +67,20 @@ export function AgendaEventDialog({
   const [endTime, setEndTime] = useState("10:00");
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
 
-  // Reset form quando abre/fecha ou muda o event
   useEffect(() => {
     if (open) {
-      if (event) {
-        setTitle(event.title);
-        // Remover metadata CDR da description pro form
-        const cleanDesc = (event.description || "")
-          .replace(/\[CDR: .+?\]\s*/g, "")
-          .replace(/\[cdrUserId: .+?\]\s*/g, "")
-          .trim();
-        setDescription(cleanDesc);
-        setType(event.type);
-        setDate(event.date ? new Date(event.date).toISOString().split("T")[0] : "");
-        setStartTime(
-          event.startDate
-            ? new Date(event.startDate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-            : "09:00"
-        );
-        setEndTime(
-          event.endDate
-            ? new Date(event.endDate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-            : "10:00"
-        );
-        setSelectedEmails(
-          event.participants?.map((p) => p.user.email) || []
-        );
-      } else {
-        setTitle("");
-        setDescription("");
-        setType("MEETING");
-        setDate(defaultDate || new Date().toISOString().split("T")[0]);
-        setStartTime(defaultStartTime || "09:00");
-        setEndTime(defaultEndTime || "10:00");
-        // Pré-selecionar leaders por padrão
-        const leaderEmails = teamMembers
-          .filter((m) => m.role === "OWNER" || m.role === "ADMIN")
-          .map((m) => m.email);
-        setSelectedEmails(leaderEmails);
-      }
+      setTitle("");
+      setDescription("");
+      setType("MEETING");
+      setDate(defaultDate || new Date().toISOString().split("T")[0]);
+      setStartTime(defaultStartTime || "09:00");
+      setEndTime(defaultEndTime || "10:00");
+      const leaderEmails = teamMembers
+        .filter((m) => m.role === "OWNER" || m.role === "ADMIN")
+        .map((m) => m.email);
+      setSelectedEmails(leaderEmails);
     }
-  }, [open, event, teamMembers]);
+  }, [open, teamMembers, defaultDate, defaultStartTime, defaultEndTime]);
 
   const toggleParticipant = (email: string) => {
     setSelectedEmails((prev) =>
@@ -134,7 +98,7 @@ export function AgendaEventDialog({
       title: title.trim(),
       description: description.trim() || undefined,
       type,
-      date: `${date}T${startTime}:00`,
+      date: startDate,
       startDate,
       endDate,
       participantEmails: selectedEmails.length > 0 ? selectedEmails : undefined,
@@ -145,27 +109,13 @@ export function AgendaEventDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Editar Evento" : "Novo Evento"}
-          </DialogTitle>
+          <DialogTitle>Novo Evento</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Título */}
-          <div className="space-y-2">
-            <Label htmlFor="event-title">Título *</Label>
-            <Input
-              id="event-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Reunião com cliente"
-              maxLength={200}
-            />
-          </div>
-
           {/* Tipo */}
           <div className="space-y-2">
-            <Label>Tipo</Label>
+            <Label>Tipo de Atividade</Label>
             <Select value={type} onValueChange={(v) => setType(v as TipoEvento)}>
               <SelectTrigger>
                 <SelectValue />
@@ -178,6 +128,32 @@ export function AgendaEventDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Título */}
+          <div className="space-y-2">
+            <Label htmlFor="event-title">Título *</Label>
+            <Input
+              id="event-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex: Reunião com cliente"
+              maxLength={200}
+            />
+          </div>
+
+          {/* Descrição */}
+          <div className="space-y-2">
+            <Label htmlFor="event-desc">Descrição</Label>
+            <Textarea
+              id="event-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Detalhes do evento..."
+              rows={4}
+              maxLength={2000}
+              className="resize-none"
+            />
           </div>
 
           {/* Data */}
@@ -211,19 +187,6 @@ export function AgendaEventDialog({
                 onChange={(e) => setEndTime(e.target.value)}
               />
             </div>
-          </div>
-
-          {/* Descrição */}
-          <div className="space-y-2">
-            <Label htmlFor="event-desc">Descrição</Label>
-            <Textarea
-              id="event-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detalhes do evento..."
-              rows={3}
-              maxLength={2000}
-            />
           </div>
 
           {/* Participantes */}
@@ -273,16 +236,6 @@ export function AgendaEventDialog({
         </div>
 
         <DialogFooter className="gap-2">
-          {isEditing && onDelete && (
-            <Button
-              variant="destructive"
-              onClick={() => onDelete(event!.id)}
-              disabled={isPending}
-              className="mr-auto"
-            >
-              Excluir
-            </Button>
-          )}
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
             Cancelar
           </Button>
@@ -290,7 +243,7 @@ export function AgendaEventDialog({
             onClick={handleSubmit}
             disabled={isPending || !title.trim() || !date}
           >
-            {isPending ? "Salvando..." : isEditing ? "Salvar" : "Criar Evento"}
+            {isPending ? "Criando..." : "Criar Evento"}
           </Button>
         </DialogFooter>
       </DialogContent>

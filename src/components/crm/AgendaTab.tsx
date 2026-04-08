@@ -4,10 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import { AgendaEventDialog } from "./AgendaEventDialog";
+import { AgendaViewDialog } from "./AgendaViewDialog";
 import { useWeekNavigation } from "./agenda/useWeekNavigation";
 import { WeeklyCalendar } from "./agenda/WeeklyCalendar";
 import { MemberFilter, buildMemberColorMap } from "./agenda/MemberFilter";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/context/AuthContext";
 import type { AgendaEvent, TeamMember, TipoEvento } from "@/types/crm";
 import {
   Plus,
@@ -17,12 +19,13 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { format, isSameDay, getDay } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export function AgendaTab() {
   const isMobile = useIsMobile();
   const nav = useWeekNavigation();
+  const { user } = useAuth();
 
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -30,15 +33,18 @@ export function AgendaTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Dialog state
+  // Create dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<AgendaEvent | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [slotDefaults, setSlotDefaults] = useState<{
     date: string;
     startTime: string;
     endTime: string;
   } | null>(null);
+
+  // View dialog state
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewingEvent, setViewingEvent] = useState<AgendaEvent | null>(null);
 
   // Buscar eventos da semana
   const fetchEvents = useCallback(async () => {
@@ -112,7 +118,6 @@ export function AgendaTab() {
   // ─── Handlers ──────────────────────────────────────────────────────────────
 
   const handleSlotClick = (date: Date, startTime: string, endTime: string) => {
-    setEditingEvent(null);
     setSlotDefaults({
       date: format(date, "yyyy-MM-dd"),
       startTime,
@@ -122,13 +127,11 @@ export function AgendaTab() {
   };
 
   const handleEventClick = (event: AgendaEvent) => {
-    setEditingEvent(event);
-    setSlotDefaults(null);
-    setDialogOpen(true);
+    setViewingEvent(event);
+    setViewDialogOpen(true);
   };
 
   const handleNewEvent = () => {
-    setEditingEvent(null);
     setSlotDefaults(null);
     setDialogOpen(true);
   };
@@ -147,7 +150,6 @@ export function AgendaTab() {
       await api.agenda.createEvent(data);
       toast({ title: "Evento criado com sucesso" });
       setDialogOpen(false);
-      setEditingEvent(null);
       setSlotDefaults(null);
       await fetchEvents();
     } catch (err) {
@@ -161,22 +163,24 @@ export function AgendaTab() {
     }
   };
 
-  const handleUpdateEvent = async (data: {
-    title: string;
-    description?: string;
-    type: TipoEvento;
-    date: string;
-    startDate?: string;
-    endDate?: string;
-    participantEmails?: string[];
-  }) => {
-    if (!editingEvent) return;
+  const handleUpdateEvent = async (
+    id: string,
+    data: {
+      title: string;
+      description?: string;
+      type: TipoEvento;
+      date: string;
+      startDate?: string;
+      endDate?: string;
+      participantEmails?: string[];
+    }
+  ) => {
     try {
       setIsPending(true);
-      await api.agenda.updateEvent(editingEvent.id, data);
+      await api.agenda.updateEvent(id, data);
       toast({ title: "Evento atualizado" });
-      setDialogOpen(false);
-      setEditingEvent(null);
+      setViewDialogOpen(false);
+      setViewingEvent(null);
       await fetchEvents();
     } catch (err) {
       toast({
@@ -194,8 +198,8 @@ export function AgendaTab() {
       setIsPending(true);
       await api.agenda.deleteEvent(id);
       toast({ title: "Evento removido" });
-      setDialogOpen(false);
-      setEditingEvent(null);
+      setViewDialogOpen(false);
+      setViewingEvent(null);
       await fetchEvents();
     } catch (err) {
       toast({
@@ -265,28 +269,51 @@ export function AgendaTab() {
           >
             Hoje
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={isMobile ? nav.goToPrevDay : nav.goToPrevWeek}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={isMobile ? nav.goToNextDay : nav.goToNextWeek}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          {isMobile ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={nav.goToPrevDay}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={nav.goToNextDay}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={nav.goToPrevWeek}
+                className="text-xs"
+              >
+                Semana Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={nav.goToNextWeek}
+                className="text-xs"
+              >
+                Próxima Semana
+              </Button>
+            </>
+          )}
         </div>
 
         <span className="text-sm font-medium text-muted-foreground">
           {isMobile
             ? format(nav.currentDay, "EEEE, d 'de' MMMM", { locale: ptBR })
-            : `${format(nav.weekStart, "d MMM", { locale: ptBR })} — ${format(nav.weekEnd, "d MMM yyyy", { locale: ptBR })}`}
+            : `${format(nav.weekStart, "d 'de' MMMM", { locale: ptBR })} — ${format(nav.weekEnd, "d 'de' MMMM", { locale: ptBR })}`}
         </span>
       </div>
 
@@ -322,24 +349,34 @@ export function AgendaTab() {
         />
       )}
 
-      {/* Dialog */}
+      {/* Create Dialog */}
       <AgendaEventDialog
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
-          if (!open) {
-            setEditingEvent(null);
-            setSlotDefaults(null);
-          }
+          if (!open) setSlotDefaults(null);
         }}
-        event={editingEvent}
         teamMembers={teamMembers}
-        onSave={editingEvent ? handleUpdateEvent : handleCreateEvent}
-        onDelete={editingEvent ? handleDeleteEvent : undefined}
+        onSave={handleCreateEvent}
         isPending={isPending}
         defaultDate={slotDefaults?.date}
         defaultStartTime={slotDefaults?.startTime}
         defaultEndTime={slotDefaults?.endTime}
+      />
+
+      {/* View/Edit Dialog */}
+      <AgendaViewDialog
+        open={viewDialogOpen}
+        onOpenChange={(open) => {
+          setViewDialogOpen(open);
+          if (!open) setViewingEvent(null);
+        }}
+        event={viewingEvent}
+        currentUserId={user?.id || ""}
+        teamMembers={teamMembers}
+        onUpdate={handleUpdateEvent}
+        onDelete={handleDeleteEvent}
+        isPending={isPending}
       />
     </div>
   );
