@@ -57,7 +57,7 @@ export function WeeklyEventBlock({
         onClick();
       }}
       style={style}
-      className={`rounded border border-border/70 p-2 text-xs group overflow-hidden
+      className={`rounded border border-border/70 px-1.5 py-0.5 text-xs group overflow-hidden
         cursor-pointer transition-all duration-150 text-left
         hover:border-primary/35 hover:shadow-md
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35
@@ -68,7 +68,7 @@ export function WeeklyEventBlock({
       <div className="h-full min-h-0 flex flex-col justify-between items-start text-foreground">
         <div className="w-full flex flex-col gap-0.5 min-w-0">
           {/* Time range — always visible */}
-          <p className="text-[11px] font-semibold leading-tight whitespace-nowrap">
+          <p className="text-[11px] font-semibold leading-tight whitespace-nowrap truncate">
             {timeLabel}
           </p>
 
@@ -81,14 +81,17 @@ export function WeeklyEventBlock({
               <span className="truncate">{event.title}</span>
             </p>
           ) : (
-            <p className="text-[10px] leading-tight truncate font-medium">
-              {event.title}
+            <p className="text-[10px] leading-tight truncate font-medium flex items-center gap-1 min-w-0">
+              {hasParticipants && (
+                <Users className="h-2.5 w-2.5 shrink-0" />
+              )}
+              <span className="truncate">{event.title}</span>
             </p>
           )}
         </div>
 
-        {/* Footer */}
-        {!isCompact ? (
+        {/* Footer — apenas quando não é compact */}
+        {!isCompact && (
           <div className="w-full flex items-center justify-between gap-2 min-w-0 mt-auto">
             <div className="flex items-center gap-1 text-[10px] text-foreground/85 whitespace-nowrap">
               <Clock className="h-2 w-2" />
@@ -99,12 +102,6 @@ export function WeeklyEventBlock({
                 CDR
               </span>
             )}
-          </div>
-        ) : (
-          <div className="w-full flex items-center justify-end whitespace-nowrap">
-            <p className="text-[10px] leading-tight text-foreground/85">
-              {endTime}
-            </p>
           </div>
         )}
       </div>
