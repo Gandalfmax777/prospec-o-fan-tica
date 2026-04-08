@@ -94,10 +94,13 @@ export function AgendaTab() {
   useEffect(() => {
     api.agenda.getSettings().then((settings) => {
       if (settings?.workingHours) {
-        const startH = parseInt(settings.workingHours.start.split(":")[0], 10);
-        const endH = parseInt(settings.workingHours.end.split(":")[0], 10);
-        if (!isNaN(startH)) setCrmStartHour(Math.max(0, startH - 1));
-        if (!isNaN(endH)) setCrmEndHour(Math.min(24, endH + 1));
+        const [startH] = settings.workingHours.start.split(":").map(Number);
+        const [endH, endM] = settings.workingHours.end.split(":").map(Number);
+        if (!isNaN(startH)) setCrmStartHour(startH);
+        if (!isNaN(endH)) {
+          // Arredondar para cima se tem minutos (ex: 18:30 → 19)
+          setCrmEndHour(Math.min(24, endH + (endM > 0 ? 1 : 0)));
+        }
       }
     }).catch(() => {});
   }, []);
