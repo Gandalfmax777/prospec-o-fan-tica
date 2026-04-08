@@ -159,6 +159,8 @@ export interface CreateAgendaEventInput {
   contactId?: string;
   dealId?: string;
   participantEmails?: string[];
+  /** Email do corretor responsável — atividade fica no calendário dele */
+  assigneeEmail?: string;
 }
 
 export interface DadosDashboard {

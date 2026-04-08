@@ -144,6 +144,7 @@ export function AgendaTab() {
     startDate?: string;
     endDate?: string;
     participantEmails?: string[];
+    assigneeEmail?: string;
   }) => {
     try {
       setIsPending(true);
