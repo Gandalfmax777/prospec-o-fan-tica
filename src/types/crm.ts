@@ -111,6 +111,56 @@ export interface MetricasDiarias {
   taxaRitmo: number;
 }
 
+// ─── Agenda (integração CRM) ─────────────────────────────────────────────────
+
+export type TipoEvento = "CALL" | "EMAIL" | "MEETING" | "NOTE" | "TASK" | "VISIT";
+
+export interface AgendaEvent {
+  id: string;
+  type: TipoEvento;
+  title: string;
+  description: string;
+  date: string;
+  startDate: string | null;
+  endDate: string | null;
+  dueDate: string | null;
+  completed: boolean;
+  visitConfirmed: boolean | null;
+  createdAt: string;
+  dealId: string | null;
+  contactId: string | null;
+  userId: string;
+  deal: { id: string; title: string } | null;
+  contact: { id: string; name: string } | null;
+  user: { id: string; name: string; email: string; image: string | null };
+  participants: {
+    userId: string;
+    user: { id: string; name: string; email: string; image: string | null };
+  }[];
+}
+
+export interface TeamMember {
+  userId: string;
+  name: string;
+  email: string;
+  image: string | null;
+  role: string;
+}
+
+export interface CreateAgendaEventInput {
+  title: string;
+  description?: string;
+  type: TipoEvento;
+  date: string;
+  startDate?: string;
+  endDate?: string;
+  dueDate?: string;
+  completed?: boolean;
+  contactId?: string;
+  dealId?: string;
+  participantEmails?: string[];
+}
+
 export interface DadosDashboard {
   totalProspects: number;
   atrasados: number;

@@ -14,6 +14,7 @@ import { AlertaBanner } from "@/components/crm/AlertaBanner";
 import { LeaderDashboard } from "@/components/crm/LeaderDashboard";
 import { SellerDetails } from "@/components/crm/SellerDetails";
 import { CrmIntegrationSettings } from "@/components/crm/CrmIntegrationSettings";
+import { AgendaTab } from "@/components/crm/AgendaTab";
 import { OrgSwitcher } from "@/components/crm/OrgSwitcher";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,7 @@ import {
   Users,
   Sun,
   Moon,
+  Calendar,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -81,6 +83,7 @@ const CRMDashboard = () => {
         { key: "metricas", label: "Métricas", icon: BarChart3 },
         { key: "pendencias", label: "Pendências", icon: AlertTriangle },
         { key: "gamificacao", label: "Gamificação", icon: Trophy },
+        { key: "agenda", label: "Agenda", icon: Calendar },
         ...(isLeader ? [{ key: "leader", label: "Liderança", icon: Users }] : []),
         ...(isAdmin ? [{ key: "settings", label: "Configurações", icon: Settings }] : []),
       ],
@@ -136,6 +139,7 @@ const CRMDashboard = () => {
       case "metricas":     return <MetricasTab />;
       case "pendencias":   return <PendenciasTab />;
       case "gamificacao":  return <GamificacaoTab />;
+      case "agenda":       return <AgendaTab />;
       case "leader":       return <LeaderDashboard onSellerClick={handleSellerClick} />;
       case "settings":     return <CrmIntegrationSettings />;
       default:             return <DashboardHeader />;

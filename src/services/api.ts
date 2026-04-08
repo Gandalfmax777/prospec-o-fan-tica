@@ -35,7 +35,7 @@ import type {
   SysAdminMember,
   SysAdminUser,
 } from "@/types/api";
-import type { Briefing, Gamificacao, MetricasDiarias } from "@/types/crm";
+import type { Briefing, Gamificacao, MetricasDiarias, AgendaEvent, TeamMember, CreateAgendaEventInput } from "@/types/crm";
 
 const API_URL = ensureHttpsInProduction(
   import.meta.env.VITE_API_URL || "http://localhost:3333/api"
@@ -383,5 +383,31 @@ export const api = {
 
     getUsers: (): Promise<SysAdminUser[]> =>
       request<SysAdminUser[]>("/sysadmin/users"),
+  },
+
+  // ─── Agenda (integração CRM) ─────────────────────────────────────────────
+  agenda: {
+    getEvents: (startDate: string, endDate: string): Promise<{ activities: AgendaEvent[] }> =>
+      request<{ activities: AgendaEvent[] }>(
+        `/agenda?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`
+      ),
+
+    getTeamMembers: (): Promise<{ members: TeamMember[] }> =>
+      request<{ members: TeamMember[] }>("/agenda/team"),
+
+    createEvent: (data: CreateAgendaEventInput): Promise<{ activity: AgendaEvent }> =>
+      request<{ activity: AgendaEvent }>("/agenda", {
+        method: "POST",
+        body: data,
+      }),
+
+    updateEvent: (id: string, data: Partial<CreateAgendaEventInput>): Promise<{ activity: AgendaEvent }> =>
+      request<{ activity: AgendaEvent }>(`/agenda/${id}`, {
+        method: "PUT",
+        body: data,
+      }),
+
+    deleteEvent: (id: string): Promise<{ deleted: boolean }> =>
+      request<{ deleted: boolean }>(`/agenda/${id}`, { method: "DELETE" }),
   },
 };
