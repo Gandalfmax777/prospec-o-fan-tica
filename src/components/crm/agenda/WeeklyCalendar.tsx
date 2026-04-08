@@ -118,6 +118,8 @@ interface WeeklyCalendarProps {
   visibleDayIndex?: number;
   startHour?: number;
   endHour?: number;
+  /** Dias úteis (0=Dom, 1=Seg, ..., 6=Sáb). Se omitido, todos são úteis. */
+  workingDaysOfWeek?: number[];
 }
 
 export function WeeklyCalendar({
@@ -129,6 +131,7 @@ export function WeeklyCalendar({
   visibleDayIndex,
   startHour = DEFAULT_START_HOUR,
   endHour = DEFAULT_END_HOUR,
+  workingDaysOfWeek,
 }: WeeklyCalendarProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const today = new Date();
@@ -185,11 +188,13 @@ export function WeeklyCalendar({
         >
           {visibleDays.map(({ day, index }) => {
             const isToday = isSameDay(day, today);
+            const isWorkingDay =
+              !workingDaysOfWeek || workingDaysOfWeek.includes(day.getDay());
             return (
               <div
                 key={index}
                 className={`flex-1 min-w-[100px] border-r border-border px-2 py-3 text-center last:border-r-0
-                  ${isToday ? "text-primary font-semibold" : "text-foreground"}`}
+                  ${isToday ? "text-primary font-semibold" : isWorkingDay ? "text-foreground" : "text-muted-foreground/60"}`}
               >
                 <div className="text-sm font-medium">
                   {DAYS_PT[day.getDay()]}
@@ -258,11 +263,14 @@ export function WeeklyCalendar({
             const dayEvents = eventsByDay.get(index) || [];
             const positioned = positionEvents(dayEvents, startHour, endHour);
             const isToday = isSameDay(day, today);
+            const isWorkingDay =
+              !workingDaysOfWeek || workingDaysOfWeek.includes(day.getDay());
 
             return (
               <div
                 key={index}
-                className="flex-1 relative border-r border-border last:border-r-0 min-w-[100px]"
+                className={`flex-1 relative border-r border-border last:border-r-0 min-w-[100px]
+                  ${!isWorkingDay ? "bg-muted/40 dark:bg-muted/20" : ""}`}
               >
                 {/* Hoverable time slots — same as CRM */}
                 <div className="absolute inset-0 flex flex-col z-0 pointer-events-auto cursor-cell">
@@ -270,10 +278,12 @@ export function WeeklyCalendar({
                     <div
                       key={slotIdx}
                       style={{ height: `${SLOT_HEIGHT}px` }}
-                      className="w-full pointer-events-auto cursor-cell transition-all duration-150
-                        hover:bg-primary/25 dark:hover:bg-primary/30
-                        hover:shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.45)]"
+                      className={`w-full transition-all duration-150
+                        ${isWorkingDay
+                          ? "pointer-events-auto cursor-cell hover:bg-primary/25 dark:hover:bg-primary/30 hover:shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.45)]"
+                          : "pointer-events-none cursor-not-allowed"}`}
                       onClick={() => {
+                        if (!isWorkingDay) return;
                         const startMinutes =
                           startHour * 60 + slotIdx * SLOT_MINUTES;
                         const endMinutes = startMinutes + SLOT_MINUTES;

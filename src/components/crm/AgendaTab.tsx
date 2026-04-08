@@ -49,6 +49,9 @@ export function AgendaTab() {
   // CRM settings (horário comercial)
   const [crmStartHour, setCrmStartHour] = useState(7);
   const [crmEndHour, setCrmEndHour] = useState(21);
+  const [crmWorkingDays, setCrmWorkingDays] = useState<number[] | undefined>(
+    undefined
+  );
 
   // Buscar eventos da semana
   const fetchEvents = useCallback(async () => {
@@ -100,6 +103,9 @@ export function AgendaTab() {
         if (!isNaN(endH)) {
           // Arredondar para cima se tem minutos (ex: 18:30 → 19)
           setCrmEndHour(Math.min(24, endH + (endM > 0 ? 1 : 0)));
+        }
+        if (Array.isArray(settings.workingHours.daysOfWeek)) {
+          setCrmWorkingDays(settings.workingHours.daysOfWeek);
         }
       }
     }).catch(() => {});
@@ -368,6 +374,7 @@ export function AgendaTab() {
           visibleDayIndex={visibleDayIndex}
           startHour={crmStartHour}
           endHour={crmEndHour}
+          workingDaysOfWeek={crmWorkingDays}
         />
       )}
 
