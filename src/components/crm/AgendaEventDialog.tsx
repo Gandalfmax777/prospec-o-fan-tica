@@ -46,6 +46,12 @@ interface AgendaEventDialogProps {
   }) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
   isPending?: boolean;
+  /** Pré-preencher data ao criar via click no slot */
+  defaultDate?: string;
+  /** Pré-preencher hora início ao criar via click no slot */
+  defaultStartTime?: string;
+  /** Pré-preencher hora fim ao criar via click no slot */
+  defaultEndTime?: string;
 }
 
 export function AgendaEventDialog({
@@ -56,6 +62,9 @@ export function AgendaEventDialog({
   onSave,
   onDelete,
   isPending = false,
+  defaultDate,
+  defaultStartTime,
+  defaultEndTime,
 }: AgendaEventDialogProps) {
   const isEditing = !!event;
 
@@ -97,9 +106,9 @@ export function AgendaEventDialog({
         setTitle("");
         setDescription("");
         setType("MEETING");
-        setDate(new Date().toISOString().split("T")[0]);
-        setStartTime("09:00");
-        setEndTime("10:00");
+        setDate(defaultDate || new Date().toISOString().split("T")[0]);
+        setStartTime(defaultStartTime || "09:00");
+        setEndTime(defaultEndTime || "10:00");
         // Pré-selecionar leaders por padrão
         const leaderEmails = teamMembers
           .filter((m) => m.role === "OWNER" || m.role === "ADMIN")
