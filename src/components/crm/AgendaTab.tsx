@@ -46,6 +46,10 @@ export function AgendaTab() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewingEvent, setViewingEvent] = useState<AgendaEvent | null>(null);
 
+  // CRM settings (horário comercial)
+  const [crmStartHour, setCrmStartHour] = useState(7);
+  const [crmEndHour, setCrmEndHour] = useState(21);
+
   // Buscar eventos da semana
   const fetchEvents = useCallback(async () => {
     try {
@@ -85,6 +89,18 @@ export function AgendaTab() {
   useEffect(() => {
     fetchTeam();
   }, [fetchTeam]);
+
+  // Buscar configurações do CRM (horário comercial)
+  useEffect(() => {
+    api.agenda.getSettings().then((settings) => {
+      if (settings?.workingHours) {
+        const startH = parseInt(settings.workingHours.start.split(":")[0], 10);
+        const endH = parseInt(settings.workingHours.end.split(":")[0], 10);
+        if (!isNaN(startH)) setCrmStartHour(Math.max(0, startH - 1));
+        if (!isNaN(endH)) setCrmEndHour(Math.min(24, endH + 1));
+      }
+    }).catch(() => {});
+  }, []);
 
   // Filtrar eventos por membros selecionados
   const filteredEvents = useMemo(
@@ -347,6 +363,8 @@ export function AgendaTab() {
           onSlotClick={handleSlotClick}
           onEventClick={handleEventClick}
           visibleDayIndex={visibleDayIndex}
+          startHour={crmStartHour}
+          endHour={crmEndHour}
         />
       )}
 

@@ -136,7 +136,10 @@ export function AgendaViewDialog({
 
   if (!event) return null;
 
-  const isCreator = event.user.id === currentUserId;
+  const cdrUserIdMatch = (event.description || "").match(/\[cdrUserId: (.+?)\]/);
+  const isCreator =
+    event.user.id === currentUserId ||
+    (cdrUserIdMatch != null && cdrUserIdMatch[1] === currentUserId);
   const isParticipant =
     !isCreator &&
     event.participants?.some((p) => p.userId === currentUserId);

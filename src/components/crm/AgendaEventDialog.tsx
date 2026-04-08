@@ -22,6 +22,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { TeamMember, TipoEvento } from "@/types/crm";
 import { X } from "lucide-react";
 
+/**
+ * Builds an ISO 8601 datetime string with the local timezone offset.
+ * e.g. "2026-04-08T11:00:00-03:00"
+ */
+function toLocalISOString(date: string, time: string): string {
+  const dt = new Date(`${date}T${time}:00`);
+  const offsetMin = dt.getTimezoneOffset(); // negative for east of UTC
+  const sign = offsetMin <= 0 ? "+" : "-";
+  const absMin = Math.abs(offsetMin);
+  const hh = String(Math.floor(absMin / 60)).padStart(2, "0");
+  const mm = String(absMin % 60).padStart(2, "0");
+  return `${date}T${time}:00${sign}${hh}:${mm}`;
+}
+
 const EVENT_TYPES: { value: TipoEvento; label: string }[] = [
   { value: "MEETING", label: "Reunião" },
   { value: "TASK", label: "Tarefa" },
@@ -91,8 +105,8 @@ export function AgendaEventDialog({
   const handleSubmit = async () => {
     if (!title.trim() || !date || !assigneeEmail) return;
 
-    const startDate = `${date}T${startTime}:00`;
-    const endDate = `${date}T${endTime}:00`;
+    const startDate = toLocalISOString(date, startTime);
+    const endDate = toLocalISOString(date, endTime);
 
     // Garantir que o corretor responsável também é participante
     const allParticipants = new Set(selectedEmails);
@@ -123,16 +137,16 @@ export function AgendaEventDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Corretor Responsável */}
+          {/* Responsável */}
           {corretores.length > 0 && (
             <div className="space-y-2">
-              <Label>Corretor Responsável *</Label>
+              <Label>Responsável *</Label>
               <Select
                 value={assigneeEmail}
                 onValueChange={setAssigneeEmail}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o corretor..." />
+                  <SelectValue placeholder="Selecione o responsável..." />
                 </SelectTrigger>
                 <SelectContent>
                   {corretores.map((m) => (
@@ -150,7 +164,7 @@ export function AgendaEventDialog({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                O evento será criado no calendário deste corretor.
+                O evento será criado no calendário deste responsável.
               </p>
             </div>
           )}

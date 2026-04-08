@@ -7,11 +7,10 @@ import type { AgendaEvent } from "@/types/crm";
 
 // ─── Constants (match CRM availability.tsx) ──────────────────────────────────
 
-const START_HOUR = 7;
-const END_HOUR = 21;
+const DEFAULT_START_HOUR = 7;
+const DEFAULT_END_HOUR = 21;
 const SLOT_MINUTES = 30;
 const SLOT_HEIGHT = 44; // px — same as CRM slotHeight={44}
-const TOTAL_SLOTS = ((END_HOUR - START_HOUR) * 60) / SLOT_MINUTES;
 
 const DAYS_PT = [
   "Domingo",
@@ -46,7 +45,7 @@ interface PositionedEvent {
   colCount: number;
 }
 
-function positionEvents(events: AgendaEvent[]): PositionedEvent[] {
+function positionEvents(events: AgendaEvent[], startHour: number, endHour: number): PositionedEvent[] {
   if (events.length === 0) return [];
 
   const withPos = events.map((event) => {
@@ -54,16 +53,16 @@ function positionEvents(events: AgendaEvent[]): PositionedEvent[] {
       ? getMinutesFromDate(event.startDate)
       : event.date
         ? getMinutesFromDate(event.date)
-        : START_HOUR * 60;
+        : startHour * 60;
     const endMin = event.endDate
       ? getMinutesFromDate(event.endDate)
       : startMin + SLOT_MINUTES;
 
-    const clampedStart = Math.max(startMin, START_HOUR * 60);
-    const clampedEnd = Math.min(endMin, END_HOUR * 60);
+    const clampedStart = Math.max(startMin, startHour * 60);
+    const clampedEnd = Math.min(endMin, endHour * 60);
 
     const top =
-      ((clampedStart - START_HOUR * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
+      ((clampedStart - startHour * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
     const height = Math.max(
       SLOT_HEIGHT * 0.8,
       ((clampedEnd - clampedStart) / SLOT_MINUTES) * SLOT_HEIGHT
@@ -117,6 +116,8 @@ interface WeeklyCalendarProps {
   onSlotClick: (date: Date, startTime: string, endTime: string) => void;
   onEventClick: (event: AgendaEvent) => void;
   visibleDayIndex?: number;
+  startHour?: number;
+  endHour?: number;
 }
 
 export function WeeklyCalendar({
@@ -126,9 +127,12 @@ export function WeeklyCalendar({
   onSlotClick,
   onEventClick,
   visibleDayIndex,
+  startHour = DEFAULT_START_HOUR,
+  endHour = DEFAULT_END_HOUR,
 }: WeeklyCalendarProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const today = new Date();
+  const TOTAL_SLOTS = ((endHour - startHour) * 60) / SLOT_MINUTES;
 
   // Scroll to current time on mount
   useEffect(() => {
@@ -136,9 +140,9 @@ export function WeeklyCalendar({
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const offset =
-      ((currentMinutes - START_HOUR * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
+      ((currentMinutes - startHour * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
     bodyRef.current.scrollTop = Math.max(0, offset - 120);
-  }, []);
+  }, [startHour]);
 
   // Group events by day index
   const eventsByDay = useMemo(() => {
@@ -161,9 +165,9 @@ export function WeeklyCalendar({
   // Current time indicator
   const nowMinutes = today.getHours() * 60 + today.getMinutes();
   const nowOffset =
-    ((nowMinutes - START_HOUR * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
+    ((nowMinutes - startHour * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
   const showNowLine =
-    nowMinutes >= START_HOUR * 60 && nowMinutes <= END_HOUR * 60;
+    nowMinutes >= startHour * 60 && nowMinutes <= endHour * 60;
 
   return (
     <div
@@ -210,7 +214,7 @@ export function WeeklyCalendar({
         {/* Time Labels column */}
         <div className="relative z-30 w-16 shrink-0 flex flex-col">
           {Array.from({ length: TOTAL_SLOTS }).map((_, i) => {
-            const totalMinutes = START_HOUR * 60 + i * SLOT_MINUTES;
+            const totalMinutes = startHour * 60 + i * SLOT_MINUTES;
             const hour = Math.floor(totalMinutes / 60);
             const minutes = totalMinutes % 60;
             return (
@@ -252,7 +256,7 @@ export function WeeklyCalendar({
           {/* Day Columns */}
           {visibleDays.map(({ day, index }) => {
             const dayEvents = eventsByDay.get(index) || [];
-            const positioned = positionEvents(dayEvents);
+            const positioned = positionEvents(dayEvents, startHour, endHour);
             const isToday = isSameDay(day, today);
 
             return (
@@ -271,7 +275,7 @@ export function WeeklyCalendar({
                         hover:shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.45)]"
                       onClick={() => {
                         const startMinutes =
-                          START_HOUR * 60 + slotIdx * SLOT_MINUTES;
+                          startHour * 60 + slotIdx * SLOT_MINUTES;
                         const endMinutes = startMinutes + SLOT_MINUTES;
                         onSlotClick(
                           day,

@@ -395,6 +395,11 @@ export const api = {
     getTeamMembers: (): Promise<{ members: TeamMember[] }> =>
       request<{ members: TeamMember[] }>("/agenda/team"),
 
+    getSettings: (): Promise<{
+      timezone: string;
+      workingHours: { start: string; end: string; daysOfWeek: number[] };
+    }> => request("/agenda/settings"),
+
     createEvent: (data: CreateAgendaEventInput): Promise<{ activity: AgendaEvent }> =>
       request<{ activity: AgendaEvent }>("/agenda", {
         method: "POST",
