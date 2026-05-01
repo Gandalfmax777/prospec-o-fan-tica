@@ -74,7 +74,7 @@ export const PrioridadeBadge = ({ prioridade, className }: PrioridadeBadgeProps)
         return "bg-[hsl(var(--priority-urgent)/0.1)] text-[hsl(var(--priority-urgent))] border-[hsl(var(--priority-urgent))] hover:bg-[hsl(var(--priority-urgent)/0.2)]";
       case "Alerta":
         return "bg-[hsl(var(--priority-warning)/0.1)] text-[hsl(var(--priority-warning))] border-[hsl(var(--priority-warning))] hover:bg-[hsl(var(--priority-warning)/0.2)]";
-      case "Atenção":
+      case "AtenÃ§Ã£o":
         return "bg-[hsl(var(--priority-attention)/0.1)] text-[hsl(var(--priority-attention))] border-[hsl(var(--priority-attention))] hover:bg-[hsl(var(--priority-attention)/0.2)]";
       case "Normal":
         return "bg-[hsl(var(--priority-normal)/0.1)] text-[hsl(var(--priority-normal))] border-[hsl(var(--priority-normal))] hover:bg-[hsl(var(--priority-normal)/0.2)]";
