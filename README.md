@@ -40,3 +40,15 @@ Veja [README_FRONTEND.md](README_FRONTEND.md) para documentação detalhada.
 - `npm run build` - Build produção
 - `npm run preview` - Preview do build
 - `npm run lint` - Linter
+
+## 🚢 Deploy
+
+Pipeline automatizado via GitHub Actions e Coolify.
+
+- **Pull Request aberto** → roda `CI` (lint + typecheck)
+- **Merge em `main`** → roda `Deploy`:
+  1. Build da imagem Docker (multi-stage Vite + nginx)
+  2. Push para `ghcr.io/gandalfmax777/prospec-o-fan-tica:latest`
+  3. Trigger do webhook de deploy no Coolify, que puxa a nova imagem e faz rolling update
+
+As variáveis `VITE_*` são injetadas em **build-time** (ficam baked no bundle JS). Por isso são gerenciadas como GitHub Actions secrets — alterar uma exige rebuild da imagem.

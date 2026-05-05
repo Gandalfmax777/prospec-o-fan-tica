@@ -1,0 +1,16 @@
+node_modules
+dist
+.git
+.github
+.vscode
+.codex
+.claude
+.env
+.env.*
+!.env.example
+*.log
+README.md
+WORKSPACE.md
+docs
+.cursorignore
+vercel.json
