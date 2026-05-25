@@ -25,3 +25,6 @@ dist-ssr
 
 .env
 *.txt
+
+# Migration artifacts (pode conter secrets/URLs internos)
+MIGRATION.md
