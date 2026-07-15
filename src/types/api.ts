@@ -181,6 +181,12 @@ export interface OrgInvite {
   token: string;
   expiresAt: string;
   createdAt: string;
+  /**
+   * Indica se o e-mail de convite foi realmente enviado. Retornado na criação
+   * do convite; ausente ao listar convites existentes. Quando `false`, a UI
+   * avisa e disponibiliza o link para envio manual.
+   */
+  emailSent?: boolean;
 }
 
 export interface CreateInviteInput {
