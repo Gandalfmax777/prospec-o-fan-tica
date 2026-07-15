@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { CRMProvider } from "@/context/CRMContext";
 import { useAuth } from "@/context/AuthContext";
+import { SUPER_ADMIN_EMAIL } from "@/config/superAdmin";
 import { DashboardHeader } from "@/components/crm/DashboardHeader";
 import { LeadTable } from "@/components/crm/LeadTable";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
@@ -31,6 +32,7 @@ import {
   Sun,
   Moon,
   Calendar,
+  Shield,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -65,6 +67,7 @@ const CRMDashboard = () => {
   const navigate = useNavigate();
   const isLeader = user?.role === "LEADER" || user?.role === "ADMIN";
   const isAdmin = user?.role === "ADMIN";
+  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
   const isDark = resolvedTheme === "dark";
 
   const roleLabel = (user?.role || "SELLER").toUpperCase();
@@ -198,6 +201,17 @@ const CRMDashboard = () => {
             <OrgSwitcher onCreateOrg={() => setActiveView("createOrg")} />
           </div>
 
+          {/* Expanded: link do superadmin para o painel do sistema */}
+          {isSuperAdmin && (
+            <button
+              onClick={() => navigate("/sysadmin")}
+              className="group-data-[collapsible=icon]:hidden w-full flex items-center gap-2.5 rounded-lg px-2 py-2 mb-1 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            >
+              <Shield className="h-3.5 w-3.5 shrink-0" />
+              Painel do Sistema
+            </button>
+          )}
+
           {/* Expanded: full user info row */}
           <div className="group-data-[collapsible=icon]:hidden flex items-center gap-2.5 rounded-lg px-2 py-2">
             <Avatar className="h-7 w-7 shrink-0">
@@ -247,6 +261,18 @@ const CRMDashboard = () => {
                   <p className="text-[11px] text-muted-foreground">{roleLabel}</p>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {isSuperAdmin && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => navigate("/sysadmin")}
+                      className="gap-2 text-[13px]"
+                    >
+                      <Shield className="h-3.5 w-3.5" />
+                      Painel do Sistema
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem
                   onClick={handleLogout}
                   className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10 text-[13px]"

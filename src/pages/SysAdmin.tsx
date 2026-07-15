@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { SUPER_ADMIN_EMAIL } from "@/config/superAdmin";
 import type { SysAdminOrg, SysAdminMember, SysAdminStats } from "@/types/api";
 import type { OrgInvite } from "@/types/api";
 import { Button } from "@/components/ui/button";
@@ -49,8 +50,6 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-const SUPER_ADMIN_EMAIL = "joaovitorsc@gmail.com";
 
 const roleLabel: Record<string, string> = {
   SELLER: "Vendedor",
