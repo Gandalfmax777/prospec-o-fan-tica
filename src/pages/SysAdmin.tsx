@@ -343,10 +343,20 @@ function InviteDialog({
     try {
       const invite = await api.sysadmin.createOrgInvite(orgId, email.trim(), role);
       onInvited(invite);
-      toast({
-        title: "Convite enviado!",
-        description: `E-mail de convite enviado para ${email} em ${orgName}.`,
-      });
+      if (invite.emailSent === false) {
+        const link = `${window.location.origin}/join?token=${invite.token}`;
+        navigator.clipboard.writeText(link).catch(() => {});
+        toast({
+          title: "Convite criado — e-mail não enviado",
+          description: `Não foi possível enviar o e-mail para ${email}. O link do convite foi copiado; envie manualmente.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Convite enviado!",
+          description: `E-mail de convite enviado para ${email} em ${orgName}.`,
+        });
+      }
       setEmail("");
       setRole("SELLER");
       onOpenChange(false);

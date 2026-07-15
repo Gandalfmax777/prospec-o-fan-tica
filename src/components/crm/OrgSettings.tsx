@@ -146,7 +146,17 @@ export const OrgSettings = () => {
       const invite = await api.createOrgInvite({ email: inviteEmail.trim(), role: inviteRole });
       setInvites((prev) => [invite, ...prev]);
       setInviteEmail("");
-      toast({ title: "Convite criado!", description: `Convite enviado para ${invite.email}.` });
+      if (invite.emailSent === false) {
+        const link = `${window.location.origin}/join?token=${invite.token}`;
+        navigator.clipboard.writeText(link).catch(() => {});
+        toast({
+          title: "Convite criado — e-mail não enviado",
+          description: `Não foi possível enviar o e-mail para ${invite.email}. O link foi copiado; envie manualmente.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Convite criado!", description: `Convite enviado para ${invite.email}.` });
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao criar convite";
       toast({ title: "Erro", description: message, variant: "destructive" });
