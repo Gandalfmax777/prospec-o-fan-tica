@@ -35,7 +35,7 @@ import type {
   SysAdminMember,
   SysAdminUser,
 } from "@/types/api";
-import type { Briefing, Gamificacao, MetricasDiarias, AgendaEvent, TeamMember, CreateAgendaEventInput } from "@/types/crm";
+import type { Briefing, Gamificacao, MetricasDiarias, AgendaEvent, TeamMember, CreateAgendaEventInput, PerdidoLead } from "@/types/crm";
 
 const API_URL = ensureHttpsInProduction(
   import.meta.env.VITE_API_URL || "http://localhost:3333/api"
@@ -240,6 +240,51 @@ export const api = {
       body: { briefing: normalizedBriefing },
     });
     return normalizeLeadResponse(updated);
+  },
+
+  // ─── Leads Perdidos (pool compartilhado) ──────────────────────────────────
+  // Marca o próprio lead como perdido (entra no pool org-wide).
+  marcarLeadPerdido: async (id: string, motivo?: string | null): Promise<LeadResponse> => {
+    const updated = await request<LeadResponse>(`/leads/${id}/perdido`, {
+      method: "POST",
+      body: { motivo: motivo ?? null },
+    });
+    return normalizeLeadResponse(updated);
+  },
+  // Lista org-wide de perdidos (qualquer assessor da org vê todos).
+  getPerdidos: async (): Promise<PerdidoLead[]> => {
+    const list = await request<PerdidoLead[]>("/leads/perdidos");
+    return list.map((p) => ({
+      ...p,
+      dataPerda: p.dataPerda ? new Date(p.dataPerda) : null,
+      dataEntrada: new Date(p.dataEntrada),
+      ultimoBriefing: p.ultimoBriefing
+        ? { ...p.ultimoBriefing, data: new Date(p.ultimoBriefing.data) }
+        : null,
+    }));
+  },
+  // Assume um lead perdido para si (rotação): reatribui o dono e revive ao funil.
+  assumirLead: async (id: string): Promise<LeadResponse> => {
+    const updated = await request<LeadResponse>(`/leads/${id}/assumir`, {
+      method: "POST",
+    });
+    return normalizeLeadResponse(updated);
+  },
+  // Baixa o PDF do pool de perdidos (blob — o wrapper request só faz JSON).
+  exportPerdidosPdf: async (): Promise<void> => {
+    const res = await fetch(`${API_URL}/leads/perdidos/pdf`, {
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Falha ao gerar o PDF de perdidos");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "leads-perdidos.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   },
 
   // Gamificação

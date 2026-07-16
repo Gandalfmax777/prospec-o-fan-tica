@@ -43,6 +43,7 @@ interface CRMContextType {
   registrarContato: (id: string, briefing?: Partial<Briefing>) => Promise<void>;
   moverTemperatura: (id: string, novaTemperatura: Temperatura) => Promise<void>;
   converterLead: (id: string) => Promise<void>;
+  marcarPerdido: (id: string, motivo?: string) => Promise<void>;
   retornarAoFunil: (id: string) => Promise<void>;
   adicionarBriefing: (
     leadId: string,
@@ -394,6 +395,42 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
     [updateLead, refreshData]
   );
 
+  const marcarPerdido = useCallback(
+    async (id: string, motivo?: string) => {
+      try {
+        setError(null);
+        const leadAtualizado = await api.marcarLeadPerdido(id, motivo);
+
+        const leadFormatado = {
+          ...leadAtualizado,
+          ultimoContato: leadAtualizado.ultimoContato ? new Date(leadAtualizado.ultimoContato) : null,
+          proximoContato: leadAtualizado.proximoContato ? new Date(leadAtualizado.proximoContato) : null,
+          dataEntrada: new Date(leadAtualizado.dataEntrada),
+          dataConversao: leadAtualizado.dataConversao ? new Date(leadAtualizado.dataConversao) : null,
+          historico: Array.isArray(leadAtualizado.historico)
+            ? leadAtualizado.historico.map((item) => ({ ...item, data: new Date(item.data) }))
+            : [],
+          briefings: Array.isArray(leadAtualizado.briefings)
+            ? leadAtualizado.briefings.map((item) => ({
+                ...item,
+                data: new Date(item.data),
+                proximoFollowUp: item.proximoFollowUp ? new Date(item.proximoFollowUp) : null,
+              }))
+            : [],
+        };
+
+        setLeads((prev) => prev.map((lead) => (lead.id === id ? leadFormatado : lead)));
+        await refreshData();
+      } catch (err) {
+        console.error("Erro ao marcar lead como perdido:", err);
+        const errorMessage = err instanceof Error ? err.message : "Erro ao marcar contato como perdido";
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [refreshData]
+  );
+
   const retornarAoFunil = useCallback(
     async (id: string) => {
       try {
@@ -502,6 +539,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         registrarContato,
         moverTemperatura,
         converterLead,
+        marcarPerdido,
         retornarAoFunil,
         adicionarBriefing,
         completarMissao,

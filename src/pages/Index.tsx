@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { CRMProvider } from "@/context/CRMContext";
@@ -8,6 +8,7 @@ import { DashboardHeader } from "@/components/crm/DashboardHeader";
 import { LeadTable } from "@/components/crm/LeadTable";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { ConvertidosTab } from "@/components/crm/ConvertidosTab";
+import { PerdidosTab } from "@/components/crm/PerdidosTab";
 import { MetricasTab } from "@/components/crm/MetricasTab";
 import { PendenciasTab } from "@/components/crm/PendenciasTab";
 import { GamificacaoTab } from "@/components/crm/GamificacaoTab";
@@ -33,6 +34,7 @@ import {
   Moon,
   Calendar,
   Shield,
+  UserX,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -70,6 +72,16 @@ const CRMDashboard = () => {
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
   const isDark = resolvedTheme === "dark";
 
+  // Design por tenant: aplica o tema EQI (verde/creme) quando a org ativa é a EQI.
+  const orgSlug = user?.organization?.slug ?? "";
+  const isEqi = /eqi/i.test(orgSlug);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isEqi) root.setAttribute("data-tenant", "eqi");
+    else root.removeAttribute("data-tenant");
+    return () => root.removeAttribute("data-tenant");
+  }, [isEqi]);
+
   const roleLabel = (user?.role || "SELLER").toUpperCase();
   const initials =
     user?.name?.slice(0, 2).toUpperCase() ||
@@ -83,6 +95,7 @@ const CRMDashboard = () => {
         { key: "leads", label: "Contatos", icon: Table },
         { key: "kanban", label: "Kanban", icon: Kanban },
         { key: "convertidos", label: "Convertidos", icon: CheckCircle },
+        { key: "perdidos", label: "Perdidos", icon: UserX },
         { key: "metricas", label: "Métricas", icon: BarChart3 },
         { key: "pendencias", label: "Pendências", icon: AlertTriangle },
         { key: "gamificacao", label: "Gamificação", icon: Trophy },
@@ -139,6 +152,7 @@ const CRMDashboard = () => {
       case "leads":        return <LeadTable />;
       case "kanban":       return <KanbanBoard />;
       case "convertidos":  return <ConvertidosTab />;
+      case "perdidos":     return <PerdidosTab />;
       case "metricas":     return <MetricasTab />;
       case "pendencias":   return <PendenciasTab />;
       case "gamificacao":  return <GamificacaoTab />;
@@ -157,16 +171,24 @@ const CRMDashboard = () => {
         {/* Logo / brand */}
         <SidebarHeader className="p-4 pb-3">
           <div className="flex items-center gap-2.5 px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
-              <img src="/shield.svg" className="h-4 w-4 opacity-90" alt="Logo" />
-            </div>
+            {isEqi ? (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg overflow-hidden">
+                <img src="/eqi-mark.svg" className="h-8 w-8" alt="EQI" />
+              </div>
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
+                <img src="/shield.svg" className="h-4 w-4 opacity-90" alt="Logo" />
+              </div>
+            )}
             <div className="group-data-[collapsible=icon]:hidden min-w-0">
               <p
                 className="text-[13px] font-bold text-foreground tracking-tight leading-tight truncate"
               >
                 Prospecção
               </p>
-              <p className="text-[11px] text-muted-foreground truncate">CRM & Performance</p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {isEqi ? "EQI · MESA" : "CRM & Performance"}
+              </p>
             </div>
           </div>
         </SidebarHeader>

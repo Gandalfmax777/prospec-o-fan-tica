@@ -1,5 +1,5 @@
 export type Cadencia = "Semanal" | "Quinzenal" | "Mensal";
-export type Status = "Atrasado" | "Falar Hoje" | "Em Dia" | "Convertido";
+export type Status = "Atrasado" | "Falar Hoje" | "Em Dia" | "Convertido" | "Perdido";
 export type Temperatura = "Frio" | "Morno" | "Quente";
 export type Prioridade = "Urgente" | "Alerta" | "Atenção" | "Normal";
 export type Origem =
@@ -66,6 +66,9 @@ export interface Lead {
   score: number;
   dataEntrada: Date;
   dataConversao: Date | null;
+  // "Lead Lost" — pool de perdidos
+  dataPerda?: Date | null;
+  motivoPerda?: string | null;
   historico: HistoricoContato[];
   briefings?: Briefing[];
   pontos: number;
@@ -76,6 +79,32 @@ export interface Lead {
   crmDealId?: string | null;
   crmDealUrl?: string | null;
   transferredAt?: Date | null;
+}
+
+// Item do pool de perdidos (org-wide) — resposta de GET /leads/perdidos
+export interface PerdidoLead {
+  id: string;
+  nome: string;
+  email?: string | null;
+  telefone: string;
+  cidade: string;
+  codigo: string;
+  origem: Origem;
+  temperatura: Temperatura;
+  observacao: string;
+  motivoPerda: string | null;
+  dataPerda: Date | null;
+  dataEntrada: Date;
+  ownerId: string;
+  ownerName: string;
+  isOwner: boolean;
+  ultimoBriefing: {
+    objetivo: string;
+    resultado: string;
+    objecoes: string;
+    proximoPasso: string;
+    data: Date;
+  } | null;
 }
 
 export interface Gamificacao {
