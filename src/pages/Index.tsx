@@ -173,7 +173,7 @@ const CRMDashboard = () => {
           <div className="flex items-center gap-2.5 px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
             {isEqi ? (
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg overflow-hidden">
-                <img src="/eqi-mark.svg" className="h-8 w-8" alt="EQI" />
+                <img src="/eqi_logo.png" className="h-8 w-8 object-cover" alt="EQI" />
               </div>
             ) : (
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
