@@ -355,6 +355,30 @@ export const auth = {
   },
 
   /**
+   * Solicitar redefinição de senha. O servidor sempre responde OK (mesmo se o
+   * e-mail não existir) para não revelar quais e-mails estão cadastrados.
+   */
+  async requestPasswordReset(email: string): Promise<void> {
+    await authRequest("/request-password-reset", {
+      method: "POST",
+      body: {
+        email,
+        redirectTo: `${window.location.origin}/reset-password`,
+      } as unknown as BodyInit,
+    });
+  },
+
+  /**
+   * Redefinir a senha usando o token recebido por e-mail.
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    await authRequest("/reset-password", {
+      method: "POST",
+      body: { newPassword, token } as unknown as BodyInit,
+    });
+  },
+
+  /**
    * Obter sessão atual
    * Usa mais retries pois é crítico e cookies podem demorar no Safari iOS
    */

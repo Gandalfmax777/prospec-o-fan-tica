@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -89,6 +89,14 @@ export const LoginForm = () => {
             disabled={loading}
             className="h-11 rounded-md transition-colors"
           />
+          <div className="flex justify-end pt-1">
+            <Link
+              to="/forgot-password"
+              className="text-[12px] text-primary hover:underline"
+            >
+              Esqueci minha senha
+            </Link>
+          </div>
         </div>
 
         <Button
