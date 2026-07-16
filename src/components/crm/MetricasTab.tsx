@@ -63,26 +63,28 @@ export const MetricasTab = () => {
   const fimAno = endOfYear(hoje);
 
   const metricas = useMemo(() => {
-    const totalLeads = leads.length;
-    const convertidos = leads.filter((lead) => lead.status === "Convertido");
-    const ativos = leads.filter((lead) => lead.status !== "Convertido");
+    // Perdidos saem das métricas: não são leads ativos nem contam nos totais/taxas.
+    const leadsBase = leads.filter((lead) => lead.status !== "Perdido");
+    const totalLeads = leadsBase.length;
+    const convertidos = leadsBase.filter((lead) => lead.status === "Convertido");
+    const ativos = leadsBase.filter((lead) => lead.status !== "Convertido");
 
     const porCadencia = {
-      semanal: leads.filter((lead) => lead.cadencia === "Semanal").length,
-      quinzenal: leads.filter((lead) => lead.cadencia === "Quinzenal").length,
-      mensal: leads.filter((lead) => lead.cadencia === "Mensal").length,
+      semanal: leadsBase.filter((lead) => lead.cadencia === "Semanal").length,
+      quinzenal: leadsBase.filter((lead) => lead.cadencia === "Quinzenal").length,
+      mensal: leadsBase.filter((lead) => lead.cadencia === "Mensal").length,
     };
 
-    const leadsHoje = leads.filter((lead) =>
+    const leadsHoje = leadsBase.filter((lead) =>
       isWithinInterval(lead.dataEntrada, { start: inicioDia, end: fimDia })
     ).length;
-    const leadsSemana = leads.filter((lead) =>
+    const leadsSemana = leadsBase.filter((lead) =>
       isWithinInterval(lead.dataEntrada, { start: inicioSemana, end: fimSemana })
     ).length;
-    const leadsMes = leads.filter((lead) =>
+    const leadsMes = leadsBase.filter((lead) =>
       isWithinInterval(lead.dataEntrada, { start: inicioMes, end: fimMes })
     ).length;
-    const leadsAno = leads.filter((lead) =>
+    const leadsAno = leadsBase.filter((lead) =>
       isWithinInterval(lead.dataEntrada, { start: inicioAno, end: fimAno })
     ).length;
 
@@ -110,7 +112,7 @@ export const MetricasTab = () => {
       convertidos: convertidos.length,
     };
 
-    const porOrigem = leads.reduce((acc, lead) => {
+    const porOrigem = leadsBase.reduce((acc, lead) => {
       const existing = acc.find((item) => item.origem === lead.origem);
       if (existing) {
         existing.quantidade++;
@@ -125,7 +127,7 @@ export const MetricasTab = () => {
       return acc;
     }, [] as { origem: string; quantidade: number; convertidos: number }[]);
 
-    const porCidade = leads
+    const porCidade = leadsBase
       .reduce((acc, lead) => {
         const existing = acc.find((item) => item.cidade === lead.cidade);
         if (existing) {

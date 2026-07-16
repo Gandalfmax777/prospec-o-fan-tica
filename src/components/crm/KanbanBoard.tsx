@@ -25,7 +25,9 @@ export const KanbanBoard = () => {
   const [showBriefing, setShowBriefing] = useState(false);
   const dragElementRef = useRef<HTMLElement | null>(null);
 
-  const activeLeads = leads.filter((lead) => lead.status !== "Convertido");
+  const activeLeads = leads.filter(
+    (lead) => lead.status !== "Convertido" && lead.status !== "Perdido"
+  );
 
   const leadsFrios = activeLeads.filter((lead) => lead.temperatura === "Frio");
   const leadsMornos = activeLeads.filter((lead) => lead.temperatura === "Morno");

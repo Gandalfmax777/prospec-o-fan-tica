@@ -18,6 +18,8 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
         return "status-em-dia";
       case "Convertido":
         return "bg-primary/10 text-primary border-primary hover:bg-primary/20";
+      case "Perdido":
+        return "status-perdido";
       default:
         return "";
     }

@@ -48,6 +48,7 @@ import {
   Phone,
   Trash2,
   Trophy,
+  UserX,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -55,6 +56,7 @@ import { BriefingDialog } from "./BriefingDialog";
 import { ConvertLeadDialog } from "./ConvertLeadDialog";
 import { EditLeadDialog } from "./EditLeadDialog";
 import { HistoricoDialog } from "./HistoricoDialog";
+import { MarcarPerdidoDialog } from "./MarcarPerdidoDialog";
 import { NewLeadDialog } from "./NewLeadDialog";
 import { PrioridadeBadge, StatusBadge } from "./StatusBadge";
 
@@ -70,6 +72,8 @@ export const LeadTable = () => {
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [leadToConvert, setLeadToConvert] = useState<Lead | null>(null);
+  const [showPerdidoDialog, setShowPerdidoDialog] = useState(false);
+  const [leadToPerder, setLeadToPerder] = useState<Lead | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [origemFilter, setOrigemFilter] = useState<Origem | "Todas">("Todas");
   const [statusFilter, setStatusFilter] = useState<Status | "Todas">("Todas");
@@ -92,7 +96,10 @@ export const LeadTable = () => {
   };
 
   const activeLeads = useMemo(
-    () => leads.filter((lead) => lead.status !== "Convertido"),
+    () =>
+      leads.filter(
+        (lead) => lead.status !== "Convertido" && lead.status !== "Perdido"
+      ),
     [leads]
   );
   const filteredLeads = useMemo(() => {
@@ -609,6 +616,18 @@ export const LeadTable = () => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-8 w-8 text-[hsl(var(--status-perdido))] hover:bg-[hsl(var(--status-perdido-bg))] hover:text-[hsl(var(--status-perdido))] transition-colors"
+                          onClick={() => {
+                            setLeadToPerder(lead);
+                            setShowPerdidoDialog(true);
+                          }}
+                          title="Mover para Perdidos"
+                        >
+                          <UserX className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
                           onClick={() => {
                             setLeadToDelete(lead);
@@ -654,6 +673,12 @@ export const LeadTable = () => {
           lead={leadToConvert}
           open={showConvertDialog}
           onOpenChange={setShowConvertDialog}
+        />
+
+        <MarcarPerdidoDialog
+          lead={leadToPerder}
+          open={showPerdidoDialog}
+          onOpenChange={setShowPerdidoDialog}
         />
 
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

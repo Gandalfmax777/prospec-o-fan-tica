@@ -22,6 +22,7 @@ export const statusToApiMap: Record<Status, string> = {
   "Falar Hoje": "FalarHoje",
   "Em Dia": "EmDia",
   Convertido: "Convertido",
+  Perdido: "Perdido",
 };
 
 export const prioridadeToApiMap: Record<Prioridade, string> = {

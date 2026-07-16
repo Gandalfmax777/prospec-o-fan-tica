@@ -22,7 +22,9 @@ export const PendenciasTab = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showBriefing, setShowBriefing] = useState(false);
 
-  const ativos = leads.filter((lead) => lead.status !== "Convertido");
+  const ativos = leads.filter(
+    (lead) => lead.status !== "Convertido" && lead.status !== "Perdido"
+  );
 
   const atrasados = ativos.filter((lead) => lead.status === "Atrasado");
   const quaseAtrasados = ativos.filter((lead) => {

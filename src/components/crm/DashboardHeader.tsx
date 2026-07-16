@@ -40,7 +40,10 @@ export const DashboardHeader = () => {
   // Garantir que leads seja sempre um array
   const leadsArray = Array.isArray(leads) ? leads : [];
 
-  const ativos = leadsArray.filter((lead) => lead.status !== "Convertido");
+  // Perdidos saem das visões ativas (não poluem funil, follow-ups, gráficos nem totais).
+  const naoPerdidos = leadsArray.filter((lead) => lead.status !== "Perdido");
+
+  const ativos = naoPerdidos.filter((lead) => lead.status !== "Convertido");
   const atrasadosLeads = ativos.filter((lead) => lead.status === "Atrasado");
   const falarHojeLeads = ativos.filter((lead) => lead.status === "Falar Hoje");
   const atrasados = atrasadosLeads.length;
@@ -51,7 +54,7 @@ export const DashboardHeader = () => {
   const todayStart = startOfDay(new Date());
   const todayEnd = endOfDay(new Date());
 
-  const followUpsToday = leadsArray.flatMap((lead) => {
+  const followUpsToday = naoPerdidos.flatMap((lead) => {
     const briefings = Array.isArray(lead.briefings) ? lead.briefings : [];
     return briefings
       .filter(
@@ -73,15 +76,15 @@ export const DashboardHeader = () => {
   const porCadencia = [
     {
       name: "Semanal",
-      value: leadsArray.filter((lead) => lead.cadencia === "Semanal").length,
+      value: naoPerdidos.filter((lead) => lead.cadencia === "Semanal").length,
     },
     {
       name: "Quinzenal",
-      value: leadsArray.filter((lead) => lead.cadencia === "Quinzenal").length,
+      value: naoPerdidos.filter((lead) => lead.cadencia === "Quinzenal").length,
     },
     {
       name: "Mensal",
-      value: leadsArray.filter((lead) => lead.cadencia === "Mensal").length,
+      value: naoPerdidos.filter((lead) => lead.cadencia === "Mensal").length,
     },
   ];
 
@@ -190,7 +193,7 @@ export const DashboardHeader = () => {
             <div className="overflow-x-auto scrollbar-thin pb-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
                 <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
-                  <KPICard title="Total Prospects" value={leadsArray.length} icon={Users} variant="primary" />
+                  <KPICard title="Total Prospects" value={naoPerdidos.length} icon={Users} variant="primary" />
                 </div>
                 <div className="min-w-[140px] sm:min-w-[150px] md:min-w-[160px]">
                   <KPICard title="Atrasados" value={atrasados} icon={AlertTriangle} variant="danger" />
