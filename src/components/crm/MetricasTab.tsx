@@ -70,6 +70,7 @@ export const MetricasTab = () => {
     const ativos = leadsBase.filter((lead) => lead.status !== "Convertido");
 
     const porCadencia = {
+      diaria: leadsBase.filter((lead) => lead.cadencia === "Diaria").length,
       semanal: leadsBase.filter((lead) => lead.cadencia === "Semanal").length,
       quinzenal: leadsBase.filter((lead) => lead.cadencia === "Quinzenal").length,
       mensal: leadsBase.filter((lead) => lead.cadencia === "Mensal").length,
@@ -91,6 +92,10 @@ export const MetricasTab = () => {
     const taxaConversaoGeral = totalLeads > 0 ? (convertidos.length / totalLeads) * 100 : 0;
 
     const taxaConversaoPorCadencia = {
+      diaria:
+        porCadencia.diaria > 0
+          ? (convertidos.filter((lead) => lead.cadencia === "Diaria").length / porCadencia.diaria) * 100
+          : 0,
       semanal:
         porCadencia.semanal > 0
           ? (convertidos.filter((lead) => lead.cadencia === "Semanal").length / porCadencia.semanal) * 100
@@ -175,6 +180,7 @@ export const MetricasTab = () => {
   }, [leads, inicioDia, fimDia, inicioSemana, fimSemana, inicioMes, fimMes, inicioAno, fimAno]);
 
   const cadenciaData = [
+    { name: "Diária", value: metricas.porCadencia.diaria },
     { name: "Semanal", value: metricas.porCadencia.semanal },
     { name: "Quinzenal", value: metricas.porCadencia.quinzenal },
     { name: "Mensal", value: metricas.porCadencia.mensal },
@@ -188,6 +194,7 @@ export const MetricasTab = () => {
   ];
 
   const taxaConversaoCadenciaData = [
+    { cadencia: "Diária", taxa: metricas.taxaConversaoPorCadencia.diaria },
     { cadencia: "Semanal", taxa: metricas.taxaConversaoPorCadencia.semanal },
     { cadencia: "Quinzenal", taxa: metricas.taxaConversaoPorCadencia.quinzenal },
     { cadencia: "Mensal", taxa: metricas.taxaConversaoPorCadencia.mensal },

@@ -102,7 +102,7 @@ export const EditLeadDialog = ({ open, onOpenChange, lead }: EditLeadDialogProps
       errors.origem = "Origem inválida";
     }
 
-    const cadenciasValidas: Cadencia[] = ["Semanal", "Quinzenal", "Mensal"];
+    const cadenciasValidas: Cadencia[] = ["Diaria", "Semanal", "Quinzenal", "Mensal"];
     if (!cadenciasValidas.includes(editedLead.cadencia)) {
       errors.cadencia = "Cadência inválida";
     }
@@ -300,6 +300,7 @@ export const EditLeadDialog = ({ open, onOpenChange, lead }: EditLeadDialogProps
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="Diaria">Diária</SelectItem>
                 <SelectItem value="Semanal">Semanal</SelectItem>
                 <SelectItem value="Quinzenal">Quinzenal</SelectItem>
                 <SelectItem value="Mensal">Mensal</SelectItem>

@@ -462,6 +462,7 @@ export const LeadTable = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="Diaria">Diária</SelectItem>
                           <SelectItem value="Semanal">Semanal</SelectItem>
                           <SelectItem value="Quinzenal">Quinzenal</SelectItem>
                           <SelectItem value="Mensal">Mensal</SelectItem>
