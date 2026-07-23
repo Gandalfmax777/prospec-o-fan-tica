@@ -129,13 +129,6 @@ export interface OrgDetails {
   slug: string;
   membersCount: number;
   leadsCount: number;
-  crmConfig: {
-    id: string;
-    crmApiUrl: string;
-    autoTransfer: boolean;
-    lastTestedAt: string | null;
-    lastTestSuccess: boolean | null;
-  } | null;
   createdAt: string;
 }
 
