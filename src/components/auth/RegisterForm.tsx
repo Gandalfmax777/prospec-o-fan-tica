@@ -17,7 +17,7 @@ export const RegisterForm = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, refreshSession } = useAuth();
 
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
@@ -80,6 +80,12 @@ export const RegisterForm = () => {
 
       // 2. Aceitar o convite automaticamente
       await api.joinOrg({ token });
+
+      // 3. Atualizar a sessão para refletir a organização recém-ingressada
+      //    (com o papel do convite, ex. SELLER). Sem isso o AuthGuard ainda
+      //    veria organizationId=null e redirecionaria para /onboarding, onde
+      //    o usuário criaria a própria org e viraria ADMIN por engano.
+      await refreshSession();
 
       toast({
         title: "Conta criada com sucesso!",
