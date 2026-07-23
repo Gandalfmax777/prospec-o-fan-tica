@@ -42,8 +42,7 @@ import {
   ChevronRight,
   ArrowLeft,
   Loader2,
-  Copy,
-  Check,
+  Send,
   UserPlus,
   BarChart3,
   RefreshCw,
@@ -105,7 +104,7 @@ function OrgDetailPanel({
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingOrg, setDeletingOrg] = useState(false);
-  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [resendingInviteId, setResendingInviteId] = useState<string | null>(null);
 
   const loadOrgData = useCallback(async () => {
     setLoadingData(true);
@@ -127,11 +126,19 @@ function OrgDetailPanel({
     loadOrgData();
   }, [loadOrgData]);
 
-  const handleCopyInviteLink = (token: string) => {
-    const link = `${window.location.origin}/join?token=${token}`;
-    navigator.clipboard.writeText(link);
-    setCopiedToken(token);
-    setTimeout(() => setCopiedToken(null), 2000);
+  // O token do convite não é devolvido pela API — o e-mail é o único canal de
+  // entrega. Reenviar cobre o caso de falha no envio.
+  const handleResendInvite = async (inviteId: string) => {
+    try {
+      setResendingInviteId(inviteId);
+      const result = await api.sysadmin.resendOrgInvite(org.id, inviteId);
+      toast({ title: "Convite reenviado", description: `E-mail enviado para ${result.email}.` });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao reenviar convite";
+      toast({ title: "Erro", description: message, variant: "destructive" });
+    } finally {
+      setResendingInviteId(null);
+    }
   };
 
   const handleCancelInvite = async (inviteId: string) => {
@@ -252,13 +259,14 @@ function OrgDetailPanel({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        title="Copiar link do convite"
-                        onClick={() => handleCopyInviteLink(i.token)}
+                        title="Reenviar e-mail de convite"
+                        disabled={resendingInviteId === i.id}
+                        onClick={() => handleResendInvite(i.id)}
                       >
-                        {copiedToken === i.token ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-500" />
+                        {resendingInviteId === i.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
-                          <Copy className="h-3.5 w-3.5" />
+                          <Send className="h-3.5 w-3.5" />
                         )}
                       </Button>
                       <Button
@@ -343,11 +351,9 @@ function InviteDialog({
       const invite = await api.sysadmin.createOrgInvite(orgId, email.trim(), role);
       onInvited(invite);
       if (invite.emailSent === false) {
-        const link = `${window.location.origin}/join?token=${invite.token}`;
-        navigator.clipboard.writeText(link).catch(() => {});
         toast({
           title: "Convite criado — e-mail não enviado",
-          description: `Não foi possível enviar o e-mail para ${email}. O link do convite foi copiado; envie manualmente.`,
+          description: `Não foi possível enviar o e-mail para ${email}. Verifique a configuração de envio e use "Reenviar" na lista de convites.`,
           variant: "destructive",
         });
       } else {

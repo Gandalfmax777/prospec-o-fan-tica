@@ -21,6 +21,7 @@ import type {
   AdminUser,
   OrgDetails,
   OrgInvite,
+  MyPendingInvite,
   OrgMember,
   UpdateUserRoleInput,
   UpdateGamificacaoInput,
@@ -374,8 +375,11 @@ export const api = {
   cancelOrgInvite: (id: string): Promise<null> =>
     request<null>(`/organizations/me/invites/${id}`, { method: "DELETE" }),
 
-  getMyPendingInvite: (): Promise<{ token: string; organization: { name: string } } | null> =>
-    request<{ token: string; organization: { name: string } } | null>("/organizations/my-pending-invite"),
+  resendOrgInvite: (id: string): Promise<{ id: string; email: string; emailSent: boolean }> =>
+    request(`/organizations/me/invites/${id}/resend`, { method: "POST" }),
+
+  getMyPendingInvite: (): Promise<MyPendingInvite | null> =>
+    request<MyPendingInvite | null>("/organizations/my-pending-invite"),
 
   // Org switcher
   switchOrganization: (organizationId: string): Promise<{ organization: { id: string; name: string; slug: string }; role: string }> =>
@@ -409,6 +413,9 @@ export const api = {
 
     cancelOrgInvite: (orgId: string, inviteId: string): Promise<null> =>
       request<null>(`/sysadmin/organizations/${orgId}/invites/${inviteId}`, { method: "DELETE" }),
+
+    resendOrgInvite: (orgId: string, inviteId: string): Promise<{ id: string; email: string; emailSent: boolean }> =>
+      request(`/sysadmin/organizations/${orgId}/invites/${inviteId}/resend`, { method: "POST" }),
 
     getUsers: (): Promise<SysAdminUser[]> =>
       request<SysAdminUser[]>("/sysadmin/users"),

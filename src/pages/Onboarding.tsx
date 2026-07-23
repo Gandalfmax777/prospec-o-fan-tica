@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Building2, Key, Loader2, Shield } from "lucide-react";
+import { Building2, Key, Loader2, Mail, Shield } from "lucide-react";
 import { SUPER_ADMIN_EMAIL } from "@/config/superAdmin";
+import type { MyPendingInvite } from "@/types/api";
 
 const Onboarding = () => {
   const { user, refreshSession, signOut } = useAuth();
@@ -25,8 +26,11 @@ const Onboarding = () => {
   const [inviteToken, setInviteToken] = useState("");
   const [joining, setJoining] = useState(false);
 
-  // Convite pendente detectado automaticamente
-  const [pendingInvite, setPendingInvite] = useState<{ token: string; organization: { name: string } } | null>(null);
+  // Convite pendente detectado automaticamente. Apenas informativo: o aceite
+  // exige o token, que chega somente pelo e-mail do convite. Este endpoint é
+  // gated só por igualdade de e-mail e o cadastro não exige verificação, então
+  // aceitar direto daqui permitiria entrar na org sem acessar a caixa postal.
+  const [pendingInvite, setPendingInvite] = useState<MyPendingInvite | null>(null);
 
   useEffect(() => {
     api.getMyPendingInvite()
@@ -132,19 +136,15 @@ const Onboarding = () => {
         {/* Banner: convite pendente detectado automaticamente */}
         {pendingInvite && (
           <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="pt-4 pb-4 text-center space-y-3">
+            <CardContent className="pt-4 pb-4 text-center space-y-2">
               <p className="text-sm font-medium text-foreground">
                 Você tem um convite pendente para{" "}
                 <strong>{pendingInvite.organization.name}</strong>
               </p>
-              <Button
-                className="w-full gap-2"
-                onClick={() => handleJoinOrg(pendingInvite.token)}
-                disabled={joining}
-              >
-                {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
-                {joining ? "Entrando..." : `Entrar em ${pendingInvite.organization.name}`}
-              </Button>
+              <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                <Mail className="h-3.5 w-3.5 shrink-0" />
+                Abra o link que enviamos para <strong>{user?.email}</strong> para aceitar.
+              </p>
             </CardContent>
           </Card>
         )}

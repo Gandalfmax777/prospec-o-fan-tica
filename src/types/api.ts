@@ -145,15 +145,29 @@ export interface OrgInvite {
   id: string;
   email: string;
   role: string;
-  token: string;
   expiresAt: string;
   createdAt: string;
   /**
    * Indica se o e-mail de convite foi realmente enviado. Retornado na criação
    * do convite; ausente ao listar convites existentes. Quando `false`, a UI
-   * avisa e disponibiliza o link para envio manual.
+   * avisa e oferece o reenvio.
    */
   emailSent?: boolean;
+}
+
+/**
+ * Convite pendente do próprio usuário autenticado, retornado por
+ * `GET /organizations/my-pending-invite`.
+ *
+ * Não inclui o token: o link de convite chega exclusivamente por e-mail, e
+ * este endpoint é gated apenas por igualdade de e-mail (o cadastro não exige
+ * verificação). O dado aqui é informativo — o aceite exige o token do e-mail.
+ */
+export interface MyPendingInvite {
+  id: string;
+  role: string;
+  expiresAt: string;
+  organization: { name: string };
 }
 
 export interface CreateInviteInput {

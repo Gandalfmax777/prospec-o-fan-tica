@@ -29,10 +29,10 @@ import { ptBR } from "date-fns/locale";
 import {
   Building2,
   Check,
-  ClipboardCopy,
   Loader2,
   MailPlus,
   Pencil,
+  Send,
   Shield,
   Trash2,
   UserMinus,
@@ -73,7 +73,7 @@ export const OrgSettings = () => {
   const [creatingInvite, setCreatingInvite] = useState(false);
 
   const [cancelingInviteId, setCancelingInviteId] = useState<string | null>(null);
-  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [resendingInviteId, setResendingInviteId] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     try {
@@ -147,11 +147,9 @@ export const OrgSettings = () => {
       setInvites((prev) => [invite, ...prev]);
       setInviteEmail("");
       if (invite.emailSent === false) {
-        const link = `${window.location.origin}/join?token=${invite.token}`;
-        navigator.clipboard.writeText(link).catch(() => {});
         toast({
           title: "Convite criado — e-mail não enviado",
-          description: `Não foi possível enviar o e-mail para ${invite.email}. O link foi copiado; envie manualmente.`,
+          description: `Não foi possível enviar o e-mail para ${invite.email}. Verifique a configuração de envio e use "Reenviar" na lista abaixo.`,
           variant: "destructive",
         });
       } else {
@@ -179,12 +177,20 @@ export const OrgSettings = () => {
     }
   };
 
-  const handleCopyToken = (token: string) => {
-    const link = `${window.location.origin}/join?token=${token}`;
-    navigator.clipboard.writeText(link).then(() => {
-      setCopiedToken(token);
-      setTimeout(() => setCopiedToken(null), 2000);
-    });
+  // O link de convite não trafega até o cliente — o token existe apenas no
+  // banco e no e-mail enviado. Reenviar é a forma de reagir a uma falha de
+  // envio sem expor o token.
+  const handleResendInvite = async (id: string) => {
+    try {
+      setResendingInviteId(id);
+      const result = await api.resendOrgInvite(id);
+      toast({ title: "Convite reenviado", description: `E-mail enviado para ${result.email}.` });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao reenviar convite";
+      toast({ title: "Erro", description: message, variant: "destructive" });
+    } finally {
+      setResendingInviteId(null);
+    }
   };
 
   if (loading) {
@@ -377,13 +383,14 @@ export const OrgSettings = () => {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
-                          onClick={() => handleCopyToken(invite.token)}
-                          title="Copiar link de convite"
+                          onClick={() => handleResendInvite(invite.id)}
+                          disabled={resendingInviteId === invite.id}
+                          title="Reenviar e-mail de convite"
                         >
-                          {copiedToken === invite.token ? (
-                            <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          {resendingInviteId === invite.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : (
-                            <ClipboardCopy className="h-3.5 w-3.5" />
+                            <Send className="h-3.5 w-3.5" />
                           )}
                         </Button>
                         <Button
