@@ -119,7 +119,7 @@ export const NewLeadDialog = () => {
       errors.origem = "Origem inválida";
     }
 
-    const cadenciasValidas: Cadencia[] = ["Semanal", "Quinzenal", "Mensal"];
+    const cadenciasValidas: Cadencia[] = ["Diaria", "Semanal", "Quinzenal", "Mensal"];
     if (!cadenciasValidas.includes(newLead.cadencia)) {
       errors.cadencia = "Cadência inválida";
     }
@@ -348,6 +348,7 @@ export const NewLeadDialog = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="Diaria">Diária</SelectItem>
                 <SelectItem value="Semanal">Semanal</SelectItem>
                 <SelectItem value="Quinzenal">Quinzenal</SelectItem>
                 <SelectItem value="Mensal">Mensal</SelectItem>

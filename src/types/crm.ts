@@ -1,4 +1,4 @@
-export type Cadencia = "Semanal" | "Quinzenal" | "Mensal";
+export type Cadencia = "Diaria" | "Semanal" | "Quinzenal" | "Mensal";
 export type Status = "Atrasado" | "Falar Hoje" | "Em Dia" | "Convertido" | "Perdido";
 export type Temperatura = "Frio" | "Morno" | "Quente";
 export type Prioridade = "Urgente" | "Alerta" | "Atenção" | "Normal";
