@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, ChevronsUpDown, Building2, Plus, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { SUPER_ADMIN_EMAIL } from "@/config/superAdmin";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,6 +24,8 @@ export const OrgSwitcher = ({ onCreateOrg }: OrgSwitcherProps) => {
   const activeOrgId = user?.organizationId;
   const activeOrg = organizations.find((o) => o.id === activeOrgId);
   const orgName = activeOrg?.name ?? user?.organization?.name ?? "Organização";
+  // Criar organização é restrito ao super-admin do sistema.
+  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
   if (organizations.length <= 1) {
     return (
@@ -88,7 +91,7 @@ export const OrgSwitcher = ({ onCreateOrg }: OrgSwitcherProps) => {
             )}
           </DropdownMenuItem>
         ))}
-        {onCreateOrg && (
+        {onCreateOrg && isSuperAdmin && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
