@@ -369,6 +369,32 @@ export const auth = {
   },
 
   /**
+   * Solicita (ou reenvia) o e-mail de verificação de endereço.
+   *
+   * O comportamento do servidor muda conforme haja sessão:
+   *
+   * - Sem sessão: sempre responde 200, exista o e-mail ou não, com um piso de
+   *   tempo constante. É proposital — impede descobrir quais e-mails estão
+   *   cadastrados. Logo, sucesso aqui NÃO significa que o e-mail saiu.
+   * - Com sessão: valida de verdade e responde 400 em dois casos —
+   *   EMAIL_MISMATCH se o e-mail não for o da sessão, e EMAIL_ALREADY_VERIFIED
+   *   se já estiver verificado. Por isso, com usuário logado, envie sempre o
+   *   e-mail da própria sessão.
+   *
+   * O callbackURL define para onde o backend redireciona depois de validar o
+   * token; em erro ele acrescenta `?error=CODIGO`.
+   */
+  async sendVerificationEmail(email: string): Promise<void> {
+    await authRequest("/send-verification-email", {
+      method: "POST",
+      body: {
+        email,
+        callbackURL: `${window.location.origin}/email-verificado`,
+      } as unknown as BodyInit,
+    });
+  },
+
+  /**
    * Redefinir a senha usando o token recebido por e-mail.
    */
   async resetPassword(token: string, newPassword: string): Promise<void> {
