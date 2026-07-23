@@ -9,10 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { Building2, Key, Loader2, Shield } from "lucide-react";
+import { SUPER_ADMIN_EMAIL } from "@/config/superAdmin";
 
 const Onboarding = () => {
-  const { refreshSession, signOut } = useAuth();
+  const { user, refreshSession, signOut } = useAuth();
   const navigate = useNavigate();
+  // Criar organização é restrito ao super-admin; os demais só entram por convite.
+  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
   // Criar organização
   const [orgName, setOrgName] = useState("");
@@ -72,6 +75,40 @@ const Onboarding = () => {
     }
   };
 
+  const joinCard = (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Key className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">Aceitar convite</CardTitle>
+        </div>
+        <CardDescription>
+          Cole o token de convite enviado pelo administrador da sua organização.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleJoinOrg} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="inviteToken">Token de convite</Label>
+            <Input
+              id="inviteToken"
+              placeholder="Cole o token aqui..."
+              value={inviteToken}
+              onChange={(e) => setInviteToken(e.target.value)}
+              disabled={joining}
+              autoFocus
+              className="font-mono text-sm"
+            />
+          </div>
+          <Button type="submit" className="w-full gap-2" disabled={joining}>
+            {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
+            {joining ? "Entrando..." : "Aceitar convite"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_hsl(var(--primary)/0.12),_transparent_60%),_linear-gradient(180deg,_hsl(var(--background)),_hsl(var(--muted)/0.5))] flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
@@ -85,7 +122,9 @@ const Onboarding = () => {
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Bem-vindo ao CDR</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Para continuar, crie sua organização ou entre com um convite.
+              {isSuperAdmin
+                ? "Para continuar, crie sua organização ou entre com um convite."
+                : "Para continuar, entre com um convite."}
             </p>
           </div>
         </div>
@@ -110,82 +149,54 @@ const Onboarding = () => {
           </Card>
         )}
 
-        {/* Tabs */}
-        <Tabs defaultValue="create" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="create">Criar organização</TabsTrigger>
-            <TabsTrigger value="join">Entrar com convite</TabsTrigger>
-          </TabsList>
+        {/* Super-admin: pode criar org ou entrar por convite. Demais: só convite. */}
+        {isSuperAdmin ? (
+          <Tabs defaultValue="create" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="create">Criar organização</TabsTrigger>
+              <TabsTrigger value="join">Entrar com convite</TabsTrigger>
+            </TabsList>
 
-          {/* Criar organização */}
-          <TabsContent value="create">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-base">Nova organização</CardTitle>
-                </div>
-                <CardDescription>
-                  Crie a organização da sua equipe de prospecção. Você será o administrador.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateOrg} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="orgName">Nome da organização</Label>
-                    <Input
-                      id="orgName"
-                      placeholder="Ex: Imobiliária Alpha"
-                      value={orgName}
-                      onChange={(e) => setOrgName(e.target.value)}
-                      disabled={creating}
-                      autoFocus
-                    />
+            {/* Criar organização */}
+            <TabsContent value="create">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-base">Nova organização</CardTitle>
                   </div>
-                  <Button type="submit" className="w-full gap-2" disabled={creating}>
-                    {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Building2 className="h-4 w-4" />}
-                    {creating ? "Criando..." : "Criar organização"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  <CardDescription>
+                    Crie a organização da sua equipe de prospecção. Você será o administrador.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleCreateOrg} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="orgName">Nome da organização</Label>
+                      <Input
+                        id="orgName"
+                        placeholder="Ex: Imobiliária Alpha"
+                        value={orgName}
+                        onChange={(e) => setOrgName(e.target.value)}
+                        disabled={creating}
+                        autoFocus
+                      />
+                    </div>
+                    <Button type="submit" className="w-full gap-2" disabled={creating}>
+                      {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Building2 className="h-4 w-4" />}
+                      {creating ? "Criando..." : "Criar organização"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Entrar com convite */}
-          <TabsContent value="join">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Key className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-base">Aceitar convite</CardTitle>
-                </div>
-                <CardDescription>
-                  Cole o token de convite enviado pelo administrador da sua organização.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleJoinOrg} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="inviteToken">Token de convite</Label>
-                    <Input
-                      id="inviteToken"
-                      placeholder="Cole o token aqui..."
-                      value={inviteToken}
-                      onChange={(e) => setInviteToken(e.target.value)}
-                      disabled={joining}
-                      autoFocus
-                      className="font-mono text-sm"
-                    />
-                  </div>
-                  <Button type="submit" className="w-full gap-2" disabled={joining}>
-                    {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
-                    {joining ? "Entrando..." : "Aceitar convite"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            {/* Entrar com convite */}
+            <TabsContent value="join">{joinCard}</TabsContent>
+          </Tabs>
+        ) : (
+          joinCard
+        )}
 
         {/* Logout link */}
         <p className="text-center text-xs text-muted-foreground">
