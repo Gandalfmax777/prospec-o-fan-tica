@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -32,13 +31,9 @@ import { useCRM } from "@/context/CRMContext";
 import { Cadencia, Lead, Origem } from "@/types/crm";
 import { ORIGENS } from "@/lib/origemConstants";
 import { format } from "date-fns";
-import { toast } from "@/hooks/use-toast";
 import {
-  ArrowUpRight,
   CheckCircle,
   Edit,
-  ExternalLink,
-  Loader2,
   MapPin,
   RotateCcw,
   Save,
@@ -72,12 +67,11 @@ const COLORS = [
 ];
 
 export const ConvertidosTab = () => {
-  const { leads, updateLead, deleteLead, retornarAoFunil, transferLead } = useCRM();
+  const { leads, updateLead, deleteLead, retornarAoFunil } = useCRM();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Lead>>({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
-  const [transferringId, setTransferringId] = useState<string | null>(null);
 
   const convertidos = leads.filter((lead) => lead.status === "Convertido");
 
@@ -149,22 +143,6 @@ export const ConvertidosTab = () => {
   const handleCancel = () => {
     setEditingId(null);
     setEditData({});
-  };
-
-  const handleTransfer = async (lead: Lead) => {
-    try {
-      setTransferringId(lead.id);
-      await transferLead(lead.id);
-      toast({
-        title: "Contato transferido!",
-        description: `${lead.nome} foi enviado ao CRM com sucesso.`,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao transferir contato";
-      toast({ title: "Erro ao transferir", description: message, variant: "destructive" });
-    } finally {
-      setTransferringId(null);
-    }
   };
 
   return (
@@ -280,7 +258,6 @@ export const ConvertidosTab = () => {
                   <TableHead>Ultimo contato</TableHead>
                   <TableHead>Data conversao</TableHead>
                   <TableHead>Observacao</TableHead>
-                  <TableHead>CRM</TableHead>
                   <TableHead>Acoes</TableHead>
                 </TableRow>
               </TableHeader>
@@ -440,37 +417,6 @@ export const ConvertidosTab = () => {
                         </span>
                       )}
                     </TableCell>
-                    {/* CRM status cell */}
-                    <TableCell>
-                      {lead.crmDealId ? (
-                        <div className="flex items-center gap-1.5">
-                          <Badge
-                            variant="secondary"
-                            className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs whitespace-nowrap"
-                          >
-                            Transferido
-                          </Badge>
-                          {lead.crmDealUrl && (
-                            <a
-                              href={lead.crmDealUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="Ver no CRM"
-                              className="text-primary hover:text-primary/80 transition-colors"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
-                          )}
-                        </div>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="text-muted-foreground text-xs whitespace-nowrap"
-                        >
-                          Pendente
-                        </Badge>
-                      )}
-                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {editingId === lead.id ? (
@@ -503,24 +449,6 @@ export const ConvertidosTab = () => {
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            {/* Botão de transferência para o CRM */}
-                            {!lead.crmDealId && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 gap-1.5 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400"
-                                onClick={() => handleTransfer(lead)}
-                                disabled={transferringId === lead.id}
-                                title="Enviar este contato ao CRM"
-                              >
-                                {transferringId === lead.id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <ArrowUpRight className="w-3.5 h-3.5" />
-                                )}
-                                Enviar ao CRM
-                              </Button>
-                            )}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -560,7 +488,7 @@ export const ConvertidosTab = () => {
                 {convertidos.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={13}
+                      colSpan={12}
                       className="text-center py-8 text-muted-foreground"
                     >
                       Nenhum lead convertido ainda.
