@@ -74,11 +74,6 @@ export interface Lead {
   pontos: number;
   nivel: string;
   conquistas: string[];
-  // Rastreabilidade da transferência para o CRM
-  crmContactId?: string | null;
-  crmDealId?: string | null;
-  crmDealUrl?: string | null;
-  transferredAt?: Date | null;
 }
 
 // Item do pool de perdidos (org-wide) — resposta de GET /leads/perdidos
@@ -138,58 +133,6 @@ export interface MetricasDiarias {
   novosLeads: number;
   leadsQuentesTrabalhados: number;
   taxaRitmo: number;
-}
-
-// ─── Agenda (integração CRM) ─────────────────────────────────────────────────
-
-export type TipoEvento = "CALL" | "EMAIL" | "MEETING" | "NOTE" | "TASK" | "VISIT";
-
-export interface AgendaEvent {
-  id: string;
-  type: TipoEvento;
-  title: string;
-  description: string;
-  date: string;
-  startDate: string | null;
-  endDate: string | null;
-  dueDate: string | null;
-  completed: boolean;
-  visitConfirmed: boolean | null;
-  createdAt: string;
-  dealId: string | null;
-  contactId: string | null;
-  userId: string;
-  deal: { id: string; title: string } | null;
-  contact: { id: string; name: string } | null;
-  user: { id: string; name: string; email: string; image: string | null };
-  participants: {
-    userId: string;
-    user: { id: string; name: string; email: string; image: string | null };
-  }[];
-}
-
-export interface TeamMember {
-  userId: string;
-  name: string;
-  email: string;
-  image: string | null;
-  role: string;
-}
-
-export interface CreateAgendaEventInput {
-  title: string;
-  description?: string;
-  type: TipoEvento;
-  date: string;
-  startDate?: string;
-  endDate?: string;
-  dueDate?: string;
-  completed?: boolean;
-  contactId?: string;
-  dealId?: string;
-  participantEmails?: string[];
-  /** Email do corretor responsável — atividade fica no calendário dele */
-  assigneeEmail?: string;
 }
 
 export interface DadosDashboard {

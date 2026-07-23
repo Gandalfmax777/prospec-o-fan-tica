@@ -13,7 +13,6 @@ import type {
   CreateInviteInput,
   CreateLeadInput,
   CreateOrgInput,
-  CrmConfig,
   JoinOrgInput,
   LeadResponse,
   LeaderTeamMember,
@@ -23,8 +22,6 @@ import type {
   OrgDetails,
   OrgInvite,
   OrgMember,
-  SaveCrmConfigInput,
-  TransferLeadResult,
   UpdateUserRoleInput,
   UpdateGamificacaoInput,
   UpdateLeadInput,
@@ -35,7 +32,7 @@ import type {
   SysAdminMember,
   SysAdminUser,
 } from "@/types/api";
-import type { Briefing, Gamificacao, MetricasDiarias, AgendaEvent, TeamMember, CreateAgendaEventInput, PerdidoLead } from "@/types/crm";
+import type { Briefing, Gamificacao, MetricasDiarias, PerdidoLead } from "@/types/crm";
 
 const API_URL = ensureHttpsInProduction(
   import.meta.env.VITE_API_URL || "http://localhost:3333/api"
@@ -384,19 +381,6 @@ export const api = {
   switchOrganization: (organizationId: string): Promise<{ organization: { id: string; name: string; slug: string }; role: string }> =>
     request("/me/active-organization", { method: "PUT", body: JSON.stringify({ organizationId }) }),
 
-  // Integração CRM
-  getCrmConfig: (): Promise<CrmConfig | null> =>
-    request<CrmConfig | null>("/organizations/me/crm-config"),
-
-  saveCrmConfig: (data: SaveCrmConfigInput): Promise<CrmConfig> =>
-    request<CrmConfig>("/organizations/me/crm-config", { method: "PUT", body: data }),
-
-  testCrmConnection: (): Promise<{ success: boolean; message: string }> =>
-    request<{ success: boolean; message: string }>("/crm/test", { method: "POST" }),
-
-  transferLeadToCrm: (leadId: string): Promise<TransferLeadResult> =>
-    request<TransferLeadResult>(`/crm/transfer/${leadId}`, { method: "POST" }),
-
   // Sysadmin
   sysadmin: {
     getStats: (): Promise<SysAdminStats> =>
@@ -428,36 +412,5 @@ export const api = {
 
     getUsers: (): Promise<SysAdminUser[]> =>
       request<SysAdminUser[]>("/sysadmin/users"),
-  },
-
-  // ─── Agenda (integração CRM) ─────────────────────────────────────────────
-  agenda: {
-    getEvents: (startDate: string, endDate: string): Promise<{ activities: AgendaEvent[] }> =>
-      request<{ activities: AgendaEvent[] }>(
-        `/agenda?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`
-      ),
-
-    getTeamMembers: (): Promise<{ members: TeamMember[] }> =>
-      request<{ members: TeamMember[] }>("/agenda/team"),
-
-    getSettings: (): Promise<{
-      timezone: string;
-      workingHours: { start: string; end: string; daysOfWeek: number[] };
-    }> => request("/agenda/settings"),
-
-    createEvent: (data: CreateAgendaEventInput): Promise<{ activity: AgendaEvent }> =>
-      request<{ activity: AgendaEvent }>("/agenda", {
-        method: "POST",
-        body: data,
-      }),
-
-    updateEvent: (id: string, data: Partial<CreateAgendaEventInput>): Promise<{ activity: AgendaEvent }> =>
-      request<{ activity: AgendaEvent }>(`/agenda/${id}`, {
-        method: "PUT",
-        body: data,
-      }),
-
-    deleteEvent: (id: string): Promise<{ deleted: boolean }> =>
-      request<{ deleted: boolean }>(`/agenda/${id}`, { method: "DELETE" }),
   },
 };

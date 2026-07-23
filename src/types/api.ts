@@ -121,32 +121,6 @@ export interface MeResponse {
   organizations: OrgMembership[];
 }
 
-export interface CrmConfig {
-  id: string;
-  crmApiUrl: string;
-  crmApiKey: string | null;
-  defaultPipelineStageId: string | null;
-  autoTransfer: boolean;
-  lastTestedAt: string | null;
-  lastTestSuccess: boolean | null;
-  updatedAt?: string;
-}
-
-export interface SaveCrmConfigInput {
-  crmApiUrl: string;
-  crmApiKey?: string;
-  defaultPipelineStageId?: string | null;
-  autoTransfer?: boolean;
-}
-
-export interface TransferLeadResult {
-  success: boolean;
-  contactId?: string;
-  dealId?: string;
-  dealUrl?: string | null;
-  transferredAt?: string;
-}
-
 // ─── Organização ──────────────────────────────────────────────────────────────
 
 export interface OrgDetails {
