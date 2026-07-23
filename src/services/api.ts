@@ -39,12 +39,16 @@ const API_URL = ensureHttpsInProduction(
   import.meta.env.VITE_API_URL || "http://localhost:3333/api"
 );
 
-const normalizeLeadInput = <T extends { status?: string; prioridade?: string }>(
-  data: T
-): T => ({
+/**
+ * Campos de enum que existem em UpdateLeadInput mas não em CreateLeadInput —
+ * por isso são opcionais aqui, e o genérico não os exige do chamador.
+ */
+type EnumsDoLead = { status?: string; prioridade?: string };
+
+const normalizeLeadInput = <T>(data: T): T & EnumsDoLead => ({
   ...data,
-  status: toApiStatus(data.status),
-  prioridade: toApiPrioridade(data.prioridade),
+  status: toApiStatus((data as T & EnumsDoLead).status),
+  prioridade: toApiPrioridade((data as T & EnumsDoLead).prioridade),
 });
 
 const normalizeBriefingInput = <T extends { tipoContato?: string }>(
@@ -122,28 +126,39 @@ function isNetworkError(error: unknown): boolean {
   return false;
 }
 
+/**
+ * Opções aceitas por `request`.
+ *
+ * Difere de `RequestInit` apenas no `body`: aqui ele é `unknown`, porque o
+ * wrapper serializa objetos simples para JSON antes de chamar o fetch. Tipar
+ * como `RequestInit` obrigaria todo chamador a passar `BodyInit` (string,
+ * FormData, Blob...), o que contradiz o comportamento real da função.
+ */
+type RequestOptions = Omit<RequestInit, "body"> & { body?: unknown };
+
 async function request<T = unknown>(
   endpoint: string,
-  options: RequestInit = {},
+  options: RequestOptions = {},
   retryCount = 0,
   maxRetries = 1
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`;
+  const { body, ...rest } = options;
   const config: RequestInit = {
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
     },
     credentials: "include",
-    ...options,
+    ...rest,
   };
 
-  if (
-    config.body &&
-    typeof config.body === "object" &&
-    !(config.body instanceof FormData)
-  ) {
-    config.body = JSON.stringify(config.body);
+  // Mantém a semântica original: objeto simples vira JSON; qualquer outra coisa
+  // (string já serializada, FormData) segue direto para o fetch.
+  if (body && typeof body === "object" && !(body instanceof FormData)) {
+    config.body = JSON.stringify(body);
+  } else if (body !== undefined) {
+    config.body = body as BodyInit;
   }
 
   try {

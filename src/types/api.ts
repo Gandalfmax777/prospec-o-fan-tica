@@ -5,9 +5,13 @@ export interface CreateLeadInput {
   cidade: string;
   origem: string;
   telefone: string;
-  codigo: string;
+  /** Opcional no backend (`z.string().optional()`, default `''`) — o formulário de novo lead não preenche. */
+  codigo?: string;
   cadencia: string;
   ultimoContato?: string | Date | null;
+  /** Enviado pelo CRMContext ao criar; o backend aceita e usa como data de entrada. */
+  dataEntrada?: string | Date | null;
+  email?: string | null;
   observacao?: string;
   temperatura?: string;
   estimatedValueCents?: number | null;
@@ -28,6 +32,8 @@ export interface UpdateLeadInput {
   temperatura?: string;
   observacao?: string;
   prioridade?: string;
+  /** O CRMContext converte e envia quando o lead traz dataEntrada alterada. */
+  dataEntrada?: string | Date | null;
   dataConversao?: string | Date | null;
   estimatedValueCents?: number | null;
   statedValueCents?: number | null;
@@ -196,7 +202,16 @@ export interface UpdateUserRoleInput {
   managerId?: string | null;
 }
 
-export interface LeadResponse extends Lead {
+/**
+ * Lead como vem da API — o formato de fio, antes da conversão para `Lead`.
+ *
+ * Difere de `Lead` em `historico` e `briefings`: as datas chegam como string e
+ * os enums como string crua. Por isso o `Omit`; herdar direto de `Lead` era um
+ * extends inválido, já que os tipos desses dois campos são incompatíveis.
+ *
+ * Use `leadResponseParaLead` (CRMContext) para converter.
+ */
+export interface LeadResponse extends Omit<Lead, "historico" | "briefings"> {
   historico: Array<{
     id: string;
     data: string;

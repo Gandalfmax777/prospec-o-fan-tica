@@ -102,7 +102,15 @@ export const DashboardHeader = () => {
     .filter((lead) => lead.status === "Convertido")
     .reduce((acc, lead) => acc + (lead.statedValueCents ?? 0), 0);
 
-  const myDayItems = [
+  // O tipo é explícito porque o array mistura três formatos: só os follow-ups
+  // carregam `date`. Sem a anotação, o TS reduz ao denominador comum e o acesso
+  // a `item.date` na renderização vira erro.
+  const myDayItems: Array<{
+    key: string;
+    lead: Lead;
+    label: string;
+    date?: Date | null;
+  }> = [
     ...atrasadosLeads.map((lead) => ({
       key: `atrasado-${lead.id}`,
       lead,

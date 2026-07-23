@@ -8,7 +8,7 @@ import {
   MissaoDiaria,
   Temperatura,
 } from "@/types/crm";
-import type { UpdateLeadInput } from "@/types/api";
+import type { LeadResponse, UpdateLeadInput } from "@/types/api";
 import React, {
   createContext,
   useCallback,
@@ -25,9 +25,13 @@ interface CRMContextType {
   loading: boolean;
   error: string | null;
   addLead: (
+    // userId vem da sessão e codigo é opcional no backend (default ''), então
+    // nenhum dos dois é responsabilidade de quem chama.
     lead: Omit<
       Lead,
       | "id"
+      | "userId"
+      | "codigo"
       | "proximoContato"
       | "status"
       | "prioridade"
@@ -82,6 +86,39 @@ const gerarMissoesDiarias = (): MissaoDiaria[] => [
   },
 ];
 
+/**
+ * Converte o lead como vem da API (`LeadResponse`) para o formato usado na UI
+ * (`Lead`): datas viram Date e os enums recuperam seus tipos.
+ *
+ * Os valores de enum (`tipo`, `temperatura`, `status`, ...) já chegam aqui na
+ * forma do frontend — `services/api.ts` normaliza na resposta. A asserção
+ * apenas recupera a informação de tipo que o formato de fio perde, sem
+ * converter nada em runtime.
+ *
+ * Esta conversão estava duplicada em cinco pontos do arquivo; qualquer campo
+ * novo precisava ser lembrado nos cinco.
+ */
+const leadResponseParaLead = (resp: LeadResponse): Lead => ({
+  ...resp,
+  ultimoContato: resp.ultimoContato ? new Date(resp.ultimoContato) : null,
+  proximoContato: resp.proximoContato ? new Date(resp.proximoContato) : null,
+  dataEntrada: new Date(resp.dataEntrada),
+  dataConversao: resp.dataConversao ? new Date(resp.dataConversao) : null,
+  historico: Array.isArray(resp.historico)
+    ? resp.historico.map((item) => ({
+        ...item,
+        data: new Date(item.data),
+      })) as Lead["historico"]
+    : [],
+  briefings: Array.isArray(resp.briefings)
+    ? resp.briefings.map((item) => ({
+        ...item,
+        data: new Date(item.data),
+        proximoFollowUp: item.proximoFollowUp ? new Date(item.proximoFollowUp) : null,
+      })) as Briefing[]
+    : [],
+});
+
 export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -97,6 +134,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
     conquistas: [],
     missoesDiarias: gerarMissoesDiarias(),
     progressoDiario: 0,
+    ultimaAtividade: null,
   });
   const [metricasDiarias, setMetricasDiarias] = useState<MetricasDiarias>({
     id: "",
@@ -138,32 +176,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         api.getMetricas(),
       ]);
 
-      const leadsFormatados = leadsData.map((lead) => ({
-        ...lead,
-        ultimoContato: lead.ultimoContato ? new Date(lead.ultimoContato) : null,
-        proximoContato: lead.proximoContato
-          ? new Date(lead.proximoContato)
-          : null,
-        dataEntrada: new Date(lead.dataEntrada),
-        dataConversao: lead.dataConversao ? new Date(lead.dataConversao) : null,
-        historico: Array.isArray(lead.historico)
-          ? lead.historico.map((item) => ({
-              ...item,
-              data: new Date(item.data),
-            }))
-          : [],
-        briefings: Array.isArray(lead.briefings)
-          ? lead.briefings.map((item) => ({
-              ...item,
-              data: new Date(item.data),
-              proximoFollowUp: item.proximoFollowUp
-                ? new Date(item.proximoFollowUp)
-                : null,
-            }))
-          : [],
-      }));
-
-      setLeads(leadsFormatados);
+      setLeads(leadsData.map(leadResponseParaLead));
       setGamificacao({
         ...gamificacaoData,
         ultimaAtividade: gamificacaoData.ultimaAtividade 
@@ -226,28 +239,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
           dataEntrada: leadData.dataEntrada?.toISOString() || new Date().toISOString(),
         });
 
-        const leadFormatado = {
-          ...novoLead,
-          ultimoContato: novoLead.ultimoContato ? new Date(novoLead.ultimoContato) : null,
-          proximoContato: novoLead.proximoContato ? new Date(novoLead.proximoContato) : null,
-          dataEntrada: new Date(novoLead.dataEntrada),
-          dataConversao: novoLead.dataConversao ? new Date(novoLead.dataConversao) : null,
-          historico: Array.isArray(novoLead.historico)
-            ? novoLead.historico.map((item) => ({
-                ...item,
-                data: new Date(item.data),
-              }))
-            : [],
-          briefings: Array.isArray(novoLead.briefings)
-            ? novoLead.briefings.map((item) => ({
-                ...item,
-                data: new Date(item.data),
-                proximoFollowUp: item.proximoFollowUp ? new Date(item.proximoFollowUp) : null,
-              }))
-            : [],
-        };
-
-        setLeads((prev) => [...prev, leadFormatado]);
+        setLeads((prev) => [...prev, leadResponseParaLead(novoLead)]);
         await refreshData();
       } catch (err) {
         console.error("Erro ao adicionar lead:", err);
@@ -271,27 +263,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const leadAtualizado = await api.updateLead(id, updateData);
 
-      const leadFormatado = {
-        ...leadAtualizado,
-        ultimoContato: leadAtualizado.ultimoContato ? new Date(leadAtualizado.ultimoContato) : null,
-        proximoContato: leadAtualizado.proximoContato ? new Date(leadAtualizado.proximoContato) : null,
-        dataEntrada: new Date(leadAtualizado.dataEntrada),
-        dataConversao: leadAtualizado.dataConversao ? new Date(leadAtualizado.dataConversao) : null,
-        historico: Array.isArray(leadAtualizado.historico)
-          ? leadAtualizado.historico.map((item) => ({
-              ...item,
-              data: new Date(item.data),
-            }))
-          : [],
-        briefings: Array.isArray(leadAtualizado.briefings)
-          ? leadAtualizado.briefings.map((item) => ({
-              ...item,
-              data: new Date(item.data),
-              proximoFollowUp: item.proximoFollowUp ? new Date(item.proximoFollowUp) : null,
-            }))
-          : [],
-      };
-
+      const leadFormatado = leadResponseParaLead(leadAtualizado);
       setLeads((prev) => prev.map((lead) => (lead.id === id ? leadFormatado : lead)));
     } catch (err) {
       console.error("Erro ao atualizar lead:", err);
@@ -323,27 +295,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
 
         const leadAtualizado = await api.registrarContato(id, briefing);
 
-        const leadFormatado = {
-          ...leadAtualizado,
-          ultimoContato: leadAtualizado.ultimoContato ? new Date(leadAtualizado.ultimoContato) : null,
-          proximoContato: leadAtualizado.proximoContato ? new Date(leadAtualizado.proximoContato) : null,
-          dataEntrada: new Date(leadAtualizado.dataEntrada),
-          dataConversao: leadAtualizado.dataConversao ? new Date(leadAtualizado.dataConversao) : null,
-          historico: Array.isArray(leadAtualizado.historico)
-            ? leadAtualizado.historico.map((item) => ({
-                ...item,
-                data: new Date(item.data),
-              }))
-            : [],
-          briefings: Array.isArray(leadAtualizado.briefings)
-            ? leadAtualizado.briefings.map((item) => ({
-                ...item,
-                data: new Date(item.data),
-                proximoFollowUp: item.proximoFollowUp ? new Date(item.proximoFollowUp) : null,
-              }))
-            : [],
-        };
-
+        const leadFormatado = leadResponseParaLead(leadAtualizado);
         setLeads((prev) => prev.map((item) => (item.id === id ? leadFormatado : item)));
         await refreshData();
       } catch (err) {
@@ -400,24 +352,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         setError(null);
         const leadAtualizado = await api.marcarLeadPerdido(id, motivo);
 
-        const leadFormatado = {
-          ...leadAtualizado,
-          ultimoContato: leadAtualizado.ultimoContato ? new Date(leadAtualizado.ultimoContato) : null,
-          proximoContato: leadAtualizado.proximoContato ? new Date(leadAtualizado.proximoContato) : null,
-          dataEntrada: new Date(leadAtualizado.dataEntrada),
-          dataConversao: leadAtualizado.dataConversao ? new Date(leadAtualizado.dataConversao) : null,
-          historico: Array.isArray(leadAtualizado.historico)
-            ? leadAtualizado.historico.map((item) => ({ ...item, data: new Date(item.data) }))
-            : [],
-          briefings: Array.isArray(leadAtualizado.briefings)
-            ? leadAtualizado.briefings.map((item) => ({
-                ...item,
-                data: new Date(item.data),
-                proximoFollowUp: item.proximoFollowUp ? new Date(item.proximoFollowUp) : null,
-              }))
-            : [],
-        };
-
+        const leadFormatado = leadResponseParaLead(leadAtualizado);
         setLeads((prev) => prev.map((lead) => (lead.id === id ? leadFormatado : lead)));
         await refreshData();
       } catch (err) {
