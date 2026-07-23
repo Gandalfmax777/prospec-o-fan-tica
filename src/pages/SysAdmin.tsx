@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { SUPER_ADMIN_EMAIL } from "@/config/superAdmin";
-import type { SysAdminOrg, SysAdminMember, SysAdminStats } from "@/types/api";
+import type { SysAdminOrg, SysAdminMember, SysAdminStats, SysAdminUser } from "@/types/api";
 import type { OrgInvite } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,8 @@ import {
   UserPlus,
   BarChart3,
   RefreshCw,
+  MailCheck,
+  MailWarning,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -496,8 +498,13 @@ export default function SysAdmin() {
   const [selectedOrg, setSelectedOrg] = useState<SysAdminOrg | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<"orgs" | "users">("orgs");
-  const [users, setUsers] = useState<import("@/types/api").SysAdminUser[]>([]);
+  const [users, setUsers] = useState<SysAdminUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
+  const [showVerifyAllDialog, setShowVerifyAllDialog] = useState(false);
+  const [verifyingAll, setVerifyingAll] = useState(false);
+
+  const naoVerificados = users.filter((u) => !u.emailVerified).length;
 
   // Guard: só o superadmin acessa
   useEffect(() => {
@@ -533,6 +540,47 @@ export default function SysAdmin() {
       setLoadingUsers(false);
     }
   }, [toast]);
+
+  // Atestação manual do super-admin. Marca (ou desmarca) emailVerified de um
+  // usuário — o campo nunca foi escrito pelo app, então toda a base começa
+  // como não verificada.
+  const handleToggleEmailVerified = async (alvo: SysAdminUser) => {
+    const novoValor = !alvo.emailVerified;
+    try {
+      setTogglingUserId(alvo.id);
+      await api.sysadmin.setUserEmailVerified(alvo.id, novoValor);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === alvo.id ? { ...u, emailVerified: novoValor } : u))
+      );
+      toast({
+        title: novoValor ? "E-mail marcado como verificado" : "Verificação removida",
+        description: alvo.email,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao atualizar verificação";
+      toast({ title: "Erro", description: message, variant: "destructive" });
+    } finally {
+      setTogglingUserId(null);
+    }
+  };
+
+  const handleVerifyAll = async () => {
+    try {
+      setVerifyingAll(true);
+      const { verifiedCount } = await api.sysadmin.verifyAllUserEmails();
+      setUsers((prev) => prev.map((u) => ({ ...u, emailVerified: true })));
+      setShowVerifyAllDialog(false);
+      toast({
+        title: "E-mails verificados",
+        description: `${verifiedCount} usuário${verifiedCount !== 1 ? "s" : ""} marcado${verifiedCount !== 1 ? "s" : ""} como verificado${verifiedCount !== 1 ? "s" : ""}.`,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao verificar e-mails";
+      toast({ title: "Erro", description: message, variant: "destructive" });
+    } finally {
+      setVerifyingAll(false);
+    }
+  };
 
   useEffect(() => {
     if (user?.email === SUPER_ADMIN_EMAIL) loadData();
@@ -680,14 +728,36 @@ export default function SysAdmin() {
         {/* Tab: Usuários */}
         {activeTab === "users" && (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <p className="text-sm text-muted-foreground">
                 {users.length} usuário{users.length !== 1 ? "s" : ""} cadastrado{users.length !== 1 ? "s" : ""}
+                {naoVerificados > 0 && (
+                  <span className="text-amber-600 dark:text-amber-500">
+                    {" "}· {naoVerificados} sem e-mail verificado
+                  </span>
+                )}
               </p>
-              <Button variant="ghost" size="sm" onClick={loadUsers}>
-                <RefreshCw className="h-4 w-4 mr-1.5" />
-                Recarregar
-              </Button>
+              <div className="flex items-center gap-1">
+                {naoVerificados > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowVerifyAllDialog(true)}
+                    disabled={verifyingAll}
+                  >
+                    {verifyingAll ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <MailCheck className="h-4 w-4 mr-1.5" />
+                    )}
+                    Verificar todos
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={loadUsers}>
+                  <RefreshCw className="h-4 w-4 mr-1.5" />
+                  Recarregar
+                </Button>
+              </div>
             </div>
 
             {loadingUsers ? (
@@ -707,13 +777,40 @@ export default function SysAdmin() {
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className="text-xs text-muted-foreground hidden sm:block">
                         {u.leadsCount} lead{u.leadsCount !== 1 ? "s" : ""}
                       </span>
                       <Badge variant={roleBadgeVariant[u.role] ?? "outline"} className="text-xs">
                         {roleLabel[u.role] ?? u.role}
                       </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-7 gap-1.5 px-2 text-xs font-normal ${
+                          u.emailVerified
+                            ? "text-emerald-600 dark:text-emerald-500"
+                            : "text-amber-600 dark:text-amber-500"
+                        }`}
+                        disabled={togglingUserId === u.id}
+                        onClick={() => handleToggleEmailVerified(u)}
+                        title={
+                          u.emailVerified
+                            ? "E-mail verificado — clique para desmarcar"
+                            : "E-mail não verificado — clique para marcar como verificado"
+                        }
+                      >
+                        {togglingUserId === u.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : u.emailVerified ? (
+                          <MailCheck className="h-3.5 w-3.5" />
+                        ) : (
+                          <MailWarning className="h-3.5 w-3.5" />
+                        )}
+                        <span className="hidden sm:inline">
+                          {u.emailVerified ? "Verificado" : "Não verificado"}
+                        </span>
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -731,6 +828,30 @@ export default function SysAdmin() {
           setStats((prev) => prev ? { ...prev, orgCount: prev.orgCount + 1 } : prev);
         }}
       />
+
+      <AlertDialog open={showVerifyAllDialog} onOpenChange={setShowVerifyAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Marcar {naoVerificados} e-mail{naoVerificados !== 1 ? "s" : ""} como verificado
+              {naoVerificados !== 1 ? "s" : ""}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Isto atesta manualmente que estes endereços pertencem aos seus donos — não
+              envia e-mail de confirmação nem verifica de fato a caixa postal. Use apenas
+              para a base já cadastrada, que você reconhece. Cada verificação pode ser
+              desfeita individualmente depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={verifyingAll}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleVerifyAll} disabled={verifyingAll}>
+              {verifyingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Verificar todos
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

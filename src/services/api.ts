@@ -419,5 +419,17 @@ export const api = {
 
     getUsers: (): Promise<SysAdminUser[]> =>
       request<SysAdminUser[]>("/sysadmin/users"),
+
+    setUserEmailVerified: (
+      userId: string,
+      emailVerified: boolean
+    ): Promise<{ id: string; email: string; emailVerified: boolean }> =>
+      request(`/sysadmin/users/${userId}/email-verified`, {
+        method: "PATCH",
+        body: JSON.stringify({ emailVerified }),
+      }),
+
+    verifyAllUserEmails: (): Promise<{ verifiedCount: number }> =>
+      request("/sysadmin/users/verify-all", { method: "POST" }),
   },
 };
