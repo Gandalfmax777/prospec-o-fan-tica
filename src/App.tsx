@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
 import Onboarding from "./pages/Onboarding";
 import Join from "./pages/Join";
 import SysAdmin from "./pages/SysAdmin";
@@ -31,6 +32,9 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            {/* Destino do redirect do backend após validar o token de verificação.
+                Público: o link pode ser aberto de um navegador sem sessão. */}
+            <Route path="/email-verificado" element={<VerifyEmail />} />
             {/* Onboarding: requer autenticação, mas não requer org */}
             <Route
               path="/onboarding"

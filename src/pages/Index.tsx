@@ -13,6 +13,7 @@ import { MetricasTab } from "@/components/crm/MetricasTab";
 import { PendenciasTab } from "@/components/crm/PendenciasTab";
 import { GamificacaoTab } from "@/components/crm/GamificacaoTab";
 import { AlertaBanner } from "@/components/crm/AlertaBanner";
+import { EmailNaoVerificadoBanner } from "@/components/auth/EmailNaoVerificadoBanner";
 import { LeaderDashboard } from "@/components/crm/LeaderDashboard";
 import { SellerDetails } from "@/components/crm/SellerDetails";
 import { CrmIntegrationSettings } from "@/components/crm/CrmIntegrationSettings";
@@ -345,6 +346,7 @@ const CRMDashboard = () => {
 
         {/* Page content */}
         <main className="px-4 md:px-6 py-5 space-y-4 min-w-0">
+          <EmailNaoVerificadoBanner />
           <AlertaBanner onNavigate={setActiveView} />
           <div className="animate-fade-up">
             {renderView()}
