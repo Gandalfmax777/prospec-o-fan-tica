@@ -252,6 +252,12 @@ export interface SysAdminUser {
   name: string | null;
   email: string;
   role: string;
+  /**
+   * Nunca foi escrito pelo app até então — toda a base está com `false`.
+   * O super-admin faz o backfill manualmente pelo /sysadmin antes de a
+   * verificação de e-mail passar a ser exigida.
+   */
+  emailVerified: boolean;
   organizationId: string | null;
   organizationName: string | null;
   leadsCount: number;
