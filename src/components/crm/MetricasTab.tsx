@@ -37,6 +37,8 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ConvertidosTab } from "./ConvertidosTab";
 
 const COLORS = [
   "#3b82f6",
@@ -201,7 +203,13 @@ export const MetricasTab = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <Tabs defaultValue="desempenho" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="desempenho">Desempenho</TabsTrigger>
+        <TabsTrigger value="convertidos">Convertidos</TabsTrigger>
+      </TabsList>
+      <TabsContent value="desempenho" className="mt-0">
+        <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-row items-center gap-2">
           <ChartPie className="h-5 w-5 text-primary" />
@@ -346,6 +354,11 @@ export const MetricasTab = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+        </div>
+      </TabsContent>
+      <TabsContent value="convertidos" className="mt-0">
+        <ConvertidosTab />
+      </TabsContent>
+    </Tabs>
   );
 };

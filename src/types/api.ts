@@ -1,4 +1,4 @@
-import { Lead, Gamificacao, MetricasDiarias, Briefing } from './crm';
+import { Lead, MetricasDiarias, Briefing } from './crm';
 
 export interface CreateLeadInput {
   nome: string;
@@ -63,15 +63,6 @@ export interface CreateBriefingInput {
   proximoPasso?: string;
   proximoFollowUp?: string | Date | null;
   temperaturaAtualizada: string;
-}
-
-export interface UpdateGamificacaoInput {
-  pontosHoje?: number;
-  pontosSemana?: number;
-  pontosMes?: number;
-  nivel?: string;
-  conquistas?: string[];
-  progressoDiario?: number;
 }
 
 export interface UpdateMetricasInput {

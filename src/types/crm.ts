@@ -102,28 +102,6 @@ export interface PerdidoLead {
   } | null;
 }
 
-export interface Gamificacao {
-  id: string;
-  userId: string;
-  pontosHoje: number;
-  pontosSemana: number;
-  pontosMes: number;
-  nivel: string;
-  conquistas: string[];
-  missoesDiarias: MissaoDiaria[];
-  progressoDiario: number;
-  ultimaAtividade: Date | null;
-}
-
-export interface MissaoDiaria {
-  id: string;
-  descricao: string;
-  meta: number;
-  progresso: number;
-  concluida: boolean;
-  pontos: number;
-}
-
 export interface MetricasDiarias {
   id: string;
   userId: string;

@@ -24,7 +24,6 @@ import type {
   MyPendingInvite,
   OrgMember,
   UpdateUserRoleInput,
-  UpdateGamificacaoInput,
   UpdateLeadInput,
   UpdateMetricasInput,
   SellerDetails,
@@ -33,9 +32,9 @@ import type {
   SysAdminMember,
   SysAdminUser,
 } from "@/types/api";
-import type { Briefing, Gamificacao, MetricasDiarias, PerdidoLead } from "@/types/crm";
+import type { Briefing, MetricasDiarias, PerdidoLead } from "@/types/crm";
 
-const API_URL = ensureHttpsInProduction(
+export const API_URL = ensureHttpsInProduction(
   import.meta.env.VITE_API_URL || "http://localhost:3333/api"
 );
 
@@ -136,7 +135,7 @@ function isNetworkError(error: unknown): boolean {
  */
 type RequestOptions = Omit<RequestInit, "body"> & { body?: unknown };
 
-async function request<T = unknown>(
+export async function request<T = unknown>(
   endpoint: string,
   options: RequestOptions = {},
   retryCount = 0,
@@ -299,19 +298,6 @@ export const api = {
     a.remove();
     URL.revokeObjectURL(url);
   },
-
-  // Gamificação
-  getGamificacao: (): Promise<Gamificacao> =>
-    request<Gamificacao>("/gamificacao"),
-  updateGamificacao: (data: UpdateGamificacaoInput): Promise<Gamificacao> =>
-    request<Gamificacao>("/gamificacao", { method: "PUT", body: data }),
-  adicionarPontos: (pontos: number): Promise<Gamificacao> =>
-    request<Gamificacao>("/gamificacao/pontos", {
-      method: "POST",
-      body: { pontos },
-    }),
-  completarMissao: (id: string): Promise<Gamificacao> =>
-    request<Gamificacao>(`/gamificacao/missoes/${id}`, { method: "PUT" }),
 
   // Métricas
   getMetricas: (): Promise<MetricasDiarias> =>
