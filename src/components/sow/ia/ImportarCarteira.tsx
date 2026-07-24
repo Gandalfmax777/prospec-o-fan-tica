@@ -3,7 +3,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useImportarCarteira, useImportJob } from "@/hooks/sow/useSoW";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useImportarCarteira, useImportJob, useSoWAtivosCliente } from "@/hooks/sow/useSoW";
 import type { SoWImportJob } from "@/types/sow";
 import { ImportReview } from "./ImportReview";
 import { toast } from "sonner";
@@ -18,8 +28,14 @@ export function ImportarCarteira({ clienteId }: { clienteId: string }) {
   const [jobId, setJobId] = useState<string | null>(null);
   const [initialJob, setInitialJob] = useState<SoWImportJob | null>(null);
   const [stopped, setStopped] = useState(false);
+  const [pendente, setPendente] = useState<File | null>(null);
 
   const importar = useImportarCarteira();
+  const { data: ativosAtuais } = useSoWAtivosCliente(clienteId);
+
+  // Reimportar substitui os ativos que vieram de importações anteriores. Os
+  // cadastrados à mão ficam, mas o assessor precisa saber antes de enviar.
+  const jaImportados = (ativosAtuais ?? []).filter((a) => a.importJobId != null).length;
 
   const isTerminal = (j?: SoWImportJob | null) =>
     j?.status === "Concluido" || j?.status === "Falhou";
@@ -33,8 +49,7 @@ export function ImportarCarteira({ clienteId }: { clienteId: string }) {
     if (isTerminal(polledJob)) setStopped(true);
   }, [polledJob]);
 
-  const handleFile = async (file: File) => {
-    if (!file) return;
+  const enviar = async (file: File) => {
     setJobId(null);
     setInitialJob(null);
     setStopped(false);
@@ -45,6 +60,16 @@ export function ImportarCarteira({ clienteId }: { clienteId: string }) {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao enviar o arquivo");
     }
+  };
+
+  const handleFile = (file: File) => {
+    if (!file) return;
+    // Só pede confirmação quando há de fato o que substituir.
+    if (jaImportados > 0) {
+      setPendente(file);
+      return;
+    }
+    void enviar(file);
   };
 
   const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -158,6 +183,41 @@ export function ImportarCarteira({ clienteId }: { clienteId: string }) {
           </Button>
         </div>
       )}
+
+      <AlertDialog
+        open={!!pendente}
+        onOpenChange={(o) => {
+          if (!o) {
+            setPendente(null);
+            if (inputRef.current) inputRef.current.value = "";
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Este cliente já tem carteira importada</AlertDialogTitle>
+            <AlertDialogDescription>
+              {jaImportados} ativo{jaImportados === 1 ? "" : "s"} veio{jaImportados === 1 ? "" : "ram"}{" "}
+              de importações anteriores e {jaImportados === 1 ? "será substituído" : "serão substituídos"}{" "}
+              pelo conteúdo deste extrato, nas instituições que ele contiver. Ativos que você cadastrou
+              à mão não são afetados, e instituições que não aparecerem no arquivo ficam como estão.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const file = pendente;
+                setPendente(null);
+                if (inputRef.current) inputRef.current.value = "";
+                if (file) void enviar(file);
+              }}
+            >
+              Substituir e importar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

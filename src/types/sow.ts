@@ -94,6 +94,8 @@ export interface SoWAtivo {
   custodia: string | null;
   observacoes: string | null;
   status: SoWAtivoStatus;
+  /** Importação que criou o ativo; null = cadastrado à mão. */
+  importJobId: string | null;
   createdAt: string;
   updatedAt: string;
 }

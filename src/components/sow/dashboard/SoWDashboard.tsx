@@ -1,5 +1,7 @@
 import { KPICard } from "@/components/crm/KPICard";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/context/AuthContext";
 import { useSoWDashboard } from "@/hooks/sow/useSoW";
 import { formatBRLCompacto, formatPct } from "@/lib/money";
 import { ShareEvolutionChart } from "./ShareEvolutionChart";
@@ -16,10 +18,13 @@ import {
   Handshake,
   CheckCircle2,
   Gauge,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function SoWDashboard({ onNavigate }: { onNavigate?: (key: string) => void }) {
   const { data, isLoading, error } = useSoWDashboard();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
 
   if (isLoading) {
     return (
@@ -54,8 +59,42 @@ export default function SoWDashboard({ onNavigate }: { onNavigate?: (key: string
     { title: "Taxa Média de Share", value: formatPct(data.taxaMediaSharePct), icon: Gauge },
   ];
 
+  // Há patrimônio cadastrado, mas nada sob uma instituição da casa: o Share fica
+  // preso em 0% e o motivo não é óbvio na tela. Explica em vez de deixar o número mudo.
+  const semInstituicaoInterna = data.patrimonioTotal > 0 && data.patrimonioInterno === 0;
+
   return (
     <div className="space-y-5">
+      {semInstituicaoInterna && (
+        <div className="flex flex-wrap items-start gap-3 rounded-lg border border-[hsl(38_92%_50%/0.35)] bg-[hsl(38_92%_50%/0.08)] p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[hsl(38_92%_40%)]" />
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-sm font-semibold text-foreground">
+              Nenhum patrimônio está em instituição da casa
+            </p>
+            <p className="text-sm text-muted-foreground">
+              O Patrimônio na EQI é a soma dos ativos cadastrados sob uma instituição marcada como
+              &ldquo;da casa&rdquo;. Como nenhuma está marcada, todo o patrimônio aparece como externo e o
+              Share fica em 0%. Abra um cliente e use{" "}
+              <strong className="text-foreground">Adicionar patrimônio na EQI</strong>, ou edite a
+              instituição existente para marcá-la como da casa.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {onNavigate && (
+              <Button size="sm" variant="outline" onClick={() => onNavigate("clientes")}>
+                Ir para clientes
+              </Button>
+            )}
+            {onNavigate && isAdmin && (
+              <Button size="sm" variant="ghost" onClick={() => onNavigate("config")}>
+                Configurações
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
           {cards.map((c) => (

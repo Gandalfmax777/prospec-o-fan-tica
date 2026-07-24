@@ -25,9 +25,16 @@ interface ParsedInstituicao {
   nome?: string | null;
   ativos?: ParsedAtivo[] | null;
 }
-interface ParsedResultado {
+interface ParsedCarteira {
   instituicoes?: ParsedInstituicao[] | null;
   observacoes?: string | null;
+}
+/** O backend grava { instituicoesCriadas, ativosCriados, carteira } (routes/sow/ai.js). */
+interface ParsedResultado {
+  instituicoesCriadas?: number | null;
+  ativosCriados?: number | null;
+  ativosSubstituidos?: number | null;
+  carteira?: ParsedCarteira | null;
 }
 
 function fmtVencimento(v?: string | null): string {
@@ -39,13 +46,14 @@ function fmtVencimento(v?: string | null): string {
 
 export function ImportReview({ job }: { job: SoWImportJob }) {
   const resultado = (job.resultado ?? {}) as ParsedResultado;
-  const instituicoes = Array.isArray(resultado.instituicoes)
-    ? resultado.instituicoes
-    : [];
-  const totalAtivos = instituicoes.reduce(
-    (acc, inst) => acc + (Array.isArray(inst.ativos) ? inst.ativos.length : 0),
-    0
-  );
+  const carteira = resultado.carteira ?? {};
+  const instituicoes = Array.isArray(carteira.instituicoes) ? carteira.instituicoes : [];
+
+  // Contadores vêm do writer: `instituicoesCriadas` conta só as novas, então
+  // pode ser menor que a lista abaixo quando a instituição já existia.
+  const instCriadas = resultado.instituicoesCriadas ?? 0;
+  const ativosCriados = resultado.ativosCriados ?? 0;
+  const substituidos = resultado.ativosSubstituidos ?? 0;
 
   return (
     <div className="space-y-4">
@@ -53,18 +61,32 @@ export function ImportReview({ job }: { job: SoWImportJob }) {
         <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-[hsl(142_71%_40%)]" />
         <div>
           <p className="text-sm font-medium text-foreground">
-            {instituicoes.length} instituiç{instituicoes.length === 1 ? "ão" : "ões"} e{" "}
-            {totalAtivos} ativo{totalAtivos === 1 ? "" : "s"} criados
+            {ativosCriados} ativo{ativosCriados === 1 ? "" : "s"} criado
+            {ativosCriados === 1 ? "" : "s"}
+            {instCriadas > 0 && (
+              <>
+                {" "}
+                em {instCriadas} nova{instCriadas === 1 ? "" : "s"} instituiç
+                {instCriadas === 1 ? "ão" : "ões"}
+              </>
+            )}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
             Os dados já foram adicionados à carteira do cliente.
+            {substituidos > 0 && (
+              <>
+                {" "}
+                {substituidos} ativo{substituidos === 1 ? "" : "s"} de importações anteriores
+                {substituidos === 1 ? " foi substituído" : " foram substituídos"}.
+              </>
+            )}
           </p>
         </div>
       </div>
 
-      {resultado.observacoes && (
+      {carteira.observacoes && (
         <p className="text-xs text-muted-foreground italic border-l-2 border-border pl-3">
-          {resultado.observacoes}
+          {carteira.observacoes}
         </p>
       )}
 

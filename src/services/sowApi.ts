@@ -96,6 +96,8 @@ export const sowApi = {
     request<SoWAlerta[]>(`/sow/alertas${qs(params)}`),
   updateAlerta: (id: string, body: { resolvido?: boolean }) =>
     request<SoWAlerta>(`/sow/alertas/${id}`, { method: "PUT", body }),
+  deleteAlerta: (id: string) =>
+    request<null>(`/sow/alertas/${id}`, { method: "DELETE" }),
 
   // ── Dashboard / indicadores / histórico / score ──
   getDashboard: (params: { scope?: string; assessorId?: string } = {}) =>
