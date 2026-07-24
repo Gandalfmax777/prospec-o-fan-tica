@@ -2,10 +2,8 @@ import { api } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import {
   Briefing,
-  Gamificacao,
   Lead,
   MetricasDiarias,
-  MissaoDiaria,
   Temperatura,
 } from "@/types/crm";
 import type { LeadResponse, UpdateLeadInput } from "@/types/api";
@@ -20,7 +18,6 @@ import React, {
 
 interface CRMContextType {
   leads: Lead[];
-  gamificacao: Gamificacao;
   metricasDiarias: MetricasDiarias;
   loading: boolean;
   error: string | null;
@@ -53,38 +50,10 @@ interface CRMContextType {
     leadId: string,
     briefing: Omit<Briefing, "id" | "leadId" | "data">
   ) => Promise<void>;
-  completarMissao: (missaoId: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
-
-const gerarMissoesDiarias = (): MissaoDiaria[] => [
-  {
-    id: "1",
-    descricao: "Falar com 5 contatos",
-    meta: 5,
-    progresso: 0,
-    concluida: false,
-    pontos: 5,
-  },
-  {
-    id: "2",
-    descricao: "Esquentar 2 contatos",
-    meta: 2,
-    progresso: 0,
-    concluida: false,
-    pontos: 5,
-  },
-  {
-    id: "3",
-    descricao: "Resolver todos atrasados",
-    meta: 1,
-    progresso: 0,
-    concluida: false,
-    pontos: 10,
-  },
-];
 
 /**
  * Converte o lead como vem da API (`LeadResponse`) para o formato usado na UI
@@ -124,18 +93,6 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { refreshSession, isSessionInvalidError } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [gamificacao, setGamificacao] = useState<Gamificacao>({
-    id: "",
-    userId: "",
-    pontosHoje: 0,
-    pontosSemana: 0,
-    pontosMes: 0,
-    nivel: "Prospectador Iniciante",
-    conquistas: [],
-    missoesDiarias: gerarMissoesDiarias(),
-    progressoDiario: 0,
-    ultimaAtividade: null,
-  });
   const [metricasDiarias, setMetricasDiarias] = useState<MetricasDiarias>({
     id: "",
     userId: "",
@@ -170,20 +127,12 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         retryAttemptsRef.current = 0;
       }
 
-      const [leadsData, gamificacaoData, metricasData] = await Promise.all([
+      const [leadsData, metricasData] = await Promise.all([
         api.getLeads(),
-        api.getGamificacao(),
         api.getMetricas(),
       ]);
 
       setLeads(leadsData.map(leadResponseParaLead));
-      setGamificacao({
-        ...gamificacaoData,
-        ultimaAtividade: gamificacaoData.ultimaAtividade 
-          ? new Date(gamificacaoData.ultimaAtividade) 
-          : null,
-        missoesDiarias: gamificacaoData.missoesDiarias || gerarMissoesDiarias(),
-      });
       setMetricasDiarias(metricasData);
       retryAttemptsRef.current = 0; // Reset contador em caso de sucesso
     } catch (err) {
@@ -405,37 +354,10 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
     [refreshData]
   );
 
-  const completarMissao = useCallback(async (missaoId: string) => {
-    try {
-      setError(null);
-      const updated = await api.completarMissao(missaoId);
-      setGamificacao((prev) => ({
-        ...prev,
-        ...updated,
-        missoesDiarias: updated.missoesDiarias || prev.missoesDiarias,
-      }));
-    } catch (err) {
-      console.error("Erro ao completar missao:", err);
-      const errorMessage = err instanceof Error ? err.message : "Erro ao completar missao";
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  useEffect(() => {
-    const meta = 10;
-    const progresso = metricasDiarias.contatosFeitos + metricasDiarias.atrasosResolvidos;
-    setGamificacao((prev) => ({
-      ...prev,
-      progressoDiario: Math.min((progresso / meta) * 100, 100),
-    }));
-  }, [metricasDiarias]);
-
   return (
     <CRMContext.Provider
       value={{
         leads,
-        gamificacao,
         metricasDiarias,
         loading,
         error,
@@ -448,7 +370,6 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         marcarPerdido,
         retornarAoFunil,
         adicionarBriefing,
-        completarMissao,
         refreshData,
       }}
     >

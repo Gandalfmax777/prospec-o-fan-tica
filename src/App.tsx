@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/context/AuthContext";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import Index from "./pages/Index";
+import ShareOfWallet from "./pages/ShareOfWallet";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -61,6 +62,15 @@ const App = () => (
               element={
                 <AuthGuard>
                   <Index />
+                </AuthGuard>
+              }
+            />
+            {/* Share of Wallet: módulo independente, requer autenticação + org */}
+            <Route
+              path="/share-of-wallet"
+              element={
+                <AuthGuard>
+                  <ShareOfWallet />
                 </AuthGuard>
               }
             />
