@@ -81,6 +81,11 @@ export function ImportReview({ job }: { job: SoWImportJob }) {
               </>
             )}
           </p>
+          {job.nomeArquivo && (
+            <p className="text-xs text-muted-foreground mt-1 break-words">
+              A partir de: {job.nomeArquivo}
+            </p>
+          )}
         </div>
       </div>
 
@@ -92,7 +97,7 @@ export function ImportReview({ job }: { job: SoWImportJob }) {
 
       {instituicoes.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-6">
-          A IA não identificou instituições ou ativos neste arquivo.
+          A IA não identificou instituições ou ativos no que foi enviado.
         </p>
       ) : (
         <div className="rounded-lg border border-border/60 overflow-hidden">

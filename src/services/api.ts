@@ -254,6 +254,17 @@ export const api = {
     return normalizeLeadResponse(updated);
   },
 
+  // Rascunho de follow-up gerado por IA a partir dos briefings e do histórico
+  // do lead. Só devolve texto — não envia nada.
+  gerarFollowUpLead: (
+    id: string,
+    body: { canal?: string; tom?: string } = {}
+  ): Promise<{ texto: string; semContexto: boolean }> =>
+    request<{ texto: string; semContexto: boolean }>(`/leads/${id}/follow-up`, {
+      method: "POST",
+      body,
+    }),
+
   // ─── Leads Perdidos (pool compartilhado) ──────────────────────────────────
   // Marca o próprio lead como perdido (entra no pool org-wide).
   marcarLeadPerdido: async (id: string, motivo?: string | null): Promise<LeadResponse> => {

@@ -78,48 +78,60 @@ export default function AlertasView({ onNavigate }: { onNavigate?: (key: string)
         <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}</div>
       ) : !data || data.length === 0 ? (
         <Card className="p-8 text-center text-sm text-muted-foreground">
-          Nenhum alerta — gere pela aba IA de um cliente.
+          Nenhum alerta. Vencimentos nos próximos 90 dias aparecem aqui sozinhos; para os demais,
+          use "Gerar alertas" na aba IA de um cliente.
         </Card>
       ) : (
         <div className="space-y-3">
-          {data.map((a) => (
-            <div
-              key={a.id}
-              className={cn("rounded-lg border p-4 flex items-start gap-3 cursor-pointer", tone[a.severidade] ?? tone.Baixa, a.resolvido && "opacity-60")}
-              onClick={() => onNavigate?.("clientes")}
-            >
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge className={cn("border-0", sevBadge[a.severidade])}>{a.severidade}</Badge>
-                  <span className="text-xs font-medium text-muted-foreground">{a.tipo}</span>
-                  {a.clienteNome && <span className="text-xs text-foreground font-semibold">· {a.clienteNome}</span>}
+          {data.map((a) => {
+            // Alertas de vencimento são derivados dos ativos, não linhas no
+            // banco — Resolver/Excluir dariam 404. Somem sozinhos quando o
+            // ativo vence ou sai da janela. Mesmo tratamento que a timeline dá
+            // aos eventos derivados.
+            const derivado = a.id.startsWith("ativo-");
+            return (
+              <div
+                key={a.id}
+                className={cn("rounded-lg border p-4 flex items-start gap-3 cursor-pointer", tone[a.severidade] ?? tone.Baixa, a.resolvido && "opacity-60")}
+                onClick={() => onNavigate?.("clientes")}
+              >
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className={cn("border-0", sevBadge[a.severidade])}>{a.severidade}</Badge>
+                    <span className="text-xs font-medium text-muted-foreground">{a.tipo}</span>
+                    {a.clienteNome && <span className="text-xs text-foreground font-semibold">· {a.clienteNome}</span>}
+                  </div>
+                  <p className="text-sm text-foreground">{a.mensagem}</p>
+                  {!derivado && (
+                    <p className="text-[11px] text-muted-foreground">{format(new Date(a.createdAt), "dd 'de' MMM, HH:mm", { locale: ptBR })}</p>
+                  )}
                 </div>
-                <p className="text-sm text-foreground">{a.mensagem}</p>
-                <p className="text-[11px] text-muted-foreground">{format(new Date(a.createdAt), "dd 'de' MMM, HH:mm", { locale: ptBR })}</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                {!a.resolvido && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 gap-1"
-                    onClick={(e) => { e.stopPropagation(); updateAlerta.mutate({ id: a.id, resolvido: true }); }}
-                  >
-                    <Check className="h-3.5 w-3.5" /> Resolver
-                  </Button>
+                {!derivado && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    {!a.resolvido && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1"
+                        onClick={(e) => { e.stopPropagation(); updateAlerta.mutate({ id: a.id, resolvido: true }); }}
+                      >
+                        <Check className="h-3.5 w-3.5" /> Resolver
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive"
+                      onClick={(e) => { e.stopPropagation(); setToDelete(a); }}
+                      title="Excluir alerta"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive"
-                  onClick={(e) => { e.stopPropagation(); setToDelete(a); }}
-                  title="Excluir alerta"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
