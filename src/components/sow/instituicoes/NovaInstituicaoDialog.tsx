@@ -184,10 +184,12 @@ export function NovaInstituicaoDialog({
                 placeholder="0,00"
                 inputMode="decimal"
               />
-              {/* Campo de referência de extrato — não entra em nenhuma métrica.
-                  Sem esse aviso o usuário digita o saldo aqui e o dashboard não muda. */}
+              {/* O que exceder os ativos vira "não mapeado" e entra no patrimônio
+                  (lib/sow/recalc.js). Sem esse aviso o usuário não entende por que
+                  o total muda ao cadastrar um ativo dentro do saldo já declarado. */}
               <p className="text-xs text-muted-foreground">
-                Só referência do extrato. O patrimônio vem dos ativos cadastrados.
+                Saldo total do extrato. O que exceder os ativos cadastrados entra como
+                patrimônio não mapeado.
               </p>
             </div>
             <div className="space-y-1.5">

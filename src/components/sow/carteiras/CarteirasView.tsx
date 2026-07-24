@@ -80,18 +80,32 @@ function CarteiraCliente({ clienteId }: { clienteId: string }) {
   const { data: instituicoes, isLoading: loadingInst } = useSoWInstituicoes(clienteId);
   const { data: ativos, isLoading: loadingAtivos } = useSoWAtivosCliente(clienteId);
 
+  // Mesma regra do backend (lib/sow/recalc.js): o patrimônio de uma instituição
+  // é a soma dos ativos mais o saldo declarado que ainda não virou ativo.
   const composicao = useMemo(() => {
     const insts = instituicoes ?? [];
     const list = ativos ?? [];
     return insts
       .map((inst) => {
-        const total = list
+        const mapeado = list
           .filter((a) => a.instituicaoId === inst.id)
           .reduce((acc, a) => acc + (a.valorAplicado ?? 0), 0);
-        return { name: inst.nome, value: total, interna: inst.interna };
+        const naoMapeado = Math.max(0, (inst.valorInformado ?? 0) - mapeado);
+        return {
+          name: inst.nome,
+          value: mapeado + naoMapeado,
+          mapeado,
+          naoMapeado,
+          interna: inst.interna,
+        };
       })
       .sort((a, b) => b.value - a.value);
   }, [instituicoes, ativos]);
+
+  const naoMapeadoTotal = useMemo(
+    () => composicao.reduce((acc, c) => acc + c.naoMapeado, 0),
+    [composicao]
+  );
 
   // Alocação por classe de ativo — o recorte que falta hoje na carteira.
   const porTipo = useMemo(() => {
@@ -99,24 +113,25 @@ function CarteiraCliente({ clienteId }: { clienteId: string }) {
     for (const a of ativos ?? []) {
       acc.set(a.tipo, (acc.get(a.tipo) ?? 0) + (a.valorAplicado ?? 0));
     }
-    return [...acc.entries()]
+    const lista = [...acc.entries()]
       .map(([name, value]) => ({ name, value }))
       .filter((e) => e.value > 0)
       .sort((a, b) => b.value - a.value);
-  }, [ativos]);
+    // Sem este balde o gráfico somaria menos que o patrimônio da carteira.
+    if (naoMapeadoTotal > 0) lista.push({ name: "Não mapeado", value: naoMapeadoTotal });
+    return lista;
+  }, [ativos, naoMapeadoTotal]);
 
-  // EQI × externo do cliente, derivado da flag `interna` da instituição de cada ativo.
+  // EQI × externo do cliente, incluindo o saldo declarado de cada instituição.
   const internoVsExterno = useMemo(() => {
-    const internas = new Set((instituicoes ?? []).filter((i) => i.interna).map((i) => i.id));
     let interno = 0;
     let externo = 0;
-    for (const a of ativos ?? []) {
-      const valor = a.valorAplicado ?? 0;
-      if (internas.has(a.instituicaoId)) interno += valor;
-      else externo += valor;
+    for (const c of composicao) {
+      if (c.interna) interno += c.value;
+      else externo += c.value;
     }
     return { interno, externo };
-  }, [instituicoes, ativos]);
+  }, [composicao]);
 
   const ivData = [
     { name: "Na EQI", value: internoVsExterno.interno },
@@ -271,6 +286,12 @@ function CarteiraCliente({ clienteId }: { clienteId: string }) {
                               </Badge>
                             )}
                           </div>
+                          {c.naoMapeado > 0 && (
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                              {formatBRLCompacto(c.mapeado)} em ativos +{" "}
+                              {formatBRLCompacto(c.naoMapeado)} declarado sem detalhe
+                            </p>
+                          )}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {formatBRLCompacto(c.value)}
