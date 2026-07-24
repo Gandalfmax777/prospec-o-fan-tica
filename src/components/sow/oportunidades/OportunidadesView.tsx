@@ -70,7 +70,13 @@ export default function OportunidadesView() {
   const setStatusOpp = (id: string, novo: string) => {
     updateOpp.mutate(
       { id, body: { status: novo } },
-      { onSuccess: () => toast.success(`Oportunidade marcada como ${novo}`) }
+      {
+        onSuccess: () => toast.success(`Oportunidade marcada como ${novo}`),
+        // Sem isto uma falha vira clique mudo: o Select volta ao valor antigo
+        // no refetch e o usuário não sabe que nada foi salvo.
+        onError: (err) =>
+          toast.error(err instanceof Error ? err.message : "Erro ao alterar o status."),
+      }
     );
   };
 
