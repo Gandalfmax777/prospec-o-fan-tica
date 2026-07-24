@@ -20,13 +20,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSoWTimeline, useCreateEvento } from "@/hooks/sow/useSoW";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useSoWTimeline, useCreateEvento, useDeleteEvento } from "@/hooks/sow/useSoW";
 import { formatBRLCompacto, parseBRL } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import type { SoWTipoEvento } from "@/types/sow";
+import type { SoWEventoTimeline, SoWTipoEvento } from "@/types/sow";
 import { differenceInCalendarDays, format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarClock, CalendarIcon, Plus } from "lucide-react";
+import { CalendarClock, CalendarIcon, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const TIPOS: SoWTipoEvento[] = [
@@ -186,7 +196,9 @@ function NovoEventoDialog({
 
 export function ClienteTimeline({ clienteId }: { clienteId: string }) {
   const { data, isLoading } = useSoWTimeline(clienteId);
+  const deleteEvento = useDeleteEvento(clienteId);
   const [showNew, setShowNew] = useState(false);
+  const [toDelete, setToDelete] = useState<SoWEventoTimeline | null>(null);
 
   const eventos = useMemo(() => {
     const list = data ?? [];
@@ -236,11 +248,25 @@ export function ClienteTimeline({ clienteId }: { clienteId: string }) {
                       {format(parseISO(ev.data), "dd 'de' MMM 'de' yyyy", { locale: ptBR })}
                     </span>
                   </div>
-                  {ev.valor != null && (
-                    <span className="text-sm font-semibold text-foreground tabular-nums">
-                      {formatBRLCompacto(ev.valor)}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {ev.valor != null && (
+                      <span className="text-sm font-semibold text-foreground tabular-nums">
+                        {formatBRLCompacto(ev.valor)}
+                      </span>
+                    )}
+                    {/* Vencimentos são derivados do ativo — só somem quando o ativo some. */}
+                    {ev.origem === "evento" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => setToDelete(ev)}
+                        title="Excluir evento"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <p className="mt-1.5 text-sm text-foreground">{ev.descricao}</p>
               </div>
@@ -250,6 +276,37 @@ export function ClienteTimeline({ clienteId }: { clienteId: string }) {
       )}
 
       <NovoEventoDialog clienteId={clienteId} open={showNew} onOpenChange={setShowNew} />
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir evento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir "{toDelete?.descricao}"? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteEvento.isPending}
+              onClick={() => {
+                if (!toDelete) return;
+                deleteEvento.mutate(toDelete.id, {
+                  onSuccess: () => {
+                    toast.success("Evento excluído.");
+                    setToDelete(null);
+                  },
+                  onError: (err) =>
+                    toast.error(err instanceof Error ? err.message : "Erro ao excluir evento."),
+                });
+              }}
+            >
+              {deleteEvento.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

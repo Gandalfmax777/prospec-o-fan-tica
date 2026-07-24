@@ -6,12 +6,23 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useSoWAlertas, useUpdateAlerta } from "@/hooks/sow/useSoW";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useSoWAlertas, useUpdateAlerta, useDeleteAlerta } from "@/hooks/sow/useSoW";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Bell, Check } from "lucide-react";
-import type { SoWSeveridade } from "@/types/sow";
+import { Bell, Check, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import type { SoWAlerta, SoWSeveridade } from "@/types/sow";
 
 const TODAS = "__todas__";
 
@@ -31,12 +42,14 @@ const sevBadge: Record<SoWSeveridade, string> = {
 export default function AlertasView({ onNavigate }: { onNavigate?: (key: string) => void }) {
   const [severidade, setSeveridade] = useState<string>(TODAS);
   const [mostrarResolvidos, setMostrarResolvidos] = useState(false);
+  const [toDelete, setToDelete] = useState<SoWAlerta | null>(null);
 
   const { data, isLoading } = useSoWAlertas({
     severidade: severidade === TODAS ? undefined : severidade,
     resolvido: mostrarResolvidos ? undefined : false,
   });
   const updateAlerta = useUpdateAlerta();
+  const deleteAlerta = useDeleteAlerta();
 
   return (
     <div className="space-y-4">
@@ -84,20 +97,63 @@ export default function AlertasView({ onNavigate }: { onNavigate?: (key: string)
                 <p className="text-sm text-foreground">{a.mensagem}</p>
                 <p className="text-[11px] text-muted-foreground">{format(new Date(a.createdAt), "dd 'de' MMM, HH:mm", { locale: ptBR })}</p>
               </div>
-              {!a.resolvido && (
+              <div className="flex shrink-0 items-center gap-1">
+                {!a.resolvido && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1"
+                    onClick={(e) => { e.stopPropagation(); updateAlerta.mutate({ id: a.id, resolvido: true }); }}
+                  >
+                    <Check className="h-3.5 w-3.5" /> Resolver
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1 shrink-0"
-                  onClick={(e) => { e.stopPropagation(); updateAlerta.mutate({ id: a.id, resolvido: true }); }}
+                  size="icon"
+                  className="h-8 w-8 text-destructive"
+                  onClick={(e) => { e.stopPropagation(); setToDelete(a); }}
+                  title="Excluir alerta"
                 >
-                  <Check className="h-3.5 w-3.5" /> Resolver
+                  <Trash2 className="h-4 w-4" />
                 </Button>
-              )}
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir alerta</AlertDialogTitle>
+            <AlertDialogDescription>
+              Excluir "{toDelete?.mensagem}"? Para apenas tirar da lista mantendo o histórico, use
+              Resolver. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteAlerta.isPending}
+              onClick={() => {
+                if (!toDelete) return;
+                deleteAlerta.mutate(toDelete.id, {
+                  onSuccess: () => {
+                    toast.success("Alerta excluído.");
+                    setToDelete(null);
+                  },
+                  onError: (err) =>
+                    toast.error(err instanceof Error ? err.message : "Erro ao excluir alerta."),
+                });
+              }}
+            >
+              {deleteAlerta.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -4,13 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ShareBar } from "@/components/sow/shared/ShareBar";
 import { InstituicoesPanel } from "@/components/sow/instituicoes/InstituicoesPanel";
 import { AtivosTable } from "@/components/sow/ativos/AtivosTable";
+import { AtivoFormDialog } from "@/components/sow/ativos/AtivoFormDialog";
 import { ClienteTimeline } from "@/components/sow/timeline/ClienteTimeline";
+import { EditClienteDialog } from "./EditClienteDialog";
 import { useSoW } from "@/context/SoWContext";
 import {
   useSoWCliente,
+  useDeleteCliente,
+  useInstituicaoInterna,
   useGerarAlertas,
   useGerarOportunidades,
   useGerarScore,
@@ -22,11 +36,14 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   Bell,
+  Building2,
   Sparkles,
   Target,
   Gauge,
   FileText,
   Loader2,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 const STATUS_TONE: Record<SoWClienteStatus, string> = {
@@ -43,11 +60,16 @@ export function ClienteDetail({ clienteId }: { clienteId: string }) {
   const { setSelectedClienteId } = useSoW();
   const { data: cliente, isLoading, error } = useSoWCliente(clienteId);
 
+  const deleteCliente = useDeleteCliente();
+  const instInterna = useInstituicaoInterna(clienteId);
   const gerarAlertas = useGerarAlertas();
   const gerarOportunidades = useGerarOportunidades();
   const gerarScore = useGerarScore();
   const gerarBriefing = useGerarBriefing();
   const [briefing, setBriefing] = useState<string | null>(null);
+  const [showEdit, setShowEdit] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [instEqiId, setInstEqiId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -103,6 +125,30 @@ export function ClienteDetail({ clienteId }: { clienteId: string }) {
     }
   };
 
+  // Resolve (criando se preciso) a instituição da casa e abre o form de ativo já
+  // fixado nela — o usuário não precisa saber que "na EQI" depende da instituição.
+  const handleAddEqi = async () => {
+    try {
+      setInstEqiId(await instInterna.garantir());
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : `Erro ao preparar a instituição ${instInterna.nome}.`
+      );
+    }
+  };
+
+  const handleDelete = () => {
+    deleteCliente.mutate(clienteId, {
+      onSuccess: () => {
+        toast.success("Cliente excluído.");
+        setConfirmDelete(false);
+        setSelectedClienteId(null); // senão a view fica presa num cliente que não existe mais
+      },
+      onError: (err) =>
+        toast.error(err instanceof Error ? err.message : "Erro ao excluir cliente."),
+    });
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3">
@@ -115,6 +161,29 @@ export function ClienteDetail({ clienteId }: { clienteId: string }) {
         >
           {cliente.status}
         </span>
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <Button size="sm" onClick={handleAddEqi} disabled={instInterna.isPending}>
+            {instInterna.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Building2 className="mr-2 h-4 w-4" />
+            )}
+            Adicionar patrimônio na {instInterna.nome}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowEdit(true)}>
+            <Pencil className="mr-2 h-4 w-4" /> Editar
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive"
+            onClick={() => setConfirmDelete(true)}
+            title="Excluir cliente"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <Card className="border-border/50 shadow-sm">
@@ -219,6 +288,40 @@ export function ClienteDetail({ clienteId }: { clienteId: string }) {
           )}
         </TabsContent>
       </Tabs>
+
+      <EditClienteDialog cliente={cliente} open={showEdit} onOpenChange={setShowEdit} />
+
+      {instEqiId && (
+        <AtivoFormDialog
+          clienteId={clienteId}
+          instituicaoId={instEqiId}
+          open
+          onOpenChange={(o) => !o && setInstEqiId(null)}
+        />
+      )}
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir cliente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir "{cliente.nome}"? As instituições, ativos, timeline,
+              oportunidades e alertas deste cliente serão excluídos junto. Esta ação não pode ser
+              desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDelete}
+              disabled={deleteCliente.isPending}
+            >
+              {deleteCliente.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

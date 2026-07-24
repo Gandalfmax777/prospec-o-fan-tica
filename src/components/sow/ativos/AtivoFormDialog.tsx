@@ -80,9 +80,9 @@ export function AtivoFormDialog({
 }) {
   const createAtivo = useCreateAtivo();
   const updateAtivo = useUpdateAtivo();
-  const { data: instituicoes } = useSoWInstituicoes(
-    !instituicaoId && !ativo ? clienteId : null
-  );
+  // Também na edição: mover um ativo de instituição é como se corrige um ativo
+  // lançado na custódia errada (e é o que faz ele passar a contar como EQI).
+  const { data: instituicoes } = useSoWInstituicoes(!instituicaoId ? clienteId : null);
 
   const [instId, setInstId] = useState<string>(instituicaoId ?? "");
   const [tipo, setTipo] = useState<SoWTipoAtivo>("CDB");
@@ -134,7 +134,7 @@ export function AtivoFormDialog({
       return;
     }
     const targetInst = instituicaoId ?? instId;
-    if (!isEdit && !targetInst) {
+    if (!targetInst) {
       toast.error("Selecione uma instituição.");
       return;
     }
@@ -154,7 +154,12 @@ export function AtivoFormDialog({
 
     if (isEdit && ativo) {
       updateAtivo.mutate(
-        { id: ativo.id, body },
+        {
+          id: ativo.id,
+          // Só manda instituicaoId quando realmente mudou — o backend valida que a
+          // instituição de destino é do mesmo cliente.
+          body: targetInst !== ativo.instituicaoId ? { ...body, instituicaoId: targetInst } : body,
+        },
         {
           onSuccess: () => {
             toast.success("Ativo atualizado!");
@@ -186,23 +191,40 @@ export function AtivoFormDialog({
           <DialogTitle>{isEdit ? "Editar ativo" : "Novo ativo"}</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-4 py-2">
-          {!instituicaoId && !isEdit && (
+          {!instituicaoId && (
             <div className="col-span-2 space-y-1.5">
               <Label>
                 Instituição <span className="text-destructive">*</span>
               </Label>
-              <Select value={instId} onValueChange={setInstId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a instituição" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(instituicoes ?? []).map((inst) => (
-                    <SelectItem key={inst.id} value={inst.id}>
-                      {inst.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {(instituicoes ?? []).length === 0 ? (
+                <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
+                  Este cliente ainda não tem instituições. Cadastre uma na aba{" "}
+                  <strong className="text-foreground">Instituições</strong> do cliente — marque-a como
+                  &ldquo;da casa&rdquo; para que os ativos contem como Patrimônio na EQI.
+                </p>
+              ) : (
+                <>
+                  <Select value={instId} onValueChange={setInstId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a instituição" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(instituicoes ?? []).map((inst) => (
+                        <SelectItem key={inst.id} value={inst.id}>
+                          {inst.nome}
+                          {inst.interna ? " · conta como EQI" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isEdit && (
+                    <p className="text-xs text-muted-foreground">
+                      Trocar a instituição move o ativo — use para corrigir um lançamento feito na
+                      custódia errada.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           )}
 

@@ -88,13 +88,14 @@ export function useSoWCatalogo() {
   const org = useOrgId();
   return useQuery({ queryKey: keys.catalogo(org), queryFn: () => sowApi.getCatalogo() });
 }
+// Marcar `interna` propaga para as instituições dos clientes e recalcula
+// patrimônio no backend → invalida tudo, não só o catálogo.
 export function useUpdateCatalogo() {
-  const qc = useQueryClient();
-  const org = useOrgId();
+  const invalidate = useInvalidateClientes();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: Partial<{ nome: string; interna: boolean; ativo: boolean; ordem: number }> }) =>
       sowApi.updateCatalogo(id, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.catalogo(org) }),
+    onSuccess: invalidate,
   });
 }
 export function useCreateCatalogo() {
@@ -104,6 +105,12 @@ export function useCreateCatalogo() {
     mutationFn: (b: { nome: string; interna?: boolean }) => sowApi.createCatalogo(b),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.catalogo(org) }),
   });
+}
+// Remover do catálogo zera o `catalogoId` das instituições vinculadas (SET NULL),
+// então a lista de instituições dos clientes também sai do cache.
+export function useDeleteCatalogo() {
+  const invalidate = useInvalidateClientes();
+  return useMutation({ mutationFn: (id: string) => sowApi.deleteCatalogo(id), onSuccess: invalidate });
 }
 
 // ── Instituições ──
@@ -129,6 +136,43 @@ export function useUpdateInstituicao() {
 export function useDeleteInstituicao() {
   const invalidate = useInvalidateClientes();
   return useMutation({ mutationFn: (id: string) => sowApi.deleteInstituicao(id), onSuccess: invalidate });
+}
+
+/**
+ * "Patrimônio na EQI" não é um campo — é a soma dos ativos sob instituições com
+ * `interna=true`. Este hook resolve (e cria, se preciso) essa instituição para um
+ * cliente, para que a UI ofereça um caminho direto em vez de exigir que o usuário
+ * deduza o modelo de dados.
+ */
+export function useInstituicaoInterna(clienteId: string | null) {
+  const { data: instituicoes, isLoading } = useSoWInstituicoes(clienteId);
+  const { data: catalogo } = useSoWCatalogo();
+  const createInstituicao = useCreateInstituicao(clienteId ?? "");
+
+  const instituicaoInterna = (instituicoes ?? []).find((i) => i.interna) ?? null;
+  const entradaCatalogo = (catalogo ?? []).find((c) => c.interna && c.ativo) ?? null;
+  const nome = instituicaoInterna?.nome ?? entradaCatalogo?.nome ?? "EQI";
+
+  // Devolve o id da instituição interna do cliente, criando-a se ainda não existir.
+  const garantir = async (): Promise<string> => {
+    if (instituicaoInterna) return instituicaoInterna.id;
+    // Com catalogoId o backend denormaliza `interna` do catálogo sozinho; sem ele
+    // (org antiga, sem entrada interna no catálogo) mandamos `interna` explícito.
+    const criada = await createInstituicao.mutateAsync(
+      entradaCatalogo
+        ? { nome: entradaCatalogo.nome, catalogoId: entradaCatalogo.id }
+        : { nome: "EQI", interna: true }
+    );
+    return criada.id;
+  };
+
+  return {
+    instituicaoInterna,
+    nome,
+    garantir,
+    isLoading,
+    isPending: createInstituicao.isPending,
+  };
 }
 
 // ── Ativos ──
@@ -176,6 +220,16 @@ export function useCreateEvento(clienteId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.timeline(org, clienteId) }),
   });
 }
+// Só eventos persistidos (origem "evento"). Vencimentos são derivados de Ativo e
+// não têm linha própria — quem exclui um vencimento é a exclusão do ativo.
+export function useDeleteEvento(clienteId: string) {
+  const qc = useQueryClient();
+  const org = useOrgId();
+  return useMutation({
+    mutationFn: (id: string) => sowApi.deleteEvento(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.timeline(org, clienteId) }),
+  });
+}
 
 // ── Oportunidades ──
 export function useSoWOportunidades(params: { status?: string; urgencia?: string; clienteId?: string } = {}) {
@@ -185,13 +239,18 @@ export function useSoWOportunidades(params: { status?: string; urgencia?: string
     queryFn: () => sowApi.getOportunidades(params),
   });
 }
+// Valor e status alimentam "Em Negociação" e "Valor Convertido" no dashboard,
+// então invalidamos tudo — não só a lista de oportunidades.
 export function useUpdateOportunidade() {
-  const qc = useQueryClient();
-  const org = useOrgId();
+  const invalidate = useInvalidateClientes();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) => sowApi.updateOportunidade(id, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.oportunidades(org) }),
+    onSuccess: invalidate,
   });
+}
+export function useDeleteOportunidade() {
+  const invalidate = useInvalidateClientes();
+  return useMutation({ mutationFn: (id: string) => sowApi.deleteOportunidade(id), onSuccess: invalidate });
 }
 
 // ── Alertas ──
@@ -207,6 +266,14 @@ export function useUpdateAlerta() {
   const org = useOrgId();
   return useMutation({
     mutationFn: ({ id, resolvido }: { id: string; resolvido: boolean }) => sowApi.updateAlerta(id, { resolvido }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.alertas(org) }),
+  });
+}
+export function useDeleteAlerta() {
+  const qc = useQueryClient();
+  const org = useOrgId();
+  return useMutation({
+    mutationFn: (id: string) => sowApi.deleteAlerta(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.alertas(org) }),
   });
 }

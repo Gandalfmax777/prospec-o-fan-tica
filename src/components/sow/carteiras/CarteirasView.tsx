@@ -36,6 +36,46 @@ const CHART_COLORS = [
   "hsl(var(--chart-5))",
 ];
 
+// Verde = da casa (EQI), âmbar = externo — mesmos tons do IndicadoresView.
+const COR_INTERNA = "hsl(var(--chart-2))";
+const COR_EXTERNA = "hsl(var(--chart-4))";
+
+const tooltipStyle = {
+  background: "hsl(var(--card))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: 8,
+  fontSize: 12,
+};
+
+function ChartCard({
+  title,
+  children,
+  empty,
+  emptyLabel = "Sem dados ainda.",
+}: {
+  title: string;
+  children: React.ReactNode;
+  empty?: boolean;
+  emptyLabel?: string;
+}) {
+  return (
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-semibold">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="h-[300px]">
+        {empty ? (
+          <p className="py-16 text-center text-sm text-muted-foreground">{emptyLabel}</p>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            {children as React.ReactElement}
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function CarteiraCliente({ clienteId }: { clienteId: string }) {
   const { data: instituicoes, isLoading: loadingInst } = useSoWInstituicoes(clienteId);
   const { data: ativos, isLoading: loadingAtivos } = useSoWAtivosCliente(clienteId);
@@ -53,69 +93,150 @@ function CarteiraCliente({ clienteId }: { clienteId: string }) {
       .sort((a, b) => b.value - a.value);
   }, [instituicoes, ativos]);
 
+  // Alocação por classe de ativo — o recorte que falta hoje na carteira.
+  const porTipo = useMemo(() => {
+    const acc = new Map<string, number>();
+    for (const a of ativos ?? []) {
+      acc.set(a.tipo, (acc.get(a.tipo) ?? 0) + (a.valorAplicado ?? 0));
+    }
+    return [...acc.entries()]
+      .map(([name, value]) => ({ name, value }))
+      .filter((e) => e.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [ativos]);
+
+  // EQI × externo do cliente, derivado da flag `interna` da instituição de cada ativo.
+  const internoVsExterno = useMemo(() => {
+    const internas = new Set((instituicoes ?? []).filter((i) => i.interna).map((i) => i.id));
+    let interno = 0;
+    let externo = 0;
+    for (const a of ativos ?? []) {
+      const valor = a.valorAplicado ?? 0;
+      if (internas.has(a.instituicaoId)) interno += valor;
+      else externo += valor;
+    }
+    return { interno, externo };
+  }, [instituicoes, ativos]);
+
+  const ivData = [
+    { name: "Na EQI", value: internoVsExterno.interno },
+    { name: "Externo", value: internoVsExterno.externo },
+  ].filter((e) => e.value > 0);
+
   const comValor = composicao.filter((c) => c.value > 0);
   const total = composicao.reduce((acc, c) => acc + c.value, 0);
 
   if (loadingInst || loadingAtivos) {
     return (
       <div className="grid gap-4 lg:grid-cols-2">
-        <Skeleton className="h-[320px] rounded-lg" />
-        <Skeleton className="h-[320px] rounded-lg" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-[320px] rounded-lg" />
+        ))}
       </div>
     );
   }
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Composição por instituição</CardTitle>
-        </CardHeader>
-        <CardContent className="h-[300px]">
-          {comValor.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">
-              Sem ativos com valor para compor a carteira.
-            </p>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={comValor}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={2}
-                >
-                  {comValor.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={CHART_COLORS[i % CHART_COLORS.length]}
-                      stroke="hsl(var(--background))"
-                      strokeWidth={2}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(v: number) => formatBRLCompacto(v)}
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
-                <Legend
-                  iconType="circle"
-                  wrapperStyle={{ fontSize: 12, color: "hsl(var(--foreground))" }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+      <ChartCard
+        title="Composição por instituição"
+        empty={comValor.length === 0}
+        emptyLabel="Nenhum ativo cadastrado ainda — adicione ativos ao cliente para compor a carteira."
+      >
+        <PieChart>
+          <Pie
+            data={comValor}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={100}
+            paddingAngle={2}
+          >
+            {comValor.map((c, i) => (
+              <Cell
+                key={i}
+                // A fatia da casa sempre em verde, para o usuário achar a EQI de relance.
+                fill={c.interna ? COR_INTERNA : CHART_COLORS[i % CHART_COLORS.length]}
+                stroke="hsl(var(--background))"
+                strokeWidth={2}
+              />
+            ))}
+          </Pie>
+          <Tooltip formatter={(v: number) => formatBRLCompacto(v)} contentStyle={tooltipStyle} />
+          <Legend
+            iconType="circle"
+            wrapperStyle={{ fontSize: 12, color: "hsl(var(--foreground))" }}
+          />
+        </PieChart>
+      </ChartCard>
+
+      <ChartCard
+        title="Alocação por classe de ativo"
+        empty={porTipo.length === 0}
+        emptyLabel="Nenhum ativo cadastrado ainda."
+      >
+        <PieChart>
+          <Pie
+            data={porTipo}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={100}
+            paddingAngle={2}
+          >
+            {porTipo.map((_, i) => (
+              <Cell
+                key={i}
+                fill={CHART_COLORS[i % CHART_COLORS.length]}
+                stroke="hsl(var(--background))"
+                strokeWidth={2}
+              />
+            ))}
+          </Pie>
+          <Tooltip formatter={(v: number) => formatBRLCompacto(v)} contentStyle={tooltipStyle} />
+          <Legend
+            iconType="circle"
+            wrapperStyle={{ fontSize: 12, color: "hsl(var(--foreground))" }}
+          />
+        </PieChart>
+      </ChartCard>
+
+      <ChartCard
+        title="Na EQI × Externo"
+        empty={ivData.length === 0}
+        emptyLabel="Nenhum ativo cadastrado ainda."
+      >
+        <PieChart>
+          <Pie
+            data={ivData}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={100}
+            paddingAngle={2}
+          >
+            {ivData.map((e, i) => (
+              <Cell
+                key={i}
+                fill={e.name === "Na EQI" ? COR_INTERNA : COR_EXTERNA}
+                stroke="hsl(var(--background))"
+                strokeWidth={2}
+              />
+            ))}
+          </Pie>
+          <Tooltip formatter={(v: number) => formatBRLCompacto(v)} contentStyle={tooltipStyle} />
+          <Legend
+            iconType="circle"
+            wrapperStyle={{ fontSize: 12, color: "hsl(var(--foreground))" }}
+          />
+        </PieChart>
+      </ChartCard>
 
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-3">

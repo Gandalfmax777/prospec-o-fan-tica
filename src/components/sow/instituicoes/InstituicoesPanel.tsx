@@ -18,7 +18,7 @@ import { formatBRLExato } from "@/lib/money";
 import type { SoWInstituicao } from "@/types/sow";
 import { AtivosTable } from "@/components/sow/ativos/AtivosTable";
 import { NovaInstituicaoDialog } from "./NovaInstituicaoDialog";
-import { Building2, ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { Building2, ChevronDown, ChevronRight, Edit2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function InstituicoesPanel({ clienteId }: { clienteId: string }) {
@@ -26,6 +26,7 @@ export function InstituicoesPanel({ clienteId }: { clienteId: string }) {
   const deleteInstituicao = useDeleteInstituicao();
 
   const [showNew, setShowNew] = useState(false);
+  const [editing, setEditing] = useState<SoWInstituicao | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [toDelete, setToDelete] = useState<SoWInstituicao | null>(null);
 
@@ -62,6 +63,14 @@ export function InstituicoesPanel({ clienteId }: { clienteId: string }) {
           <p className="text-sm text-muted-foreground">
             Nenhuma instituição cadastrada para este cliente.
           </p>
+          <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+            Os ativos ficam dentro de uma instituição. Marque a instituição da casa para que o
+            patrimônio dela conte como Patrimônio na EQI.
+          </p>
+          <Button size="sm" className="mt-4" onClick={() => setShowNew(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Cadastrar instituição
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -84,7 +93,7 @@ export function InstituicoesPanel({ clienteId }: { clienteId: string }) {
                         <span className="font-semibold text-foreground">{inst.nome}</span>
                         {inst.interna && (
                           <Badge variant="secondary" className="text-[10px]">
-                            Própria instituição
+                            Da casa · conta como EQI
                           </Badge>
                         )}
                       </div>
@@ -101,15 +110,26 @@ export function InstituicoesPanel({ clienteId }: { clienteId: string }) {
                       </div>
                     </div>
                   </button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0 text-destructive"
-                    onClick={() => setToDelete(inst)}
-                    title="Excluir instituição"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setEditing(inst)}
+                      title="Editar instituição"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive"
+                      onClick={() => setToDelete(inst)}
+                      title="Excluir instituição"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardHeader>
                 {isOpen && (
                   <CardContent className="pt-0">
@@ -123,6 +143,15 @@ export function InstituicoesPanel({ clienteId }: { clienteId: string }) {
       )}
 
       <NovaInstituicaoDialog clienteId={clienteId} open={showNew} onOpenChange={setShowNew} />
+
+      {editing && (
+        <NovaInstituicaoDialog
+          clienteId={clienteId}
+          instituicao={editing}
+          open
+          onOpenChange={(o) => !o && setEditing(null)}
+        />
+      )}
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>

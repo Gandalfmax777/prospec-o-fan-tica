@@ -5,14 +5,28 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ShareBar } from "@/components/sow/shared/ShareBar";
 import { UrgenciaBadge } from "@/components/sow/shared/UrgenciaBadge";
-import { useSoWOportunidades, useUpdateOportunidade } from "@/hooks/sow/useSoW";
+import {
+  useSoWOportunidades,
+  useUpdateOportunidade,
+  useDeleteOportunidade,
+} from "@/hooks/sow/useSoW";
 import { formatBRLCompacto } from "@/lib/money";
 import { FollowUpDialog } from "./FollowUpDialog";
 import type { SoWOportunidade } from "@/types/sow";
 import { toast } from "sonner";
-import { MessageSquarePlus, Target } from "lucide-react";
+import { MessageSquarePlus, Target, Trash2 } from "lucide-react";
 
 const TODAS = "__todas__";
 
@@ -20,12 +34,14 @@ export default function OportunidadesView() {
   const [status, setStatus] = useState<string>(TODAS);
   const [urgencia, setUrgencia] = useState<string>(TODAS);
   const [followUp, setFollowUp] = useState<SoWOportunidade | null>(null);
+  const [toDelete, setToDelete] = useState<SoWOportunidade | null>(null);
 
   const { data, isLoading } = useSoWOportunidades({
     status: status === TODAS ? undefined : status,
     urgencia: urgencia === TODAS ? undefined : urgencia,
   });
   const updateOpp = useUpdateOportunidade();
+  const deleteOpp = useDeleteOportunidade();
 
   const setStatusOpp = (id: string, novo: string) => {
     updateOpp.mutate(
@@ -115,6 +131,15 @@ export default function OportunidadesView() {
                             <Button variant="ghost" size="sm" className="h-8 text-destructive" onClick={() => setStatusOpp(o.id, "Perdida")}>Perdida</Button>
                           </>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="ml-1 h-8 w-8 text-destructive"
+                          onClick={() => setToDelete(o)}
+                          title="Excluir oportunidade"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );
@@ -128,6 +153,42 @@ export default function OportunidadesView() {
       {followUp && (
         <FollowUpDialog oportunidade={followUp} open={!!followUp} onOpenChange={(v) => !v && setFollowUp(null)} />
       )}
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir oportunidade</AlertDialogTitle>
+            <AlertDialogDescription>
+              Excluir a oportunidade de {toDelete?.clienteNome ?? "este cliente"}
+              {toDelete?.valor != null ? ` (${formatBRLCompacto(toDelete.valor)})` : ""}? Ela sai do
+              valor em negociação. Se o negócio apenas não avançou, prefira marcar como Perdida para
+              manter o histórico. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteOpp.isPending}
+              onClick={() => {
+                if (!toDelete) return;
+                deleteOpp.mutate(toDelete.id, {
+                  onSuccess: () => {
+                    toast.success("Oportunidade excluída.");
+                    setToDelete(null);
+                  },
+                  onError: (err) =>
+                    toast.error(
+                      err instanceof Error ? err.message : "Erro ao excluir oportunidade."
+                    ),
+                });
+              }}
+            >
+              {deleteOpp.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
