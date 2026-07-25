@@ -6,6 +6,7 @@ import { useCRM } from "@/context/CRMContext";
 import { Origem, PerdidoLead } from "@/types/crm";
 import { ORIGEM_LABELS } from "@/lib/origemConstants";
 import { toast } from "@/hooks/use-toast";
+import { usePaginacao } from "@/hooks/usePaginacao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { PaginacaoControles } from "./PaginacaoControles";
 import {
   Eye,
   FileDown,
@@ -86,6 +88,10 @@ export const PerdidosTab = () => {
         p.ownerName.toLowerCase().includes(t)
     );
   }, [perdidos, search]);
+
+  // Lista org-wide: cresce com a equipe toda, não com um assessor só. Pagina
+  // apenas o render — a busca continua varrendo a lista completa.
+  const paginacao = usePaginacao(filtered, { chaveReset: search });
 
   const handleAssumir = async (p: PerdidoLead) => {
     try {
@@ -232,7 +238,7 @@ export const PerdidosTab = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((p) => (
+                {paginacao.visiveis.map((p) => (
                   <TableRow
                     key={p.id}
                     className="hover:bg-muted/40 transition-colors duration-150 border-b border-border/30"
@@ -338,6 +344,9 @@ export const PerdidosTab = () => {
               </TableBody>
             </Table>
           </div>
+
+          {/* "perdido"/"perdidos" — o plural do componente é só o "s". */}
+          <PaginacaoControles {...paginacao} rotuloItem="perdido" />
         </div>
       </CardContent>
 

@@ -34,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCRM } from "@/context/CRMContext";
+import { usePaginacao } from "@/hooks/usePaginacao";
 import { ORIGENS, ORIGEM_LABELS } from "@/lib/origemConstants";
 import { cn } from "@/lib/utils";
 import { Cadencia, Lead, Origem, Status, Temperatura } from "@/types/crm";
@@ -58,6 +59,7 @@ import { EditLeadDialog } from "./EditLeadDialog";
 import { HistoricoDialog } from "./HistoricoDialog";
 import { MarcarPerdidoDialog } from "./MarcarPerdidoDialog";
 import { NewLeadDialog } from "./NewLeadDialog";
+import { PaginacaoControles } from "./PaginacaoControles";
 import { PrioridadeBadge, StatusBadge } from "./StatusBadge";
 
 export const LeadTable = () => {
@@ -120,6 +122,13 @@ export const LeadTable = () => {
     () => [...filteredLeads].sort((a, b) => b.score - a.score),
     [filteredLeads]
   );
+
+  // Pagina só o RENDER. Busca, filtros e ordenação continuam sobre a lista
+  // inteira, então o resultado não muda — o que muda é quantas linhas o React
+  // monta de uma vez.
+  const paginacao = usePaginacao(sortedLeads, {
+    chaveReset: `${searchTerm}|${origemFilter}|${statusFilter}`,
+  });
 
   // Detectar quais colunas devem ser exibidas baseado nos leads visíveis
   const visibleColumns = useMemo(() => {
@@ -333,7 +342,7 @@ export const LeadTable = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedLeads.map((lead) => (
+                {paginacao.visiveis.map((lead) => (
                   <TableRow
                     key={lead.id}
                     className="hover:bg-muted/40 transition-colors duration-150 border-b border-border/30"
@@ -645,6 +654,8 @@ export const LeadTable = () => {
               </TableBody>
             </Table>
           </div>
+
+          <PaginacaoControles {...paginacao} rotuloItem="contato" />
         </div>
 
         {selectedLead && (
