@@ -43,7 +43,10 @@ export function NewClienteDialog({
   const [cidade, setCidade] = useState("");
   const [codigo, setCodigo] = useState("");
   const [status, setStatus] = useState<SoWClienteStatus>("Prospect");
-  const [metaSharePct, setMetaSharePct] = useState<number>(80);
+  // String, não number: `Number("")` é 0, e o backend aceita 0 (validação é
+  // min(0)). Limpar o campo gravava meta 0 em silêncio — cliente com meta zero
+  // tem gap sempre zero, e a IA para de propor migração de patrimônio para ele.
+  const [metaSharePct, setMetaSharePct] = useState<string>("80");
 
   useEffect(() => {
     if (!open) {
@@ -53,7 +56,7 @@ export function NewClienteDialog({
       setCidade("");
       setCodigo("");
       setStatus("Prospect");
-      setMetaSharePct(80);
+      setMetaSharePct("80");
     }
   }, [open]);
 
@@ -70,7 +73,9 @@ export function NewClienteDialog({
         cidade: cidade.trim() || null,
         codigo: codigo.trim() || null,
         status,
-        metaSharePct,
+        // Campo vazio => omite, para o backend aplicar o default do banco em
+        // vez de receber 0.
+        metaSharePct: metaSharePct.trim() === "" ? undefined : Number(metaSharePct),
       },
       {
         onSuccess: () => {
@@ -147,7 +152,7 @@ export function NewClienteDialog({
               min={0}
               max={100}
               value={metaSharePct}
-              onChange={(e) => setMetaSharePct(Number(e.target.value))}
+              onChange={(e) => setMetaSharePct(e.target.value)}
             />
           </div>
         </div>

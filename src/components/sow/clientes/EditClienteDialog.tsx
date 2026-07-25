@@ -45,7 +45,9 @@ export function EditClienteDialog({
   const [cidade, setCidade] = useState("");
   const [codigo, setCodigo] = useState("");
   const [status, setStatus] = useState<SoWClienteStatus>("Prospect");
-  const [metaSharePct, setMetaSharePct] = useState<number>(80);
+  // String, não number: `Number("")` é 0 e o backend aceita 0 (validação é
+  // min(0)), então limpar o campo zerava a meta em silêncio.
+  const [metaSharePct, setMetaSharePct] = useState<string>("");
 
   useEffect(() => {
     if (!open) return;
@@ -55,7 +57,7 @@ export function EditClienteDialog({
     setCidade(cliente.cidade ?? "");
     setCodigo(cliente.codigo ?? "");
     setStatus(cliente.status);
-    setMetaSharePct(cliente.metaSharePct);
+    setMetaSharePct(String(cliente.metaSharePct));
   }, [open, cliente]);
 
   const handleSubmit = () => {
@@ -73,7 +75,9 @@ export function EditClienteDialog({
           cidade: cidade.trim() || null,
           codigo: codigo.trim() || null,
           status,
-          metaSharePct,
+          // Campo vazio => mantém a meta atual, em vez de gravar 0.
+          metaSharePct:
+            metaSharePct.trim() === "" ? cliente.metaSharePct : Number(metaSharePct),
         },
       },
       {
@@ -151,7 +155,7 @@ export function EditClienteDialog({
               min={0}
               max={100}
               value={metaSharePct}
-              onChange={(e) => setMetaSharePct(Number(e.target.value))}
+              onChange={(e) => setMetaSharePct(e.target.value)}
             />
           </div>
         </div>
