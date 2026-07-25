@@ -4,20 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useSoW } from "@/context/SoWContext";
-import { useSoWClientes, useGerarAlertas, useGerarOportunidades, useGerarScore, useGerarBriefing } from "@/hooks/sow/useSoW";
+import { useSoWClientes, useGerarAlertas, useGerarOportunidades, useGerarScore, useAnalisarCarteira } from "@/hooks/sow/useSoW";
 import { ImportarCarteira } from "./ImportarCarteira";
+import { Markdown } from "@/components/sow/shared/Markdown";
 import { Sparkles, Bell, Target, Gauge, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 export default function IAView() {
   const { selectedClienteId, setSelectedClienteId } = useSoW();
   const { data: clientes } = useSoWClientes({});
-  const [briefing, setBriefing] = useState<string>("");
+  const [analise, setAnalise] = useState<string>("");
 
   const gerarAlertas = useGerarAlertas();
   const gerarOportunidades = useGerarOportunidades();
   const gerarScore = useGerarScore();
-  const gerarBriefing = useGerarBriefing();
+  const analisarCarteira = useAnalisarCarteira();
 
   const clienteId = selectedClienteId;
 
@@ -79,22 +80,26 @@ export default function IAView() {
                   onClick={() => run(() => gerarScore.mutateAsync(clienteId), "Score")}>
                   <Gauge className="h-4 w-4" /> Gerar score
                 </Button>
-                <Button variant="outline" className="gap-2" disabled={gerarBriefing.isPending}
+                <Button variant="outline" className="gap-2" disabled={analisarCarteira.isPending}
                   onClick={async () => {
                     try {
-                      const r = await gerarBriefing.mutateAsync(clienteId);
-                      setBriefing(r.texto);
-                      toast.success("Briefing gerado");
+                      const r = await analisarCarteira.mutateAsync(clienteId);
+                      setAnalise(r.texto);
+                      toast.success(
+                        r.ativosComentados > 0
+                          ? `Carteira analisada — ${r.ativosComentados} ativo(s) comentados`
+                          : "Carteira analisada"
+                      );
                     } catch (e) {
-                      toast.error(e instanceof Error ? e.message : "Falha ao gerar briefing");
+                      toast.error(e instanceof Error ? e.message : "Falha ao analisar a carteira");
                     }
                   }}>
-                  <FileText className="h-4 w-4" /> Gerar briefing
+                  <FileText className="h-4 w-4" /> Analisar carteira
                 </Button>
               </div>
-              {briefing && (
-                <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm whitespace-pre-wrap max-h-72 overflow-y-auto">
-                  {briefing}
+              {analise && (
+                <div className="rounded-lg border border-border bg-muted/30 p-3 max-h-96 overflow-y-auto">
+                  <Markdown>{analise}</Markdown>
                 </div>
               )}
             </CardContent>

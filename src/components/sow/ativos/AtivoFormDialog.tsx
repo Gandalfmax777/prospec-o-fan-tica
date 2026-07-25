@@ -144,8 +144,12 @@ export function AtivoFormDialog({
       nome: nome.trim(),
       valorAplicado: parseBRL(valorAplicado),
       rentabilidade: rentabilidade.trim() || null,
-      dataAplicacao: dataAplicacao ? dataAplicacao.toISOString() : null,
-      vencimento: vencimento ? vencimento.toISOString() : null,
+      // Data pura, e não toISOString(): o calendário devolve meia-noite LOCAL, e
+      // o ISO disso vira 03:00Z em Brasília — um instante diferente do que a
+      // importação grava (meia-noite UTC) para a mesma data. Mandando
+      // "AAAA-MM-DD" as duas origens ficam idênticas no banco.
+      dataAplicacao: dataAplicacao ? format(dataAplicacao, "yyyy-MM-dd") : null,
+      vencimento: vencimento ? format(vencimento, "yyyy-MM-dd") : null,
       liquidez: liquidez.trim() || null,
       custodia: custodia.trim() || null,
       observacoes: observacoes.trim() || null,
@@ -350,6 +354,9 @@ export function AtivoFormDialog({
 
           <div className="space-y-1.5">
             <Label>Status</Label>
+            {/* Carrega o status GRAVADO, nunca o derivado: se o select viesse
+                preenchido com "Vencido", salvar gravaria essa derivação no
+                banco em silêncio, e ela deixaria de acompanhar a data. */}
             <Select value={status} onValueChange={(v: SoWAtivoStatus) => setStatus(v)}>
               <SelectTrigger>
                 <SelectValue />
@@ -362,6 +369,15 @@ export function AtivoFormDialog({
                 ))}
               </SelectContent>
             </Select>
+            {/* Sem esta linha o assessor vê badge vermelho "Vencido" na lista e
+                "Ativo" aqui dentro, e conclui que a tela está com bug. */}
+            {ativo && ativo.statusEfetivo !== ativo.status && (
+              <p className="text-[11px] text-muted-foreground">
+                Este ativo já passou do vencimento e aparece como{" "}
+                <span className="font-medium text-destructive">{ativo.statusEfetivo}</span> na
+                lista. Ajuste o status aqui quando o cliente resgatar ou renovar.
+              </p>
+            )}
           </div>
 
           <div className="col-span-2 space-y-1.5">

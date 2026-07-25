@@ -141,6 +141,12 @@ export const sowApi = {
     request<SoWCliente>(`/sow/ai/clientes/${clienteId}/score`, { method: "POST" }),
   gerarFollowUp: (clienteId: string, body: { oportunidadeId?: string; canal?: string; tom?: string } = {}) =>
     request<{ texto: string }>(`/sow/ai/clientes/${clienteId}/follow-up`, { method: "POST", body }),
-  gerarBriefing: (clienteId: string) =>
-    request<{ texto: string }>(`/sow/ai/clientes/${clienteId}/briefing`, { method: "POST" }),
+  // Substituiu o antigo "briefing de reunião": além do relatório em Markdown,
+  // grava o comentário individual de cada ativo comentado (por isso o hook
+  // invalida as queries — a tabela de Ativos muda com isso).
+  analisarCarteira: (clienteId: string) =>
+    request<{ texto: string; ativosComentados: number }>(
+      `/sow/ai/clientes/${clienteId}/analise`,
+      { method: "POST" }
+    ),
 };

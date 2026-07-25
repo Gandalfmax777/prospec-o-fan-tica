@@ -201,6 +201,11 @@ export default function OportunidadesView() {
                                     <Sparkles className="h-3 w-3" /> Gerada por IA
                                   </Badge>
                                 )}
+                                {o.ativoNome && (
+                                  <Badge variant="outline" className="text-[10px] font-normal">
+                                    {o.ativoNome}
+                                  </Badge>
+                                )}
                                 {o.prazo && (
                                   <span className="text-[11px] text-muted-foreground">
                                     Prazo sugerido: {new Date(o.prazo).toLocaleDateString("pt-BR")}
@@ -213,7 +218,9 @@ export default function OportunidadesView() {
                               {o.geradoIA && (
                                 <p className="text-[11px] text-muted-foreground">
                                   Valor e chance são estimativas geradas a partir da carteira do
-                                  cliente — revise antes de usar.
+                                  cliente em {new Date(o.createdAt).toLocaleDateString("pt-BR")} —
+                                  revise antes de usar. Os números citados no texto são daquele
+                                  momento e não acompanham mudanças na carteira.
                                 </p>
                               )}
                             </div>

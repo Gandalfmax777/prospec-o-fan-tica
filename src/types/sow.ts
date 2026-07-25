@@ -93,7 +93,19 @@ export interface SoWAtivo {
   liquidez: string | null;
   custodia: string | null;
   observacoes: string | null;
+  /** Situação COMO GRAVADA. Use no formulário de edição e no PUT. */
   status: SoWAtivoStatus;
+  /**
+   * Situação derivada na leitura: "Vencido" quando `status` é "Ativo" e o
+   * vencimento já passou. Um Resgatado / Em Movimentação marcado à mão sempre
+   * ganha da derivação. Use para EXIBIR; nunca mande de volta ao backend.
+   */
+  statusEfetivo: SoWAtivoStatus;
+  /** Dias de calendário até o vencimento. NEGATIVO = já venceu. */
+  diasAteVencimento: number | null;
+  /** Comentário individual escrito pela análise de carteira da IA. */
+  analiseIA: string | null;
+  analiseIAEm: string | null;
   /** Importação que criou o ativo; null = cadastrado à mão. */
   importJobId: string | null;
   createdAt: string;
@@ -119,6 +131,8 @@ export interface SoWOportunidade {
   clienteNome: string | null;
   assessorId: string | null;
   ativoId: string | null;
+  /** Nome do ativo que originou a oportunidade; null quando é da carteira toda. */
+  ativoNome: string | null;
   instituicao: string | null;
   valor: number | null;
   chancePct: number | null;
