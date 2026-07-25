@@ -88,7 +88,9 @@ export function useDeleteCliente() {
 }
 export function useImportFromLead() {
   const invalidate = useInvalidateClientes();
-  return useMutation({ mutationFn: (leadId: string) => sowApi.importFromLead(leadId), onSuccess: invalidate });
+  return useMutation({ mutationFn: ({ leadId, metaSharePct }: { leadId: string; metaSharePct: number }) =>
+      sowApi.importFromLead(leadId, metaSharePct),
+    onSuccess: invalidate, });
 }
 
 // ── Catálogo ──

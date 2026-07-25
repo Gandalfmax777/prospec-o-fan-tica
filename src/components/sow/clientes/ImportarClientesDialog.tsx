@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,11 +30,15 @@ export function ImportarClientesDialog({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Uma meta para o lote inteiro: a importação é em massa, e pedir cliente por
+  // cliente seria inviável. Fica ajustável depois, no cadastro de cada um.
+  const [metaSharePct, setMetaSharePct] = useState("");
 
   useEffect(() => {
     if (!open) {
       setSearch("");
       setSelected(new Set());
+      setMetaSharePct("");
       return;
     }
     let alive = true;
@@ -80,10 +85,15 @@ export function ImportarClientesDialog({
       toast.error("Selecione ao menos um lead.");
       return;
     }
+    const meta = Number(metaSharePct);
+    if (metaSharePct.trim() === "" || !Number.isFinite(meta) || meta < 1 || meta > 100) {
+      toast.error("Informe a meta de share (1 a 100).");
+      return;
+    }
     let ok = 0;
     for (const id of ids) {
       try {
-        await mutateAsync(id);
+        await mutateAsync({ leadId: id, metaSharePct: meta });
         ok += 1;
       } catch {
         /* segue para os próximos */
@@ -146,6 +156,25 @@ export function ImportarClientesDialog({
             </div>
           )}
         </ScrollArea>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="meta-lote" className="text-xs">
+            Meta de share (%) — aplicada a todos os selecionados
+          </Label>
+          <Input
+            id="meta-lote"
+            type="number"
+            min={1}
+            max={100}
+            placeholder="ex.: 80"
+            value={metaSharePct}
+            onChange={(e) => setMetaSharePct(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Quanto do patrimônio de cada cliente você quer ter na casa. Pode ser ajustada
+            individualmente depois, no cadastro do cliente.
+          </p>
+        </div>
 
         <DialogFooter className="items-center sm:justify-between">
           <span className="text-xs text-muted-foreground">

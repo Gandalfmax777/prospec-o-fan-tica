@@ -201,7 +201,8 @@ export interface CreateClienteInput {
   cidade?: string | null;
   codigo?: string | null;
   status?: SoWClienteStatus;
-  metaSharePct?: number;
+  /** Obrigatória na criação: não há default no banco, é decisão por cliente. */
+  metaSharePct: number;
 }
 export type UpdateClienteInput = Partial<CreateClienteInput> & { assessorId?: string };
 
