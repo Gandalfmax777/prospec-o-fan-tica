@@ -57,11 +57,19 @@ export function useSoWCliente(id: string | null) {
   });
 }
 
-function useInvalidateClientes() {
+/**
+ * Invalida TODO o cache do SoW da org. Exportado porque a importação de
+ * carteira conclui em background (job assíncrono, fora de uma mutation), então
+ * o componente precisa disparar a recarga por conta própria — sem isso a
+ * carteira e o dashboard seguem mostrando os números de antes da importação.
+ */
+export function useInvalidateSoW() {
   const qc = useQueryClient();
   const org = useOrgId();
   return () => qc.invalidateQueries({ queryKey: ["sow", org] });
 }
+
+const useInvalidateClientes = useInvalidateSoW;
 
 export function useCreateCliente() {
   const invalidate = useInvalidateClientes();
@@ -295,7 +303,7 @@ export function useSoWScore() {
 export function useImportarCarteira() {
   const invalidate = useInvalidateClientes();
   return useMutation({
-    mutationFn: ({ clienteId, file }: { clienteId: string; file: File }) => sowApi.importarCarteira(clienteId, file),
+    mutationFn: ({ clienteId, files }: { clienteId: string; files: File[] }) => sowApi.importarCarteira(clienteId, files),
     onSuccess: invalidate,
   });
 }
@@ -306,6 +314,12 @@ export function useImportJob(id: string | null, poll = false) {
     queryFn: () => sowApi.getImportJob(id as string),
     enabled: !!id,
     refetchInterval: poll ? 2500 : false,
+    // A importação roda no servidor e conclui sozinha. Por padrão o React Query
+    // pausa o refetchInterval em aba oculta, então trocar de aba durante o
+    // processamento congelava a tela no "A IA está lendo os extratos…" até
+    // voltar o foco. É o único polling do módulo que precisa disso — os demais
+    // só refletem ação do usuário, que por definição está com a aba à frente.
+    refetchIntervalInBackground: poll,
   });
 }
 export function useGerarAlertas() {

@@ -92,17 +92,12 @@ export function ClienteCard({
 
         <ShareBar value={cliente.sharePct} meta={cliente.metaSharePct} />
 
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            Gap{" "}
-            <strong className="font-semibold text-destructive tabular-nums">
-              {formatBRLCompacto(cliente.gap)}
-            </strong>
-          </span>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-muted-foreground">Score</span>
-            <ScoreBadge score={cliente.scoreValor} />
-          </div>
+        {/* O "Gap" que existia aqui era max(0, meta% × total − interno), lido
+            como "quanto está fora" — mas o que está fora já é o tile "Externo"
+            logo acima, com outro valor. Dois números, um rótulo só. */}
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-[11px] text-muted-foreground">Score</span>
+          <ScoreBadge score={cliente.scoreValor} />
         </div>
 
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-border/50 pt-2 text-[11px] text-muted-foreground">

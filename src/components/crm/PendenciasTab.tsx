@@ -13,14 +13,54 @@ import {
   AlertTriangle,
   Clock,
   Zap,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { BriefingDialog } from "./BriefingDialog";
+import { api } from "@/services/api";
 
 export const PendenciasTab = () => {
   const { leads, registrarContato, moverTemperatura } = useCRM();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showBriefing, setShowBriefing] = useState(false);
+  // Rascunhos da IA por lead. O template abaixo continua sendo o texto padrão:
+  // custo zero, o card nunca fica vazio, e a IA só roda sob clique.
+  const [rascunhos, setRascunhos] = useState<Record<string, string>>({});
+  const [gerando, setGerando] = useState<string | null>(null);
+
+  const personalizarComIA = async (lead: Lead) => {
+    setGerando(lead.id);
+    try {
+      const r = await api.gerarFollowUpLead(lead.id, { canal: "WhatsApp" });
+      const texto = (r.texto ?? "").trim();
+      // Rascunho vazio nao pode substituir o template: o card ficaria com aspas
+      // vazias e o assessor copiaria nada, sem sinal de que algo falhou.
+      if (!texto) {
+        toast({
+          title: "Nao foi possivel gerar",
+          description: "A IA nao devolveu texto. Tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setRascunhos((prev) => ({ ...prev, [lead.id]: texto }));
+      if (r.semContexto) {
+        toast({
+          title: "Contexto limitado",
+          description:
+            "Este lead nao tem briefing nem historico registrado, entao a IA tinha pouco material. Registre um briefing para a proxima mensagem sair mais especifica.",
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Nao foi possivel gerar",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setGerando(null);
+    }
+  };
 
   const ativos = leads.filter(
     (lead) => lead.status !== "Convertido" && lead.status !== "Perdido"
@@ -195,23 +235,44 @@ export const PendenciasTab = () => {
             <CardTitle>Sugestoes de follow-up</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 max-h-[600px] overflow-y-auto scrollbar-thin">
-            {[...atrasados, ...quaseAtrasados].slice(0, 5).map((lead) => (
-              <Card key={lead.id}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center justify-between">
-                    <span>{lead.nome}</span>
-                    <TemperaturaBadge temperatura={lead.temperatura} />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-sm text-muted-foreground mb-3 italic">"{gerarSugestaoFollowUp(lead)}"</p>
-                  <Button size="sm" variant="outline" className="w-full" onClick={() => copiarMensagem(gerarSugestaoFollowUp(lead))}>
-                    <Copy className="w-3 h-3 mr-1" />
-                    Copiar mensagem
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+            {[...atrasados, ...quaseAtrasados].slice(0, 5).map((lead) => {
+              // Calculado uma vez, não duas: antes o template rodava no render
+              // para exibir e de novo no onClick para copiar.
+              const doIA = rascunhos[lead.id];
+              const mensagem = doIA ?? gerarSugestaoFollowUp(lead);
+              const carregando = gerando === lead.id;
+              return (
+                <Card key={lead.id}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center justify-between">
+                      <span>{lead.nome}</span>
+                      <TemperaturaBadge temperatura={lead.temperatura} />
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-sm text-muted-foreground mb-3 italic whitespace-pre-line">"{mensagem}"</p>
+                    {/* Empilhados: a coluna e estreita e "Personalizar com IA"
+                        lado a lado com "Copiar" transborda no breakpoint lg. */}
+                    <div className="flex flex-col gap-2">
+                      <Button size="sm" variant="outline" onClick={() => copiarMensagem(mensagem)}>
+                        <Copy className="w-3 h-3 mr-1" />
+                        Copiar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-auto min-h-9 whitespace-normal py-1.5 leading-tight"
+                        disabled={carregando}
+                        onClick={() => personalizarComIA(lead)}
+                      >
+                        <Sparkles className="w-3 h-3 mr-1 shrink-0" />
+                        {carregando ? "Gerando..." : doIA ? "Gerar de novo" : "Personalizar com IA"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
             {atrasados.length === 0 && quaseAtrasados.length === 0 && (
               <Card>
                 <CardContent className="p-6 text-center text-muted-foreground">

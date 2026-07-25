@@ -8,12 +8,9 @@ import { ShareEvolutionChart } from "./ShareEvolutionChart";
 import {
   Wallet,
   Building2,
-  Globe,
   PieChart,
   Target,
-  TrendingDown,
   Users,
-  Eye,
   Magnet,
   Handshake,
   CheckCircle2,
@@ -29,7 +26,7 @@ export default function SoWDashboard({ onNavigate }: { onNavigate?: (key: string
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
-        {Array.from({ length: 12 }).map((_, i) => (
+        {Array.from({ length: 9 }).map((_, i) => (
           <Skeleton key={i} className="h-[104px] rounded-lg" />
         ))}
       </div>
@@ -44,16 +41,16 @@ export default function SoWDashboard({ onNavigate }: { onNavigate?: (key: string
     );
   }
 
+  // "Patrimônio Captável" é tudo o que está fora da casa. Antes o mesmo número
+  // aparecia também como "Patrimônio Externo", e "Patrimônio Monitorado"
+  // repetia o "Patrimônio Total" — três cards para dois números.
   const cards: Array<{ title: string; value: string; icon: typeof Wallet; variant?: "default" | "primary" | "success" | "warning" | "danger" }> = [
     { title: "Patrimônio Total", value: formatBRLCompacto(data.patrimonioTotal), icon: Wallet, variant: "primary" },
     { title: "Patrimônio na EQI", value: formatBRLCompacto(data.patrimonioInterno), icon: Building2, variant: "success" },
-    { title: "Patrimônio Externo", value: formatBRLCompacto(data.patrimonioExterno), icon: Globe, variant: "warning" },
+    { title: "Patrimônio Captável", value: formatBRLCompacto(data.patrimonioCaptavel), icon: Magnet, variant: "warning" },
     { title: "Share Atual", value: formatPct(data.shareAtualPct), icon: PieChart, variant: "primary" },
     { title: "Meta de Share", value: formatPct(data.metaSharePct), icon: Target },
-    { title: "Gap Financeiro", value: formatBRLCompacto(data.gap), icon: TrendingDown, variant: "danger" },
     { title: "Nº de Clientes", value: String(data.numClientes), icon: Users },
-    { title: "Patrimônio Monitorado", value: formatBRLCompacto(data.patrimonioMonitorado), icon: Eye },
-    { title: "Patrimônio Captável", value: formatBRLCompacto(data.patrimonioCaptavel), icon: Magnet, variant: "warning" },
     { title: "Em Negociação", value: formatBRLCompacto(data.patrimonioEmNegociacao), icon: Handshake, variant: "primary" },
     { title: "Valor Convertido", value: formatBRLCompacto(data.valorConvertido), icon: CheckCircle2, variant: "success" },
     { title: "Taxa Média de Share", value: formatPct(data.taxaMediaSharePct), icon: Gauge },

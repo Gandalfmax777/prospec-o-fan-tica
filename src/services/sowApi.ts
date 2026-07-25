@@ -110,9 +110,11 @@ export const sowApi = {
     request<SoWCliente[]>(`/sow/score${qs(params)}`),
 
   // ── IA ──
-  importarCarteira: async (clienteId: string, file: File): Promise<SoWImportJob> => {
+  // Vários extratos vão numa requisição só: o backend consolida por instituição
+  // numa única análise da IA, em vez de N importações que se sobrescreveriam.
+  importarCarteira: async (clienteId: string, files: File[]): Promise<SoWImportJob> => {
     const fd = new FormData();
-    fd.append("arquivo", file);
+    for (const file of files) fd.append("arquivos", file);
     fd.append("clienteId", clienteId);
     const res = await fetch(`${API_URL}/sow/ai/import-carteira`, {
       method: "POST",
