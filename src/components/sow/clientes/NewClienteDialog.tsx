@@ -46,7 +46,9 @@ export function NewClienteDialog({
   // String, não number: `Number("")` é 0, e o backend aceita 0 (validação é
   // min(0)). Limpar o campo gravava meta 0 em silêncio — cliente com meta zero
   // tem gap sempre zero, e a IA para de propor migração de patrimônio para ele.
-  const [metaSharePct, setMetaSharePct] = useState<string>("80");
+  // Vazio de propósito: a meta é obrigatória e não há default no banco.
+  // Pré-preencher faria o assessor aceitar um número sem decidir.
+  const [metaSharePct, setMetaSharePct] = useState<string>("");
 
   useEffect(() => {
     if (!open) {
@@ -56,13 +58,18 @@ export function NewClienteDialog({
       setCidade("");
       setCodigo("");
       setStatus("Prospect");
-      setMetaSharePct("80");
+      setMetaSharePct("");
     }
   }, [open]);
 
   const handleSubmit = () => {
     if (!nome.trim()) {
       toast.error("O nome é obrigatório.");
+      return;
+    }
+    const meta = Number(metaSharePct);
+    if (metaSharePct.trim() === "" || !Number.isFinite(meta) || meta < 1 || meta > 100) {
+      toast.error("Informe a meta de share (1 a 100).");
       return;
     }
     mutate(
@@ -73,9 +80,7 @@ export function NewClienteDialog({
         cidade: cidade.trim() || null,
         codigo: codigo.trim() || null,
         status,
-        // Campo vazio => omite, para o backend aplicar o default do banco em
-        // vez de receber 0.
-        metaSharePct: metaSharePct.trim() === "" ? undefined : Number(metaSharePct),
+        metaSharePct: meta,
       },
       {
         onSuccess: () => {
@@ -146,14 +151,18 @@ export function NewClienteDialog({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Meta de share (%)</Label>
+            <Label>Meta de share (%) *</Label>
             <Input
               type="number"
-              min={0}
+              min={1}
               max={100}
+              placeholder="ex.: 80"
               value={metaSharePct}
               onChange={(e) => setMetaSharePct(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Quanto do patrimônio do cliente você quer ter na casa. Ajustável depois.
+            </p>
           </div>
         </div>
         <DialogFooter>

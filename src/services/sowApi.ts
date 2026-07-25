@@ -37,8 +37,13 @@ export const sowApi = {
     request<SoWCliente>(`/sow/clientes/${id}`, { method: "PUT", body }),
   deleteCliente: (id: string) =>
     request<null>(`/sow/clientes/${id}`, { method: "DELETE" }),
-  importFromLead: (leadId: string) =>
-    request<SoWCliente>("/sow/clientes/import-from-lead", { method: "POST", body: { leadId } }),
+  // metaSharePct é obrigatória: a ponte era o caminho que criava cliente sem
+  // meta explícita, caindo no default do banco (que já não existe mais).
+  importFromLead: (leadId: string, metaSharePct: number) =>
+    request<SoWCliente>("/sow/clientes/import-from-lead", {
+      method: "POST",
+      body: { leadId, metaSharePct },
+    }),
   getClienteShare: (id: string) => request<{
     clienteId: string; patrimonioTotal: number; patrimonioInterno: number;
     patrimonioExterno: number; sharePct: number; metaSharePct: number; gap: number;
