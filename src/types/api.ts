@@ -228,6 +228,113 @@ export interface LeadResponse extends Omit<Lead, "historico" | "briefings"> {
   }>;
 }
 
+/**
+ * Sugestão consultiva de follow-up gerada por IA a partir de todo o histórico
+ * do lead. Só string e string[] — sem Date, para dispensar normalizer.
+ *
+ * `texto` é alias de `mensagem`, mantido para não quebrar a versão anterior do
+ * frontend durante a janela de deploy. Código novo deve ler `mensagem`.
+ */
+export interface FollowUpContexto {
+  afirmacao: string;
+  /** Trecho literal do histórico, conferido pelo backend contra o material do lead. */
+  ancora: string;
+  fonte: string;
+  data: string | null;
+}
+
+export interface FollowUpSugestao {
+  /** null quando a geração deu certo mas a gravação falhou. */
+  id: string | null;
+  texto: string;
+  mensagem: string;
+  objetivo: { tipo: string; porQueAgora: string };
+  contextoUtilizado: FollowUpContexto[];
+  justificativa: string;
+  leitura: {
+    quemE: string;
+    profissao: string | null;
+    setor: string | null;
+    comoGanhaDinheiro: string | null;
+    perfilDeLinguagem: string;
+    interesses: string[];
+    dores: string[];
+    objecoesEmAberto: string[];
+    pendencias: string[];
+    compromissosAssumidos: string[];
+    tomDasConversas: string | null;
+    estagioRelacionamento: string | null;
+  };
+  /** Conferência determinística do backend. `aprovado: false` vira aviso na UI. */
+  qualidade: { aprovado: boolean; falhas: string[]; ancorasConfirmadas: number };
+  comCarteira: boolean;
+  semContexto: boolean;
+  canal: string;
+  tom: string;
+  criadaEm: string;
+  /** Quando o assessor copiou a mensagem. null = gerada e nunca usada. */
+  copiadaEm: string | null;
+}
+
+/** Linha do histórico de sugestões (tela dedicada). */
+export interface SugestaoHistoricoItem {
+  id: string;
+  leadId: string;
+  leadNome: string | null;
+  leadCidade: string | null;
+  assessorId: string;
+  assessorNome: string | null;
+  canal: string;
+  tom: string;
+  objetivoTipo: string;
+  objetivoPorQueAgora: string;
+  mensagem: string;
+  justificativa: string;
+  contextoUtilizado: FollowUpContexto[];
+  qualidadeAprovado: boolean;
+  qualidadeFalhas: string[];
+  ancorasConfirmadas: number;
+  comCarteira: boolean;
+  modeloIA: string | null;
+  criadaEm: string;
+  copiadaEm: string | null;
+}
+
+export interface SugestoesHistoricoResponse {
+  /** Escopo que o backend de fato aplicou — pode ser menor que o pedido. */
+  escopo: string;
+  page: number;
+  pageSize: number;
+  total: number;
+  /** Agregados sobre o conjunto FILTRADO, não sobre a página. */
+  resumo: {
+    geradas: number;
+    copiadas: number;
+    taxaCopia: number;
+    comRessalva: number;
+    porObjetivo: Array<{ tipo: string; total: number }>;
+    porAssessor: Array<{
+      assessorId: string;
+      assessorNome: string | null;
+      geradas: number;
+      copiadas: number;
+      taxaCopia: number;
+    }>;
+  };
+  itens: SugestaoHistoricoItem[];
+}
+
+export interface SugestoesHistoricoFiltros {
+  escopo?: string;
+  assessorId?: string;
+  leadId?: string;
+  copiadas?: string;
+  de?: string;
+  ate?: string;
+  page?: number;
+  pageSize?: number;
+}
+
 // ─── Sysadmin ─────────────────────────────────────────────────────────────────
 
 export interface SysAdminStats {

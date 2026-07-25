@@ -9,58 +9,21 @@ import {
   CheckCircle,
   ThermometerSun,
   Eye,
-  Copy,
   AlertTriangle,
   Clock,
   Zap,
   Sparkles,
 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 import { BriefingDialog } from "./BriefingDialog";
-import { api } from "@/services/api";
+import { FollowUpIADialog } from "./FollowUpIADialog";
 
 export const PendenciasTab = () => {
   const { leads, registrarContato, moverTemperatura } = useCRM();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showBriefing, setShowBriefing] = useState(false);
-  // Rascunhos da IA por lead. O template abaixo continua sendo o texto padrão:
-  // custo zero, o card nunca fica vazio, e a IA só roda sob clique.
-  const [rascunhos, setRascunhos] = useState<Record<string, string>>({});
-  const [gerando, setGerando] = useState<string | null>(null);
-
-  const personalizarComIA = async (lead: Lead) => {
-    setGerando(lead.id);
-    try {
-      const r = await api.gerarFollowUpLead(lead.id, { canal: "WhatsApp" });
-      const texto = (r.texto ?? "").trim();
-      // Rascunho vazio nao pode substituir o template: o card ficaria com aspas
-      // vazias e o assessor copiaria nada, sem sinal de que algo falhou.
-      if (!texto) {
-        toast({
-          title: "Nao foi possivel gerar",
-          description: "A IA nao devolveu texto. Tente novamente.",
-          variant: "destructive",
-        });
-        return;
-      }
-      setRascunhos((prev) => ({ ...prev, [lead.id]: texto }));
-      if (r.semContexto) {
-        toast({
-          title: "Contexto limitado",
-          description:
-            "Este lead nao tem briefing nem historico registrado, entao a IA tinha pouco material. Registre um briefing para a proxima mensagem sair mais especifica.",
-        });
-      }
-    } catch (err) {
-      toast({
-        title: "Nao foi possivel gerar",
-        description: err instanceof Error ? err.message : "Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setGerando(null);
-    }
-  };
+  // A sugestão vive no dialog: são quatro seções (objetivo, contexto, mensagem
+  // e justificativa) que não cabem na coluna estreita. A IA só roda sob clique.
+  const [followUpLead, setFollowUpLead] = useState<Lead | null>(null);
 
   const ativos = leads.filter(
     (lead) => lead.status !== "Convertido" && lead.status !== "Perdido"
@@ -73,39 +36,41 @@ export const PendenciasTab = () => {
     return dias === 1 || dias === 2;
   });
 
-  const gerarSugestaoFollowUp = (lead: Lead): string => {
-    const diasSemContato = lead.ultimoContato
-      ? differenceInDays(new Date(), lead.ultimoContato)
-      : 999;
+  // As duas listas se sobrepõem: um lead com status "Atrasado" cujo
+  // `proximoContato` ainda está 1-2 dias à frente entra nas duas. O corte de 5
+  // cards que existia aqui escondia isso — sem ele, vira key duplicada, e o
+  // React descarta ou duplica cards em silêncio.
+  const vistos = new Set<string>();
+  const paraSugestao = [...atrasados, ...quaseAtrasados].filter((lead) => {
+    if (vistos.has(lead.id)) return false;
+    vistos.add(lead.id);
+    return true;
+  });
 
-    if (lead.status === "Atrasado") {
-      if (lead.temperatura === "Quente") {
-        return `Ola ${lead.nome.split(" ")[0]}! Estou entrando em contato pois percebi que faz alguns dias que nao conversamos. Tenho novidades que podem te interessar. Podemos marcar uma conversa rapida?`;
-      }
-      return `Ola ${lead.nome.split(" ")[0]}! Tudo bem? Faz um tempinho que nao conversamos e queria saber como voce esta. Posso ajudar em algo?`;
+  /**
+   * Resumo factual do estado do lead. Substitui o template de mensagem que
+   * ficava aqui: ele produzia justamente as frases genéricas que a feature
+   * existe para eliminar ("faz um tempinho que nao conversamos", "conseguiu
+   * analisar"), e era o texto que o assessor mais copiava, por ser instantâneo.
+   */
+  const resumoDoLead = (lead: Lead): string => {
+    const partes: string[] = [];
+
+    if (lead.ultimoContato) {
+      const dias = differenceInDays(new Date(), lead.ultimoContato);
+      partes.push(dias === 0 ? "Último contato hoje" : `${dias} dias sem contato`);
+    } else {
+      partes.push("Nenhum contato registrado");
     }
 
-    if (diasSemContato > 7) {
-      return `Oi ${lead.nome.split(" ")[0]}! Como vai? Passando para dar um alo e saber se surgiu alguma novidade por ai. Fico a disposicao!`;
+    const ultimoBriefing = [...(lead.briefings ?? [])].sort(
+      (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()
+    )[0];
+    if (ultimoBriefing?.proximoPasso) {
+      partes.push(`combinado: ${ultimoBriefing.proximoPasso}`);
     }
 
-    if (lead.temperatura === "Quente") {
-      return `Ola ${lead.nome.split(" ")[0]}! Vamos fechar essa parceria? Estou disponivel para tirar qualquer duvida final que voce tenha!`;
-    }
-
-    if (lead.temperatura === "Morno") {
-      return `Oi ${lead.nome.split(" ")[0]}! Espero que esteja tudo bem. Queria saber se conseguiu analisar nossa proposta. Posso te ligar para conversarmos?`;
-    }
-
-    return `Ola ${lead.nome.split(" ")[0]}! Tudo bem? Queria retomar nosso contato e entender melhor suas necessidades. Quando podemos conversar?`;
-  };
-
-  const copiarMensagem = (mensagem: string) => {
-    navigator.clipboard.writeText(mensagem);
-    toast({
-      title: "Mensagem copiada!",
-      description: "A sugestao de follow-up foi copiada para a area de transferencia.",
-    });
+    return partes.join(" · ");
   };
 
   const LeadCard = ({ lead, isQuaseAtrasado = false }: { lead: Lead; isQuaseAtrasado?: boolean }) => (
@@ -235,45 +200,29 @@ export const PendenciasTab = () => {
             <CardTitle>Sugestoes de follow-up</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 max-h-[600px] overflow-y-auto scrollbar-thin">
-            {[...atrasados, ...quaseAtrasados].slice(0, 5).map((lead) => {
-              // Calculado uma vez, não duas: antes o template rodava no render
-              // para exibir e de novo no onClick para copiar.
-              const doIA = rascunhos[lead.id];
-              const mensagem = doIA ?? gerarSugestaoFollowUp(lead);
-              const carregando = gerando === lead.id;
-              return (
-                <Card key={lead.id}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center justify-between">
-                      <span>{lead.nome}</span>
-                      <TemperaturaBadge temperatura={lead.temperatura} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-muted-foreground mb-3 italic whitespace-pre-line">"{mensagem}"</p>
-                    {/* Empilhados: a coluna e estreita e "Personalizar com IA"
-                        lado a lado com "Copiar" transborda no breakpoint lg. */}
-                    <div className="flex flex-col gap-2">
-                      <Button size="sm" variant="outline" onClick={() => copiarMensagem(mensagem)}>
-                        <Copy className="w-3 h-3 mr-1" />
-                        Copiar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="h-auto min-h-9 whitespace-normal py-1.5 leading-tight"
-                        disabled={carregando}
-                        onClick={() => personalizarComIA(lead)}
-                      >
-                        <Sparkles className="w-3 h-3 mr-1 shrink-0" />
-                        {carregando ? "Gerando..." : doIA ? "Gerar de novo" : "Personalizar com IA"}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-            {atrasados.length === 0 && quaseAtrasados.length === 0 && (
+            {paraSugestao.map((lead) => (
+              <Card key={lead.id}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    <span>{lead.nome}</span>
+                    <TemperaturaBadge temperatura={lead.temperatura} />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-sm text-muted-foreground mb-3">{resumoDoLead(lead)}</p>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="w-full h-auto min-h-9 whitespace-normal py-1.5 leading-tight"
+                    onClick={() => setFollowUpLead(lead)}
+                  >
+                    <Sparkles className="w-3 h-3 mr-1 shrink-0" />
+                    Gerar sugestão com IA
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+            {paraSugestao.length === 0 && (
               <Card>
                 <CardContent className="p-6 text-center text-muted-foreground">
                   Sem sugestoes no momento.
@@ -289,6 +238,14 @@ export const PendenciasTab = () => {
           open={showBriefing}
           onOpenChange={setShowBriefing}
           lead={selectedLead}
+        />
+      )}
+
+      {followUpLead && (
+        <FollowUpIADialog
+          lead={followUpLead}
+          open={!!followUpLead}
+          onOpenChange={(v) => !v && setFollowUpLead(null)}
         />
       )}
     </div>

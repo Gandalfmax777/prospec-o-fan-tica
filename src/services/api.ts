@@ -13,6 +13,7 @@ import type {
   CreateInviteInput,
   CreateLeadInput,
   CreateOrgInput,
+  FollowUpSugestao,
   JoinOrgInput,
   LeadResponse,
   LeaderTeamMember,
@@ -31,6 +32,8 @@ import type {
   SysAdminOrg,
   SysAdminMember,
   SysAdminUser,
+  SugestoesHistoricoFiltros,
+  SugestoesHistoricoResponse,
 } from "@/types/api";
 import type { Briefing, MetricasDiarias, PerdidoLead } from "@/types/crm";
 
@@ -254,16 +257,79 @@ export const api = {
     return normalizeLeadResponse(updated);
   },
 
-  // Rascunho de follow-up gerado por IA a partir dos briefings e do histórico
-  // do lead. Só devolve texto — não envia nada.
+  // Sugestão consultiva de follow-up gerada por IA a partir de todo o histórico
+  // do lead. Só devolve dados — não envia nada. Fica salva.
   gerarFollowUpLead: (
     id: string,
     body: { canal?: string; tom?: string } = {}
-  ): Promise<{ texto: string; semContexto: boolean }> =>
-    request<{ texto: string; semContexto: boolean }>(`/leads/${id}/follow-up`, {
+  ): Promise<FollowUpSugestao> =>
+    request<FollowUpSugestao>(`/leads/${id}/follow-up`, {
       method: "POST",
       body,
     }),
+
+  // Última sugestão salva do lead, ou null. Custo zero — evita pagar outra
+  // geração só para reler o que já foi produzido.
+  buscarFollowUpLead: (id: string): Promise<FollowUpSugestao | null> =>
+    request<FollowUpSugestao | null>(`/leads/${id}/follow-up`),
+
+  // Registra que o assessor copiou a mensagem. Só a primeira cópia é gravada.
+  marcarFollowUpCopiada: (
+    leadId: string,
+    sugestaoId: string
+  ): Promise<{ registrado: boolean }> =>
+    request<{ registrado: boolean }>(
+      `/leads/${leadId}/follow-up/${sugestaoId}/copiada`,
+      { method: "POST" }
+    ),
+
+  // Todas as sugestões já geradas para um lead, da mais recente para a antiga.
+  listarFollowUpsDoLead: (leadId: string): Promise<FollowUpSugestao[]> =>
+    request<FollowUpSugestao[]>(`/leads/${leadId}/follow-up/historico`),
+
+  // Histórico agregado. O escopo (próprias / equipe / organização) é decidido
+  // pelo backend conforme o papel — o que vem em `escopo` é o que valeu.
+  listarSugestoes: (
+    filtros: SugestoesHistoricoFiltros = {}
+  ): Promise<SugestoesHistoricoResponse> => {
+    const qs = new URLSearchParams();
+    Object.entries(filtros).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
+    });
+    const sufixo = qs.toString() ? `?${qs}` : "";
+    return request<SugestoesHistoricoResponse>(`/sugestoes-followup${sufixo}`);
+  },
+
+  // CSV do recorte filtrado INTEIRO, não só da página visível. Não passa pelo
+  // `request` porque aquele wrapper faz response.json() em tudo.
+  exportarSugestoesCsv: async (
+    filtros: SugestoesHistoricoFiltros = {}
+  ): Promise<{ blob: Blob; nomeArquivo: string; total: number | null }> => {
+    const qs = new URLSearchParams();
+    Object.entries(filtros).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
+    });
+    const sufixo = qs.toString() ? `?${qs}` : "";
+
+    const res = await fetch(`${API_URL}/sugestoes-followup/export.csv${sufixo}`, {
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const erro = await res.json().catch(() => ({ error: "Falha ao exportar" }));
+      throw new Error(erro.error || `HTTP ${res.status}`);
+    }
+
+    // Ambos só chegam porque estão em EXPOSED_HEADERS no server.js — sem isso
+    // o CORS os esconde e o arquivo desce sem nome.
+    const nome = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "");
+    const total = Number(res.headers.get("x-total-exportado"));
+
+    return {
+      blob: await res.blob(),
+      nomeArquivo: nome?.[1] ?? "sugestoes-followup.csv",
+      total: Number.isFinite(total) ? total : null,
+    };
+  },
 
   // ─── Leads Perdidos (pool compartilhado) ──────────────────────────────────
   // Marca o próprio lead como perdido (entra no pool org-wide).

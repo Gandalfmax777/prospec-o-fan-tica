@@ -47,6 +47,7 @@ import {
   Loader2,
   MessageSquare,
   Phone,
+  Sparkles,
   Trash2,
   Trophy,
   UserX,
@@ -56,6 +57,7 @@ import { useMemo, useState } from "react";
 import { BriefingDialog } from "./BriefingDialog";
 import { ConvertLeadDialog } from "./ConvertLeadDialog";
 import { EditLeadDialog } from "./EditLeadDialog";
+import { FollowUpIADialog } from "./FollowUpIADialog";
 import { HistoricoDialog } from "./HistoricoDialog";
 import { MarcarPerdidoDialog } from "./MarcarPerdidoDialog";
 import { NewLeadDialog } from "./NewLeadDialog";
@@ -76,6 +78,7 @@ export const LeadTable = () => {
   const [leadToConvert, setLeadToConvert] = useState<Lead | null>(null);
   const [showPerdidoDialog, setShowPerdidoDialog] = useState(false);
   const [leadToPerder, setLeadToPerder] = useState<Lead | null>(null);
+  const [leadFollowUp, setLeadFollowUp] = useState<Lead | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [origemFilter, setOrigemFilter] = useState<Origem | "Todas">("Todas");
   const [statusFilter, setStatusFilter] = useState<Status | "Todas">("Todas");
@@ -603,6 +606,15 @@ export const LeadTable = () => {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
+                          onClick={() => setLeadFollowUp(lead)}
+                          title="Sugestão de follow-up por IA"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
                           onClick={() => {
                             setLeadToEdit(lead);
                             setShowEditDialog(true);
@@ -671,6 +683,14 @@ export const LeadTable = () => {
               lead={selectedLead}
             />
           </>
+        )}
+
+        {leadFollowUp && (
+          <FollowUpIADialog
+            lead={leadFollowUp}
+            open={!!leadFollowUp}
+            onOpenChange={(v) => !v && setLeadFollowUp(null)}
+          />
         )}
 
         {leadToEdit && (
