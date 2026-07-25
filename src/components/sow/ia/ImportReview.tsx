@@ -19,6 +19,7 @@ interface ParsedAtivo {
   nome?: string | null;
   tipo?: string | null;
   valorAplicado?: number | null;
+  valorAtual?: number | null;
   vencimento?: string | null;
 }
 interface ParsedInstituicao {
@@ -35,6 +36,14 @@ interface ParsedResultado {
   ativosCriados?: number | null;
   ativosSubstituidos?: number | null;
   carteira?: ParsedCarteira | null;
+}
+
+// Mesmo fallback que lib/sow/writer.js usa ao gravar: muito extrato traz só o
+// saldo/posição atual, e nesse caso a IA preenche valorAtual e deixa
+// valorAplicado nulo. Sem repetir o fallback aqui, a revisão mostrava "R$ 0"
+// para ativos que foram gravados com valor.
+function valorDoAtivo(a: ParsedAtivo): number {
+  return a.valorAplicado ?? a.valorAtual ?? 0;
 }
 
 function fmtVencimento(v?: string | null): string {
@@ -146,7 +155,7 @@ export function ImportReview({ job }: { job: SoWImportJob }) {
                               {ativo.tipo || "—"}
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-sm">
-                              {formatBRLCompacto(ativo.valorAplicado ?? 0)}
+                              {formatBRLCompacto(valorDoAtivo(ativo))}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {fmtVencimento(ativo.vencimento)}
