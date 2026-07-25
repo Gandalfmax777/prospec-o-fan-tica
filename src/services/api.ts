@@ -408,8 +408,19 @@ export const api = {
     createOrg: (name: string): Promise<SysAdminOrg> =>
       request<SysAdminOrg>("/sysadmin/organizations", { method: "POST", body: { name } }),
 
-    deleteOrg: (id: string): Promise<null> =>
-      request<null>(`/sysadmin/organizations/${id}`, { method: "DELETE" }),
+    /**
+     * Devolve 204 quando ninguém tinha essa organização como ativa. Quando
+     * tinha, devolve 200 com o resumo: quantos foram reapontados para outra
+     * organização, e quem ficou sem nenhuma (essas pessoas perdem o acesso ao
+     * app até serem convidadas para alguma).
+     */
+    deleteOrg: (
+      id: string
+    ): Promise<{ reapontados: number; semOrganizacao: string[] } | null> =>
+      request<{ reapontados: number; semOrganizacao: string[] } | null>(
+        `/sysadmin/organizations/${id}`,
+        { method: "DELETE" }
+      ),
 
     getOrgMembers: (orgId: string): Promise<SysAdminMember[]> =>
       request<SysAdminMember[]>(`/sysadmin/organizations/${orgId}/members`),

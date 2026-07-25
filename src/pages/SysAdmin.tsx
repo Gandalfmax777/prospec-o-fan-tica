@@ -156,8 +156,20 @@ function OrgDetailPanel({
   const handleDeleteOrg = async () => {
     setDeletingOrg(true);
     try {
-      await api.sysadmin.deleteOrg(org.id);
-      toast({ title: `Organização "${org.name}" removida.` });
+      const r = await api.sysadmin.deleteOrg(org.id);
+      // Quem tinha esta organização como ativa foi reapontado para outra. Quem
+      // não tinha outra perdeu o acesso ao app — precisa aparecer aqui, senão
+      // quem apagou não descobre.
+      const semOrg = r?.semOrganizacao ?? [];
+      toast({
+        title: `Organização "${org.name}" removida.`,
+        description: semOrg.length
+          ? `Sem outra organização e agora sem acesso: ${semOrg.join(", ")}. Convide para uma organização para restaurar.`
+          : r?.reapontados
+            ? `${r.reapontados} usuário(s) movido(s) para outra organização.`
+            : undefined,
+        variant: semOrg.length ? "destructive" : undefined,
+      });
       onOrgDeleted();
     } catch {
       toast({ title: "Erro ao remover organização", variant: "destructive" });
