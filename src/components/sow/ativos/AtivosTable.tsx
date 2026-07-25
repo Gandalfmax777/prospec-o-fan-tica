@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -23,7 +23,7 @@ import { useSoWAtivosCliente, useDeleteAtivo } from "@/hooks/sow/useSoW";
 import { formatBRLExato } from "@/lib/money";
 import type { SoWAtivo, SoWAtivoStatus } from "@/types/sow";
 import { format, parseISO } from "date-fns";
-import { Edit2, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Edit2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AtivoFormDialog } from "./AtivoFormDialog";
 
@@ -43,6 +43,15 @@ function fmtDate(iso: string | null): string {
   }
 }
 
+/** Legenda sob a data. `diasAteVencimento` é assinado: negativo = já venceu. */
+function legendaVencimento(dias: number | null): string | null {
+  if (dias == null) return null;
+  if (dias < 0) return `venceu há ${-dias} ${-dias === 1 ? "dia" : "dias"}`;
+  if (dias === 0) return "vence hoje";
+  if (dias <= 90) return `em ${dias} ${dias === 1 ? "dia" : "dias"}`;
+  return null;
+}
+
 export function AtivosTable({
   clienteId,
   instituicaoId,
@@ -56,6 +65,7 @@ export function AtivosTable({
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<SoWAtivo | undefined>(undefined);
   const [toDelete, setToDelete] = useState<SoWAtivo | null>(null);
+  const [expandido, setExpandido] = useState<string | null>(null);
 
   const ativos = useMemo(() => {
     const list = data ?? [];
@@ -111,53 +121,112 @@ export function AtivosTable({
                 </TableCell>
               </TableRow>
             ) : (
-              ativos.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell>
-                    <span className="metric-badge bg-muted text-muted-foreground">{a.tipo}</span>
-                  </TableCell>
-                  <TableCell className="font-medium">{a.nome}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatBRLExato(a.valorAplicado)}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {a.rentabilidade || "—"}
-                  </TableCell>
-                  <TableCell className="text-sm">{fmtDate(a.vencimento)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {a.liquidez || "—"}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${STATUS_TONE[a.status] ?? "bg-muted text-muted-foreground"}`}
-                    >
-                      {a.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openEdit(a)}
-                        title="Editar"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => setToDelete(a)}
-                        title="Excluir"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+              ativos.map((a) => {
+                const legenda = legendaVencimento(a.diasAteVencimento);
+                const aberto = expandido === a.id;
+                return (
+                  <Fragment key={a.id}>
+                    <TableRow>
+                      <TableCell>
+                        <span className="metric-badge bg-muted text-muted-foreground">{a.tipo}</span>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1.5">
+                          {a.nome}
+                          {a.analiseIA && (
+                            <button
+                              type="button"
+                              onClick={() => setExpandido(aberto ? null : a.id)}
+                              className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/10"
+                              title="Análise da IA para este ativo"
+                            >
+                              <Sparkles className="h-3 w-3" />
+                              {aberto ? (
+                                <ChevronUp className="h-3 w-3" />
+                              ) : (
+                                <ChevronDown className="h-3 w-3" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatBRLExato(a.valorAplicado)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {a.rentabilidade || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {fmtDate(a.vencimento)}
+                        {legenda && (
+                          <span
+                            className={`block text-[11px] ${
+                              a.diasAteVencimento != null && a.diasAteVencimento < 0
+                                ? "text-destructive"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {legenda}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {a.liquidez || "—"}
+                      </TableCell>
+                      <TableCell>
+                        {/* statusEfetivo, não status: a coluna gravada nunca é
+                            recalculada (não há scheduler), então um papel
+                            vencido continuaria verde "Ativo" para sempre. */}
+                        <span
+                          className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${STATUS_TONE[a.statusEfetivo] ?? "bg-muted text-muted-foreground"}`}
+                        >
+                          {a.statusEfetivo}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => openEdit(a)}
+                            title="Editar"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => setToDelete(a)}
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {aberto && a.analiseIA && (
+                      <TableRow className="hover:bg-transparent">
+                        <TableCell colSpan={8} className="bg-muted/30 py-3">
+                          <div className="flex items-start gap-2 text-sm">
+                            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                            <div className="space-y-1">
+                              <p className="whitespace-pre-wrap text-muted-foreground">
+                                {a.analiseIA}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground/70">
+                                Análise gerada por IA em {fmtDate(a.analiseIAEm)} — revise antes de
+                                usar.
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
+                );
+              })
             )}
           </TableBody>
         </Table>

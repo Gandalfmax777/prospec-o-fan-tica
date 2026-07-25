@@ -1,5 +1,8 @@
 import type { Config } from "tailwindcss";
 import animate from "tailwindcss-animate";
+// Estava em devDependencies mas nunca registrado, então as classes `prose` não
+// existiam. É o que formata o Markdown que a IA devolve (ver components/sow/shared/Markdown).
+import typography from "@tailwindcss/typography";
 
 export default {
   darkMode: ["class"],
@@ -122,5 +125,5 @@ export default {
       },
     },
   },
-  plugins: [animate],
+  plugins: [animate, typography],
 } satisfies Config;

@@ -342,6 +342,12 @@ export function useGerarFollowUp() {
       sowApi.gerarFollowUp(clienteId, { oportunidadeId, canal, tom }),
   });
 }
-export function useGerarBriefing() {
-  return useMutation({ mutationFn: (clienteId: string) => sowApi.gerarBriefing(clienteId) });
+// Invalida, ao contrário do antigo useGerarBriefing: a análise não só devolve
+// texto, ela grava o comentário individual em cada ativo comentado.
+export function useAnalisarCarteira() {
+  const invalidate = useInvalidateClientes();
+  return useMutation({
+    mutationFn: (clienteId: string) => sowApi.analisarCarteira(clienteId),
+    onSuccess: invalidate,
+  });
 }

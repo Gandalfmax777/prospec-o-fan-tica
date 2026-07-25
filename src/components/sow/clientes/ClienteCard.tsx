@@ -33,21 +33,19 @@ export function ClienteCard({
   onClick?: () => void;
 }) {
   const proximoVencimento = useMemo(() => {
-    const ativos = cliente.ativos ?? [];
-    const now = Date.now();
-    const futuros = ativos
-      .map((a) => a.vencimento)
-      .filter((v): v is string => !!v)
-      .map((v) => {
-        try {
-          return parseISO(v);
-        } catch {
-          return null;
-        }
-      })
-      .filter((d): d is Date => d != null && d.getTime() >= now)
-      .sort((a, b) => a.getTime() - b.getTime());
-    return futuros[0] ? format(futuros[0], "dd/MM/yyyy") : "—";
+    // Filtra por diasAteVencimento (dia de calendário, calculado no backend) e
+    // não pelo instante: comparar com Date.now() descartava o ativo que vence
+    // HOJE, porque o vencimento é gravado à meia-noite.
+    const proximos = (cliente.ativos ?? [])
+      .filter((a) => a.vencimento && a.diasAteVencimento != null && a.diasAteVencimento >= 0)
+      .sort((a, b) => (a.diasAteVencimento ?? 0) - (b.diasAteVencimento ?? 0));
+    const alvo = proximos[0]?.vencimento;
+    if (!alvo) return "—";
+    try {
+      return format(parseISO(alvo), "dd/MM/yyyy");
+    } catch {
+      return "—";
+    }
   }, [cliente.ativos]);
 
   return (
@@ -97,7 +95,11 @@ export function ClienteCard({
             logo acima, com outro valor. Dois números, um rótulo só. */}
         <div className="flex items-center justify-end gap-2">
           <span className="text-[11px] text-muted-foreground">Score</span>
-          <ScoreBadge score={cliente.scoreValor} />
+          {/* scoreProbabilidade (0-100), e não scoreValor: este último é um
+              VALOR em reais, e o ScoreBadge faz bucket de cor em 75/50/25 —
+              qualquer cliente com potencial acima de R$ 75 virava "score alto"
+              verde, mostrando um número em reais sem o rótulo de reais. */}
+          <ScoreBadge score={cliente.scoreProbabilidade} />
         </div>
 
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-border/50 pt-2 text-[11px] text-muted-foreground">

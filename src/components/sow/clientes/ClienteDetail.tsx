@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ShareBar } from "@/components/sow/shared/ShareBar";
+import { Markdown } from "@/components/sow/shared/Markdown";
 import { InstituicoesPanel } from "@/components/sow/instituicoes/InstituicoesPanel";
 import { AtivosTable } from "@/components/sow/ativos/AtivosTable";
 import { AtivoFormDialog } from "@/components/sow/ativos/AtivoFormDialog";
@@ -28,7 +29,7 @@ import {
   useGerarAlertas,
   useGerarOportunidades,
   useGerarScore,
-  useGerarBriefing,
+  useAnalisarCarteira,
 } from "@/hooks/sow/useSoW";
 import { formatBRLCompacto } from "@/lib/money";
 import type { SoWClienteStatus } from "@/types/sow";
@@ -65,8 +66,8 @@ export function ClienteDetail({ clienteId }: { clienteId: string }) {
   const gerarAlertas = useGerarAlertas();
   const gerarOportunidades = useGerarOportunidades();
   const gerarScore = useGerarScore();
-  const gerarBriefing = useGerarBriefing();
-  const [briefing, setBriefing] = useState<string | null>(null);
+  const analisarCarteira = useAnalisarCarteira();
+  const [analise, setAnalise] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [instEqiId, setInstEqiId] = useState<string | null>(null);
@@ -115,13 +116,17 @@ export function ClienteDetail({ clienteId }: { clienteId: string }) {
     });
   };
 
-  const handleBriefing = async () => {
+  const handleAnalise = async () => {
     try {
-      const res = await gerarBriefing.mutateAsync(clienteId);
-      setBriefing(res.texto);
-      toast.success("Briefing gerado com sucesso!");
+      const res = await analisarCarteira.mutateAsync(clienteId);
+      setAnalise(res.texto);
+      toast.success(
+        res.ativosComentados > 0
+          ? `Carteira analisada — ${res.ativosComentados} ativo(s) comentados.`
+          : "Carteira analisada!"
+      );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao gerar briefing.");
+      toast.error(err instanceof Error ? err.message : "Erro ao analisar a carteira.");
     }
   };
 
@@ -265,24 +270,24 @@ export function ClienteDetail({ clienteId }: { clienteId: string }) {
               )}
               Gerar score
             </Button>
-            <Button disabled={gerarBriefing.isPending} onClick={handleBriefing}>
-              {gerarBriefing.isPending ? (
+            <Button disabled={analisarCarteira.isPending} onClick={handleAnalise}>
+              {analisarCarteira.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Sparkles className="mr-2 h-4 w-4" />
               )}
-              Gerar briefing
+              Analisar carteira
             </Button>
           </div>
 
-          {briefing && (
+          {analise && (
             <Card className="border-border/50 shadow-sm">
               <CardContent className="space-y-2 p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <FileText className="h-4 w-4 text-primary" />
-                  Briefing gerado por IA
+                  Análise da carteira
                 </div>
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{briefing}</p>
+                <Markdown>{analise}</Markdown>
               </CardContent>
             </Card>
           )}
