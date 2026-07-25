@@ -10,6 +10,7 @@ import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { PerdidosTab } from "@/components/crm/PerdidosTab";
 import { MetricasTab } from "@/components/crm/MetricasTab";
 import { PendenciasTab } from "@/components/crm/PendenciasTab";
+import { SugestoesIATab } from "@/components/crm/SugestoesIATab";
 import { AlertaBanner } from "@/components/crm/AlertaBanner";
 import { EmailNaoVerificadoBanner } from "@/components/auth/EmailNaoVerificadoBanner";
 import { LeaderDashboard } from "@/components/crm/LeaderDashboard";
@@ -23,6 +24,7 @@ import {
   Kanban,
   BarChart3,
   AlertTriangle,
+  Sparkles,
   LogOut,
   Settings,
   Users,
@@ -93,6 +95,7 @@ const CRMDashboard = () => {
         { key: "perdidos", label: "Perdidos", icon: UserX },
         { key: "metricas", label: "Métricas", icon: BarChart3 },
         { key: "pendencias", label: "Pendências", icon: AlertTriangle },
+        { key: "sugestoes", label: "Sugestões IA", icon: Sparkles },
         ...(isLeader ? [{ key: "leader", label: "Liderança", icon: Users }] : []),
         ...(isAdmin ? [{ key: "settings", label: "Configurações", icon: Settings }] : []),
       ],
@@ -147,6 +150,7 @@ const CRMDashboard = () => {
       case "perdidos":     return <PerdidosTab />;
       case "metricas":     return <MetricasTab />;
       case "pendencias":   return <PendenciasTab />;
+      case "sugestoes":    return <SugestoesIATab isLeader={isLeader} />;
       case "leader":       return <LeaderDashboard onSellerClick={handleSellerClick} />;
       case "settings":     return <CrmIntegrationSettings />;
       default:             return <DashboardHeader />;
