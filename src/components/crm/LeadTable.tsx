@@ -117,7 +117,7 @@ export const LeadTable = () => {
       const matchesOrigem =
         origemFilter === "Todas" || lead.origem === origemFilter;
       const matchesStatus =
-        statusFilter === "Todas" || lead.status === statusFilter;
+        statusFilter === "Todas" || lead.statusEfetivo === statusFilter;
       return matchesText && matchesOrigem && matchesStatus;
     });
   }, [activeLeads, origemFilter, searchTerm, statusFilter]);
@@ -351,7 +351,7 @@ export const LeadTable = () => {
                     className="hover:bg-muted/40 transition-colors duration-150 border-b border-border/30"
                   >
                     <TableCell className="hidden lg:table-cell">
-                      <PrioridadeBadge prioridade={lead.prioridade} />
+                      <PrioridadeBadge prioridade={lead.prioridadeEfetiva} />
                     </TableCell>
                     <TableCell className="font-medium">{lead.nome}</TableCell>
                     {visibleColumns.cidade &&
@@ -525,9 +525,9 @@ export const LeadTable = () => {
                           <span
                             className={cn(
                               "font-medium",
-                              lead.status === "Atrasado" &&
+                              lead.statusEfetivo === "Atrasado" &&
                                 "text-[hsl(var(--status-atrasado))]",
-                              lead.status === "Falar Hoje" &&
+                              lead.statusEfetivo === "Falar Hoje" &&
                                 "text-[hsl(var(--status-falar-hoje))]"
                             )}
                           >
@@ -539,7 +539,7 @@ export const LeadTable = () => {
                       </TableCell>
                     )}
                     <TableCell>
-                      <StatusBadge status={lead.status} />
+                      <StatusBadge status={lead.statusEfetivo} />
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       <Select

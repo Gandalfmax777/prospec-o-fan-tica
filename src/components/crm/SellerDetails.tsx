@@ -102,7 +102,7 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
         lead.nome.toLowerCase().includes(term) ||
         lead.cidade.toLowerCase().includes(term);
       const matchesStatus =
-        statusFilter === "Todas" || lead.status === statusFilter;
+        statusFilter === "Todas" || lead.statusEfetivo === statusFilter;
       const matchesOrigem =
         origemFilter === "Todas" || lead.origem === origemFilter;
       const matchesCidade =
@@ -606,7 +606,7 @@ export const SellerDetails = ({ sellerId, onBack }: SellerDetailsProps) => {
                       <TableCell>{lead.cidade}</TableCell>
                       <TableCell>{lead.origem}</TableCell>
                       <TableCell>
-                        <StatusBadge status={lead.status} />
+                        <StatusBadge status={lead.statusEfetivo} />
                       </TableCell>
                       <TableCell>
                         {formatCurrency(lead.statedValueCents || 0)}

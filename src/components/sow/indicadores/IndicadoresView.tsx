@@ -8,8 +8,9 @@ import {
   Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 
-const CHART = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
-const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 };
+// Tema compartilhado — era duplicado aqui e no CarteirasView, e a duplicata
+// carregava um comentário que o tema por tenant já tinha invalidado.
+import { CHART_COLORS as CHART, tooltipStyle } from "@/components/sow/shared/chartTheme";
 
 function ChartCard({ title, children, empty }: { title: string; children: React.ReactNode; empty?: boolean }) {
   return (

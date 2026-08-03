@@ -44,11 +44,11 @@ export const DashboardHeader = () => {
   const naoPerdidos = leadsArray.filter((lead) => lead.status !== "Perdido");
 
   const ativos = naoPerdidos.filter((lead) => lead.status !== "Convertido");
-  const atrasadosLeads = ativos.filter((lead) => lead.status === "Atrasado");
-  const falarHojeLeads = ativos.filter((lead) => lead.status === "Falar Hoje");
+  const atrasadosLeads = ativos.filter((lead) => lead.statusEfetivo === "Atrasado");
+  const falarHojeLeads = ativos.filter((lead) => lead.statusEfetivo === "Falar Hoje");
   const atrasados = atrasadosLeads.length;
   const falarHoje = falarHojeLeads.length;
-  const emDia = ativos.filter((lead) => lead.status === "Em Dia").length;
+  const emDia = ativos.filter((lead) => lead.statusEfetivo === "Em Dia").length;
   const convertidos = leadsArray.filter((lead) => lead.status === "Convertido").length;
 
   const todayStart = startOfDay(new Date());

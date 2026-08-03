@@ -152,7 +152,7 @@ export const MetricasTab = () => {
       .sort((a, b) => b.quantidade - a.quantidade)
       .slice(0, 8);
 
-    const atrasados = ativos.filter((lead) => lead.status === "Atrasado").length;
+    const atrasados = ativos.filter((lead) => lead.statusEfetivo === "Atrasado").length;
 
     const temposMediosConversao = convertidos
       .filter((lead) => lead.dataConversao)

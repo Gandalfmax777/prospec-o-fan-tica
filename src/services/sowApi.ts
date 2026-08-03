@@ -11,6 +11,7 @@ import type {
   SoWIndicadores,
   SoWShareSnapshot,
   SoWImportJob,
+  SoWAnaliseCarteira,
   CreateClienteInput,
   UpdateClienteInput,
   CreateInstituicaoInput,
@@ -141,12 +142,15 @@ export const sowApi = {
     request<SoWCliente>(`/sow/ai/clientes/${clienteId}/score`, { method: "POST" }),
   gerarFollowUp: (clienteId: string, body: { oportunidadeId?: string; canal?: string; tom?: string } = {}) =>
     request<{ texto: string }>(`/sow/ai/clientes/${clienteId}/follow-up`, { method: "POST", body }),
-  // Substituiu o antigo "briefing de reunião": além do relatório em Markdown,
+  // Última análise salva, ou null se nunca foi gerada. CUSTO ZERO — é o que a
+  // aba IA chama ao abrir, para não pagar outra geração de Opus só para reler.
+  getAnaliseCarteira: (clienteId: string) =>
+    request<SoWAnaliseCarteira | null>(`/sow/ai/clientes/${clienteId}/analise`),
+  // Substituiu o antigo "briefing de reunião". Além do relatório em Markdown,
   // grava o comentário individual de cada ativo comentado (por isso o hook
-  // invalida as queries — a tabela de Ativos muda com isso).
+  // invalida as queries — a tabela de Ativos muda com isso) e persiste o
+  // relatório. Devolve o MESMO shape do GET, para a mutation escrever direto no
+  // cache sem um refetch logo depois de uma chamada de ~60s.
   analisarCarteira: (clienteId: string) =>
-    request<{ texto: string; ativosComentados: number }>(
-      `/sow/ai/clientes/${clienteId}/analise`,
-      { method: "POST" }
-    ),
+    request<SoWAnaliseCarteira>(`/sow/ai/clientes/${clienteId}/analise`, { method: "POST" }),
 };

@@ -13,7 +13,7 @@ export const AlertaBanner = ({ onNavigate }: AlertaBannerProps) => {
   const { leads } = useCRM();
   const [dismissed, setDismissed] = useState(false);
 
-  const atrasados = leads.filter((lead) => lead.status === "Atrasado").length;
+  const atrasados = leads.filter((lead) => lead.statusEfetivo === "Atrasado").length;
 
   if (atrasados === 0 || dismissed) return null;
 

@@ -114,7 +114,7 @@ export const KanbanBoard = () => {
             <GripVertical className="w-4 h-4 text-muted-foreground/50 cursor-grab active:cursor-grabbing flex-shrink-0" />
             <h4 className="font-semibold text-sm">{lead.nome}</h4>
           </div>
-          <PrioridadeBadge prioridade={lead.prioridade} />
+          <PrioridadeBadge prioridade={lead.prioridadeEfetiva} />
         </div>
 
         <div className="space-y-1.5 text-xs text-muted-foreground">
@@ -147,9 +147,9 @@ export const KanbanBoard = () => {
             <span className="text-muted-foreground">Proximo:</span>
             <span
               className={cn(
-                lead.status === "Atrasado" &&
+                lead.statusEfetivo === "Atrasado" &&
                   "text-[hsl(var(--status-atrasado))] font-medium",
-                lead.status === "Falar Hoje" &&
+                lead.statusEfetivo === "Falar Hoje" &&
                   "text-[hsl(var(--status-falar-hoje))] font-medium"
               )}
             >
@@ -159,7 +159,7 @@ export const KanbanBoard = () => {
         </div>
 
         <div className="mt-3">
-          <StatusBadge status={lead.status} />
+          <StatusBadge status={lead.statusEfetivo} />
         </div>
 
         {lead.observacao && (

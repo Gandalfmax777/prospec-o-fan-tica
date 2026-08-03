@@ -361,6 +361,20 @@
     --sidebar-accent-foreground: 148 60% 60%;
     --sidebar-border: 148 20% 16%;
     --sidebar: 148 45% 5%;
+
+    /* Charts EQI escuro.
+       Este bloco FALTAVA. Sem ele, `[data-tenant="eqi"]` (0,1,0) e `.dark`
+       (0,1,0) empatam em especificidade e o tenant vence por vir depois no
+       arquivo — então o tema escuro da EQI herdava os verdes CLAROS
+       (--chart-1: 148 70% 22%) sobre --background: 148 45% 6%. Donut quase
+       invisível.
+       Mesmas matizes do claro, com luminosidade subida para o fundo escuro.
+       --chart-2 continua sendo o verde "da casa" nos quatro temas. */
+    --chart-1: 148 60% 50%;
+    --chart-2: 148 55% 58%;
+    --chart-3: 38 85% 62%;
+    --chart-4: 200 55% 60%;
+    --chart-5: 14 75% 62%;
   }
 }
 
