@@ -26,10 +26,13 @@ import type {
  * inteira para ADMIN, time para LEADER) — foi assim que a carteira do líder
  * ficou fundida com a do time. Ver docs/API.md, "Escopo por assessor".
  */
-export interface SoWScopeParams {
+// `type` e não `interface`: só aliases de objeto ganham index signature
+// implícita, e sem ela nada disto entra no `Record<string, …>` que o `qs`
+// abaixo recebe. Com interface, o tsc do CI (`tsc -b`) reprova.
+export type SoWScopeParams = {
   scope?: string;
   assessorId?: string;
-}
+};
 
 const qs = (params: Record<string, string | number | boolean | undefined>) => {
   const p = new URLSearchParams();
