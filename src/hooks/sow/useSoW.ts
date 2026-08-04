@@ -28,6 +28,7 @@ const keys = {
   historico: (org: string, clienteId?: string) => ["sow", org, "historico", clienteId ?? "carteira"] as const,
   score: (org: string) => ["sow", org, "score"] as const,
   importJob: (org: string, id: string) => ["sow", org, "importJob", id] as const,
+  analise: (org: string, clienteId: string) => ["sow", org, "analise", clienteId] as const,
 };
 
 // ── Dashboard / indicadores ──
@@ -342,12 +343,50 @@ export function useGerarFollowUp() {
       sowApi.gerarFollowUp(clienteId, { oportunidadeId, canal, tom }),
   });
 }
+/**
+ * Última análise de carteira salva do cliente.
+ *
+ * Substitui os dois `useState` que existiam em ClienteDetail e IAView: o estado
+ * era volátil, então cada releitura custava uma geração de Opus (~60s), e em
+ * IAView ele nem era limpo ao trocar de cliente — o relatório de um aparecia sob
+ * o nome do outro. Com a query keyed por clienteId, o vazamento some por
+ * construção.
+ *
+ * staleTime alto de propósito: a análise só muda quando alguém gera outra (a
+ * mutation abaixo escreve no cache) ou quando o patrimônio muda — e QUALQUER
+ * mutação de patrimônio já invalida ["sow", org] inteiro via useInvalidateSoW,
+ * o que refaz esta query e traz o `desatualizada` novo do backend. A flag
+ * aparece sozinha, sem plumbing nenhum.
+ */
+export function useAnaliseCarteira(clienteId: string | null) {
+  const org = useOrgId();
+  return useQuery({
+    queryKey: keys.analise(org, clienteId ?? ""),
+    queryFn: () => sowApi.getAnaliseCarteira(clienteId as string),
+    enabled: !!clienteId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 // Invalida, ao contrário do antigo useGerarBriefing: a análise não só devolve
 // texto, ela grava o comentário individual em cada ativo comentado.
 export function useAnalisarCarteira() {
-  const invalidate = useInvalidateClientes();
+  const qc = useQueryClient();
+  const org = useOrgId();
   return useMutation({
     mutationFn: (clienteId: string) => sowApi.analisarCarteira(clienteId),
-    onSuccess: invalidate,
+    onSuccess: (analise, clienteId) => {
+      // A análise recém-gerada JÁ veio na resposta do POST (mesmo shape do GET):
+      // escrever no cache evita um GET redundante logo depois de uma chamada que
+      // levou ~60s e custou caro.
+      qc.setQueryData(keys.analise(org, clienteId), analise);
+      // O predicate poupa a própria chave que acabamos de preencher; sem ele o
+      // invalidate marcaria como stale o dado que a linha acima escreveu e
+      // dispararia um refetch imediato dele.
+      qc.invalidateQueries({
+        queryKey: keys.all(org),
+        predicate: (q) => q.queryKey[2] !== "analise",
+      });
+    },
   });
 }

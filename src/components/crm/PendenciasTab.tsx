@@ -29,23 +29,26 @@ export const PendenciasTab = () => {
     (lead) => lead.status !== "Convertido" && lead.status !== "Perdido"
   );
 
-  const atrasados = ativos.filter((lead) => lead.status === "Atrasado");
-  const quaseAtrasados = ativos.filter((lead) => {
-    if (!lead.proximoContato) return false;
-    const dias = differenceInDays(lead.proximoContato, new Date());
-    return dias === 1 || dias === 2;
-  });
+  // Uma conta só, feita no servidor. Antes esta aba misturava a coluna
+  // `status` — congelada no instante da última escrita — com um
+  // `differenceInDays` ao vivo sobre o INSTANTE, e as duas discordavam:
+  //  · um lead atrasado há 6 dias dava -6, não casava com `1 || 2`, e como a
+  //    coluna ainda dizia "Em Dia" ele sumia das DUAS listas;
+  //  · um lead com prazo para amanhã, consultado às 14h, truncava para 0 e
+  //    sumia do "quase atrasado".
+  const atrasados = ativos.filter((lead) => lead.statusEfetivo === "Atrasado");
+  const quaseAtrasados = ativos.filter(
+    (lead) =>
+      lead.diasAteProximoContato != null &&
+      // Faixa FECHADA: o valor é assinado, então um `<= 2` solto pegaria -6.
+      lead.diasAteProximoContato >= 1 &&
+      lead.diasAteProximoContato <= 2
+  );
 
-  // As duas listas se sobrepõem: um lead com status "Atrasado" cujo
-  // `proximoContato` ainda está 1-2 dias à frente entra nas duas. O corte de 5
-  // cards que existia aqui escondia isso — sem ele, vira key duplicada, e o
-  // React descarta ou duplica cards em silêncio.
-  const vistos = new Set<string>();
-  const paraSugestao = [...atrasados, ...quaseAtrasados].filter((lead) => {
-    if (vistos.has(lead.id)) return false;
-    vistos.add(lead.id);
-    return true;
-  });
+  // Disjuntos por construção (< 0 vs [1,2]), então não há mais dedup a fazer: o
+  // Set que existia aqui compensava a sobreposição entre a coluna congelada e a
+  // conta ao vivo — era sintoma, não invariante.
+  const paraSugestao = [...atrasados, ...quaseAtrasados];
 
   /**
    * Resumo factual do estado do lead. Substitui o template de mensagem que
@@ -82,7 +85,7 @@ export const PendenciasTab = () => {
             <p className="text-sm text-muted-foreground">{lead.cidade} - {lead.telefone}</p>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <PrioridadeBadge prioridade={lead.prioridade} />
+            <PrioridadeBadge prioridade={lead.prioridadeEfetiva} />
             <TemperaturaBadge temperatura={lead.temperatura} />
           </div>
         </div>

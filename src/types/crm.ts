@@ -56,10 +56,35 @@ export interface Lead {
   cadencia: Cadencia;
   ultimoContato: Date | null;
   proximoContato: Date | null;
+
+  /**
+   * Status COMO GRAVADO no banco. É o que o PUT devolve e o que as declarações
+   * do assessor (Converter / Marcar perdido / Assumir) escrevem.
+   */
   status: Status;
+  /** Prioridade COMO GRAVADA. Mesma regra do `status` acima. */
+  prioridade: Prioridade;
+
+  /**
+   * Status derivado na leitura: "Atrasado"/"Falar Hoje" quando a data de
+   * `proximoContato` já diz isso. A coluna do banco não é recomputada — não há
+   * scheduler no backend —, então ela congela no instante da última escrita.
+   * Convertido/Perdido são declarações do assessor e sempre ganham da data.
+   *
+   * Use para EXIBIR, FILTRAR e CONTAR. Nunca mande de volta ao backend: o schema
+   * de validação do PUT é `.strict()` e responde 400.
+   */
+  statusEfetivo: Status;
+  /** Prioridade derivada, mesma regra. */
+  prioridadeEfetiva: Prioridade;
+  /**
+   * Dias de calendário até o próximo contato. ASSINADO: NEGATIVO = o follow-up
+   * combinado passou há N dias. `null` quando não há `proximoContato`.
+   */
+  diasAteProximoContato: number | null;
+
   temperatura: Temperatura;
   observacao: string;
-  prioridade: Prioridade;
   estimatedValueCents: number | null;
   statedValueCents: number | null;
   currency: string;

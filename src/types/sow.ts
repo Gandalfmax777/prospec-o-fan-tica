@@ -207,6 +207,32 @@ export interface SoWImportJob {
   concluidoEm: string | null;
 }
 
+/**
+ * Análise de carteira gerada por IA e persistida (`AnaliseCarteira` no backend).
+ *
+ * Antes o relatório só existia no `useState` da aba — recarregar a página o
+ * perdia e reler custava outra geração de Opus (~60s). Agora o POST devolve e o
+ * GET relê, no MESMO shape.
+ */
+export interface SoWAnaliseCarteira {
+  /** null quando a geração deu certo mas a gravação falhou (o texto vem mesmo assim). */
+  id: string | null;
+  clienteId: string;
+  /** O relatório em Markdown. Nome legado — era o shape do POST antes da persistência. */
+  texto: string;
+  ativosComentados: number;
+  geradaEm: string;
+  geradaPorId: string | null;
+  modeloIA: string | null;
+  tokensUsados: number | null;
+  /**
+   * true quando o patrimônio mudou depois da geração. Calculada no backend
+   * comparando com `Cliente.cacheAtualizadoEm` — não recalcular aqui, senão
+   * viram duas cópias da mesma conta e o caso nulo diverge.
+   */
+  desatualizada: boolean;
+}
+
 // ── inputs ──
 export interface CreateClienteInput {
   nome: string;

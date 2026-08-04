@@ -1,24 +1,21 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useSoW } from "@/context/SoWContext";
-import { useSoWClientes, useGerarAlertas, useGerarOportunidades, useGerarScore, useAnalisarCarteira } from "@/hooks/sow/useSoW";
+import { useSoWClientes, useGerarAlertas, useGerarOportunidades, useGerarScore } from "@/hooks/sow/useSoW";
 import { ImportarCarteira } from "./ImportarCarteira";
-import { Markdown } from "@/components/sow/shared/Markdown";
-import { Sparkles, Bell, Target, Gauge, FileText } from "lucide-react";
+import { AnaliseCarteiraBotao, AnaliseCarteiraCard } from "./AnaliseCarteira";
+import { Sparkles, Bell, Target, Gauge } from "lucide-react";
 import { toast } from "sonner";
 
 export default function IAView() {
   const { selectedClienteId, setSelectedClienteId } = useSoW();
   const { data: clientes } = useSoWClientes({});
-  const [analise, setAnalise] = useState<string>("");
 
   const gerarAlertas = useGerarAlertas();
   const gerarOportunidades = useGerarOportunidades();
   const gerarScore = useGerarScore();
-  const analisarCarteira = useAnalisarCarteira();
 
   const clienteId = selectedClienteId;
 
@@ -58,7 +55,11 @@ export default function IAView() {
           Selecione um cliente para importar a carteira e gerar insights.
         </Card>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-2">
+        // key={clienteId}: a análise já é uma query keyed por cliente, então o
+        // texto não vaza mais entre clientes ao trocar o Select. O key zera
+        // também o isPending da mutation, que antes deixava o botão travado sob
+        // o nome do cliente errado quando a troca acontecia durante a geração.
+        <div key={clienteId} className="grid gap-5 lg:grid-cols-2">
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Importar carteira</CardTitle></CardHeader>
             <CardContent><ImportarCarteira clienteId={clienteId} /></CardContent>
@@ -80,28 +81,11 @@ export default function IAView() {
                   onClick={() => run(() => gerarScore.mutateAsync(clienteId), "Score")}>
                   <Gauge className="h-4 w-4" /> Gerar score
                 </Button>
-                <Button variant="outline" className="gap-2" disabled={analisarCarteira.isPending}
-                  onClick={async () => {
-                    try {
-                      const r = await analisarCarteira.mutateAsync(clienteId);
-                      setAnalise(r.texto);
-                      toast.success(
-                        r.ativosComentados > 0
-                          ? `Carteira analisada — ${r.ativosComentados} ativo(s) comentados`
-                          : "Carteira analisada"
-                      );
-                    } catch (e) {
-                      toast.error(e instanceof Error ? e.message : "Falha ao analisar a carteira");
-                    }
-                  }}>
-                  <FileText className="h-4 w-4" /> Analisar carteira
-                </Button>
+                <AnaliseCarteiraBotao clienteId={clienteId} />
               </div>
-              {analise && (
-                <div className="rounded-lg border border-border bg-muted/30 p-3 max-h-96 overflow-y-auto">
-                  <Markdown>{analise}</Markdown>
-                </div>
-              )}
+              <div className="max-h-96 overflow-y-auto">
+                <AnaliseCarteiraCard clienteId={clienteId} />
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -32,6 +32,10 @@ interface CRMContextType {
       | "proximoContato"
       | "status"
       | "prioridade"
+      // Derivados na leitura — o backend os calcula, ninguém os envia.
+      | "statusEfetivo"
+      | "prioridadeEfetiva"
+      | "diasAteProximoContato"
       | "score"
       | "historico"
       | "pontos"
@@ -173,6 +177,10 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
         | "proximoContato"
         | "status"
         | "prioridade"
+        // Derivados na leitura — o backend os calcula, ninguém os envia.
+        | "statusEfetivo"
+        | "prioridadeEfetiva"
+        | "diasAteProximoContato"
         | "score"
         | "historico"
         | "pontos"
@@ -203,7 +211,17 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateLead = useCallback(async (id: string, updates: Partial<Lead>) => {
     try {
       setError(null);
-      const updateData: UpdateLeadInput = { ...updates };
+
+      // Os campos derivados são calculados na leitura e NÃO existem como coluna.
+      // `updateLeadSchema` é `.strict()` no backend, então mandá-los de volta
+      // responde 400 — e o spread abaixo não dispara excess-property check do
+      // TypeScript, ou seja, o compilador não avisaria.
+      const { statusEfetivo, prioridadeEfetiva, diasAteProximoContato, ...enviaveis } = updates;
+      void statusEfetivo;
+      void prioridadeEfetiva;
+      void diasAteProximoContato;
+
+      const updateData: UpdateLeadInput = { ...enviaveis };
 
       if (updates.ultimoContato) updateData.ultimoContato = updates.ultimoContato.toISOString();
       if (updates.proximoContato) updateData.proximoContato = updates.proximoContato.toISOString();

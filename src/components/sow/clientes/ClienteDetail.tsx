@@ -15,11 +15,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ShareBar } from "@/components/sow/shared/ShareBar";
-import { Markdown } from "@/components/sow/shared/Markdown";
+import { CarteiraPanel } from "@/components/sow/shared/CarteiraPanel";
 import { InstituicoesPanel } from "@/components/sow/instituicoes/InstituicoesPanel";
 import { AtivosTable } from "@/components/sow/ativos/AtivosTable";
 import { AtivoFormDialog } from "@/components/sow/ativos/AtivoFormDialog";
 import { ClienteTimeline } from "@/components/sow/timeline/ClienteTimeline";
+import {
+  AnaliseCarteiraBotao,
+  AnaliseCarteiraCard,
+} from "@/components/sow/ia/AnaliseCarteira";
 import { EditClienteDialog } from "./EditClienteDialog";
 import { useSoW } from "@/context/SoWContext";
 import {
@@ -29,7 +33,6 @@ import {
   useGerarAlertas,
   useGerarOportunidades,
   useGerarScore,
-  useAnalisarCarteira,
 } from "@/hooks/sow/useSoW";
 import { formatBRLCompacto } from "@/lib/money";
 import type { SoWClienteStatus } from "@/types/sow";
@@ -38,10 +41,8 @@ import {
   ArrowLeft,
   Bell,
   Building2,
-  Sparkles,
   Target,
   Gauge,
-  FileText,
   Loader2,
   Pencil,
   Trash2,
@@ -66,8 +67,6 @@ export function ClienteDetail({ clienteId }: { clienteId: string }) {
   const gerarAlertas = useGerarAlertas();
   const gerarOportunidades = useGerarOportunidades();
   const gerarScore = useGerarScore();
-  const analisarCarteira = useAnalisarCarteira();
-  const [analise, setAnalise] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [instEqiId, setInstEqiId] = useState<string | null>(null);
@@ -114,20 +113,6 @@ export function ClienteDetail({ clienteId }: { clienteId: string }) {
       onError: (err) =>
         toast.error(err instanceof Error ? err.message : `Erro ao ${label.toLowerCase()}.`),
     });
-  };
-
-  const handleAnalise = async () => {
-    try {
-      const res = await analisarCarteira.mutateAsync(clienteId);
-      setAnalise(res.texto);
-      toast.success(
-        res.ativosComentados > 0
-          ? `Carteira analisada — ${res.ativosComentados} ativo(s) comentados.`
-          : "Carteira analisada!"
-      );
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao analisar a carteira.");
-    }
   };
 
   // Resolve (criando se preciso) a instituição da casa e abre o form de ativo já
@@ -212,13 +197,21 @@ export function ClienteDetail({ clienteId }: { clienteId: string }) {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="instituicoes" className="w-full">
+      {/* "carteira" é a aba padrão: é a leitura que o assessor faz primeiro —
+          quanto tem, onde está, e quanto está fora da casa. As outras três são
+          para mexer no cadastro. */}
+      <Tabs defaultValue="carteira" className="w-full">
         <TabsList>
+          <TabsTrigger value="carteira">Carteira</TabsTrigger>
           <TabsTrigger value="instituicoes">Instituições</TabsTrigger>
           <TabsTrigger value="ativos">Ativos</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="ia">IA</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="carteira" className="mt-4">
+          <CarteiraPanel clienteId={clienteId} />
+        </TabsContent>
 
         <TabsContent value="instituicoes" className="mt-4">
           <InstituicoesPanel clienteId={clienteId} />
@@ -270,27 +263,10 @@ export function ClienteDetail({ clienteId }: { clienteId: string }) {
               )}
               Gerar score
             </Button>
-            <Button disabled={analisarCarteira.isPending} onClick={handleAnalise}>
-              {analisarCarteira.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              Analisar carteira
-            </Button>
+            <AnaliseCarteiraBotao clienteId={clienteId} />
           </div>
 
-          {analise && (
-            <Card className="border-border/50 shadow-sm">
-              <CardContent className="space-y-2 p-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <FileText className="h-4 w-4 text-primary" />
-                  Análise da carteira
-                </div>
-                <Markdown>{analise}</Markdown>
-              </CardContent>
-            </Card>
-          )}
+          <AnaliseCarteiraCard clienteId={clienteId} />
         </TabsContent>
       </Tabs>
 
