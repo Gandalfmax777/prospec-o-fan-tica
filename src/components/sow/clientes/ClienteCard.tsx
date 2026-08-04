@@ -5,6 +5,7 @@ import { ScoreBadge } from "@/components/sow/shared/ScoreBadge";
 import { formatBRLCompacto, formatPct } from "@/lib/money";
 import type { SoWCliente, SoWClienteStatus } from "@/types/sow";
 import { format, parseISO } from "date-fns";
+import { UserRound } from "lucide-react";
 
 const STATUS_TONE: Record<SoWClienteStatus, string> = {
   Prospect: "bg-muted text-muted-foreground",
@@ -28,9 +29,17 @@ function fmtDate(iso: string | null): string {
 export function ClienteCard({
   cliente,
   onClick,
+  mostrarAssessor = false,
 }: {
   cliente: SoWCliente;
   onClick?: () => void;
+  /**
+   * Etiqueta de quem é o cliente. Ligada só fora do escopo "meus clientes",
+   * onde a lista mistura carteiras — sem ela, o líder não distingue o cliente
+   * dele do cliente do assessor, que foi como um cliente alheio acabou
+   * excluído por engano.
+   */
+  mostrarAssessor?: boolean;
 }) {
   const proximoVencimento = useMemo(() => {
     // Filtra por diasAteVencimento (dia de calendário, calculado no backend) e
@@ -58,6 +67,12 @@ export function ClienteCard({
           <CardTitle className="text-base font-semibold truncate">{cliente.nome}</CardTitle>
           {cliente.cidade && (
             <p className="text-xs text-muted-foreground truncate">{cliente.cidade}</p>
+          )}
+          {mostrarAssessor && (
+            <p className="mt-1 inline-flex max-w-full items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <UserRound className="h-3 w-3 shrink-0" />
+              <span className="truncate">{cliente.assessorNome ?? "Sem assessor"}</span>
+            </p>
           )}
         </div>
         <span

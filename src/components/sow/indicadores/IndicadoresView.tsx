@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSoWScopeParams } from "@/context/SoWContext";
 import { useSoWIndicadores } from "@/hooks/sow/useSoW";
 import { formatBRLCompacto } from "@/lib/money";
 import { VencimentosHeatmap } from "./VencimentosHeatmap";
@@ -28,7 +29,7 @@ function ChartCard({ title, children, empty }: { title: string; children: React.
 }
 
 export default function IndicadoresView() {
-  const { data, isLoading } = useSoWIndicadores();
+  const { data, isLoading } = useSoWIndicadores(useSoWScopeParams());
 
   if (isLoading) {
     return <div className="grid gap-4 md:grid-cols-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-lg" />)}</div>;

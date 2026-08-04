@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useSoWScopeParams } from "@/context/SoWContext";
 import { useSoWAlertas, useUpdateAlerta, useDeleteAlerta } from "@/hooks/sow/useSoW";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -45,6 +46,7 @@ export default function AlertasView({ onNavigate }: { onNavigate?: (key: string)
   const [toDelete, setToDelete] = useState<SoWAlerta | null>(null);
 
   const { data, isLoading } = useSoWAlertas({
+    ...useSoWScopeParams(),
     severidade: severidade === TODAS ? undefined : severidade,
     resolvido: mostrarResolvidos ? undefined : false,
   });

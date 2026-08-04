@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { useSoW } from "@/context/SoWContext";
+import { useSoW, useSoWScopeParams } from "@/context/SoWContext";
 import { useSoWClientes, useGerarAlertas, useGerarOportunidades, useGerarScore } from "@/hooks/sow/useSoW";
 import { ImportarCarteira } from "./ImportarCarteira";
 import { AnaliseCarteiraBotao, AnaliseCarteiraCard } from "./AnaliseCarteira";
@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 export default function IAView() {
   const { selectedClienteId, setSelectedClienteId } = useSoW();
-  const { data: clientes } = useSoWClientes({});
+  const { data: clientes } = useSoWClientes(useSoWScopeParams());
 
   const gerarAlertas = useGerarAlertas();
   const gerarOportunidades = useGerarOportunidades();

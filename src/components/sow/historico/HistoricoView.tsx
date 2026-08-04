@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useSoWScopeParams } from "@/context/SoWContext";
 import { useSoWHistorico, useSoWClientes } from "@/hooks/sow/useSoW";
 import { formatBRLCompacto } from "@/lib/money";
 import { History } from "lucide-react";
@@ -12,8 +13,13 @@ const CARTEIRA = "__carteira__";
 
 export default function HistoricoView() {
   const [alvo, setAlvo] = useState<string>(CARTEIRA);
-  const { data: clientes } = useSoWClientes({});
-  const { data, isLoading } = useSoWHistorico(alvo === CARTEIRA ? undefined : alvo, 12);
+  const escopo = useSoWScopeParams();
+  const { data: clientes } = useSoWClientes(escopo);
+  const { data, isLoading } = useSoWHistorico({
+    ...escopo,
+    clienteId: alvo === CARTEIRA ? undefined : alvo,
+    meses: 12,
+  });
 
   const chartData = useMemo(
     () => (data?.pontos ?? []).map((p) => ({ mes: `${String(p.mes).padStart(2, "0")}/${p.ano}`, sharePct: p.sharePct, ...p })),

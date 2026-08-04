@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useSoW } from "@/context/SoWContext";
+import { useSoW, useSoWScopeParams } from "@/context/SoWContext";
 import { useSoWClientes } from "@/hooks/sow/useSoW";
 import { CarteiraPanel } from "@/components/sow/shared/CarteiraPanel";
 import { ArrowLeft, Wallet } from "lucide-react";
@@ -22,8 +22,8 @@ import { ArrowLeft, Wallet } from "lucide-react";
  * mesma tela em dois caminhos de navegação, não duas implementações.
  */
 export default function CarteirasView() {
-  const { selectedClienteId, setSelectedClienteId, scope } = useSoW();
-  const { data, isLoading } = useSoWClientes({ scope: scope || undefined });
+  const { selectedClienteId, setSelectedClienteId } = useSoW();
+  const { data, isLoading } = useSoWClientes(useSoWScopeParams());
 
   const clienteNome = useMemo(
     () => (data ?? []).find((c) => c.id === selectedClienteId)?.nome ?? "",

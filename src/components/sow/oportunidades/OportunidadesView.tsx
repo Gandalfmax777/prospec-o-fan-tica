@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ShareBar } from "@/components/sow/shared/ShareBar";
 import { UrgenciaBadge } from "@/components/sow/shared/UrgenciaBadge";
+import { useSoWScopeParams } from "@/context/SoWContext";
 import {
   useSoWOportunidades,
   useUpdateOportunidade,
@@ -61,6 +62,7 @@ export default function OportunidadesView() {
     });
 
   const { data, isLoading } = useSoWOportunidades({
+    ...useSoWScopeParams(),
     status: status === TODAS ? undefined : status,
     urgencia: urgencia === TODAS ? undefined : urgencia,
   });
