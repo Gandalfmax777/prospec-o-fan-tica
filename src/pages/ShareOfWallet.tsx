@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/context/AuthContext";
-import { SoWProvider, useSoW } from "@/context/SoWContext";
+import { SoWProvider, useSoW, type SoWScope } from "@/context/SoWContext";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -21,7 +21,15 @@ import {
   Sun,
   Moon,
   ArrowLeftRight,
+  UserRound,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import {
   Sidebar,
@@ -58,6 +66,7 @@ import AlertasView from "@/components/sow/alertas/AlertasView";
 import IAView from "@/components/sow/ia/IAView";
 import HistoricoView from "@/components/sow/historico/HistoricoView";
 import IndicadoresView from "@/components/sow/indicadores/IndicadoresView";
+import EquipeView from "@/components/sow/equipe/EquipeView";
 import ConfigView from "@/components/sow/config/ConfigView";
 
 const SoWShell = () => {
@@ -65,8 +74,10 @@ const SoWShell = () => {
   const { signOut, user } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const navigate = useNavigate();
-  const { setSelectedClienteId } = useSoW();
+  const { setSelectedClienteId, scope, setScope, assessorId, assessorNome, setAssessorId } =
+    useSoW();
   const isAdmin = user?.role === "ADMIN";
+  const isLeader = isAdmin || user?.role === "LEADER";
   const isDark = resolvedTheme === "dark";
 
   // Tema por tenant (EQI) — mesma lógica da prospecção, para herdar o visual.
@@ -99,9 +110,10 @@ const SoWShell = () => {
         { key: "ia", label: "IA", icon: Sparkles },
         { key: "historico", label: "Histórico", icon: History },
         { key: "indicadores", label: "Indicadores", icon: BarChart3 },
+        ...(isLeader ? [{ key: "equipe", label: "Liderança", icon: Users }] : []),
         ...(isAdmin ? [{ key: "config", label: "Configurações", icon: Settings }] : []),
       ],
-    [isAdmin]
+    [isAdmin, isLeader]
   );
 
   const handleLogout = async () => {
@@ -136,6 +148,7 @@ const SoWShell = () => {
       case "ia": return <IAView />;
       case "historico": return <HistoricoView />;
       case "indicadores": return <IndicadoresView />;
+      case "equipe": return <EquipeView onNavigate={goTo} />;
       case "config": return <ConfigView />;
       default: return <SoWDashboard onNavigate={goTo} />;
     }
@@ -264,15 +277,58 @@ const SoWShell = () => {
                 </p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setTheme(isDark ? "light" : "dark")}
-              title={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
-            >
-              {isDark ? <Sun className="h-[15px] w-[15px]" /> : <Moon className="h-[15px] w-[15px]" />}
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* O seletor é a resposta ao "tá tudo junto, o meu com os deles":
+                  o módulo abre em "Meus clientes" e ampliar passa a ser uma
+                  escolha visível. SELLER não vê — o backend já o trava em "me",
+                  então a opção só criaria a impressão de que há o que escolher. */}
+              {isLeader && (
+                <>
+                  {assessorId && (
+                    <button
+                      onClick={() => setAssessorId(null)}
+                      className="hidden items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary hover:bg-primary/20 transition-colors sm:inline-flex"
+                      title="Sair da carteira deste assessor"
+                    >
+                      <UserRound className="h-3 w-3" />
+                      <span className="max-w-[140px] truncate">
+                        {assessorNome ?? "Assessor"}
+                      </span>
+                      ✕
+                    </button>
+                  )}
+                  <Select
+                    value={scope}
+                    onValueChange={(v) => {
+                      setScope(v as SoWScope);
+                      // Trocar de escopo abandona o drill-down: manter o
+                      // assessorId faria o backend ignorar o escopo escolhido,
+                      // e o seletor passaria a mentir sobre o que está na tela.
+                      setAssessorId(null);
+                      setSelectedClienteId(null);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[168px] text-[12px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="me">Meus clientes</SelectItem>
+                      <SelectItem value="team">Minha equipe</SelectItem>
+                      {isAdmin && <SelectItem value="org">Toda a organização</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setTheme(isDark ? "light" : "dark")}
+                title={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
+              >
+                {isDark ? <Sun className="h-[15px] w-[15px]" /> : <Moon className="h-[15px] w-[15px]" />}
+              </Button>
+            </div>
           </div>
         </header>
 

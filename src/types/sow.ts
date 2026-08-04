@@ -35,6 +35,13 @@ export interface SoWCliente {
   cidade: string | null;
   codigo: string | null;
   assessorId: string;
+  /**
+   * Só vem preenchido nas rotas que enriquecem (lista de clientes, detalhe,
+   * score) — `assessorId` é escalar sem relação no Prisma, então não há include
+   * que traga o nome de graça. A UI só mostra a etiqueta de dono fora do escopo
+   * "me", onde ela é redundante.
+   */
+  assessorNome: string | null;
   status: SoWClienteStatus;
   metaSharePct: number;
   probabilidadeConcentracao: number | null;
@@ -175,6 +182,24 @@ export interface SoWDashboard {
   valorConvertido: number;
   taxaMediaSharePct: number;
   evolucaoMensal: { mes: string; sharePct: number; patrimonio: number }[];
+}
+
+/** Uma linha da visão de Liderança (GET /sow/equipe). */
+export interface SoWEquipeAssessor {
+  assessorId: string;
+  assessorNome: string;
+  clientes: number;
+  patrimonioTotal: number;
+  patrimonioInterno: number;
+  patrimonioExterno: number;
+  sharePct: number;
+  metaSharePct: number;
+  gap: number;
+}
+
+export interface SoWEquipe {
+  totals: Omit<SoWEquipeAssessor, "assessorId" | "assessorNome"> & { assessores: number };
+  breakdown: SoWEquipeAssessor[];
 }
 
 export interface SoWIndicadores {

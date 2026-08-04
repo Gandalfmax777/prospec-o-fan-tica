@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useSoW } from "@/context/SoWContext";
+import { useSoW, useSoWScopeParams } from "@/context/SoWContext";
 import { useSoWClientes } from "@/hooks/sow/useSoW";
 import type { SoWClienteStatus } from "@/types/sow";
 import { ClienteCard } from "./ClienteCard";
@@ -37,11 +37,15 @@ export default function ClientesView({
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [sort, setSort] = useState<string>("share");
 
+  const escopo = useSoWScopeParams();
   const { data, isLoading } = useSoWClientes({
-    scope: scope || undefined,
+    ...escopo,
     status: statusFilter === "todos" ? undefined : statusFilter,
     sort,
   });
+
+  // Em "meus clientes" a etiqueta seria a mesma em todos os cards.
+  const mostrarAssessor = scope !== "me";
 
   void onNavigate;
 
@@ -111,7 +115,12 @@ export default function ClientesView({
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {clientes.map((c) => (
-            <ClienteCard key={c.id} cliente={c} onClick={() => setSelectedClienteId(c.id)} />
+            <ClienteCard
+              key={c.id}
+              cliente={c}
+              mostrarAssessor={mostrarAssessor}
+              onClick={() => setSelectedClienteId(c.id)}
+            />
           ))}
         </div>
       )}

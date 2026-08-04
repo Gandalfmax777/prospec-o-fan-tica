@@ -6,14 +6,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSoW } from "@/context/SoWContext";
+import { useSoW, useSoWScopeParams } from "@/context/SoWContext";
 import { useSoWClientes } from "@/hooks/sow/useSoW";
 import { Coins } from "lucide-react";
 import { AtivosTable } from "./AtivosTable";
 
 export default function AtivosView() {
-  const { selectedClienteId, setSelectedClienteId, scope } = useSoW();
-  const { data, isLoading } = useSoWClientes({ scope: scope || undefined });
+  const { selectedClienteId, setSelectedClienteId } = useSoW();
+  const { data, isLoading } = useSoWClientes(useSoWScopeParams());
 
   if (selectedClienteId) {
     return <AtivosTable clienteId={selectedClienteId} />;

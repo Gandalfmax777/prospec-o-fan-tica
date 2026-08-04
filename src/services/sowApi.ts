@@ -8,6 +8,7 @@ import type {
   SoWOportunidade,
   SoWAlerta,
   SoWDashboard,
+  SoWEquipe,
   SoWIndicadores,
   SoWShareSnapshot,
   SoWImportJob,
@@ -17,6 +18,21 @@ import type {
   CreateInstituicaoInput,
   CreateAtivoInput,
 } from "@/types/sow";
+
+/**
+ * Recorte por assessor, aceito por toda rota de listagem/agregação do SoW.
+ *
+ * Mandar SEMPRE: sem `scope` o backend cai no default por papel (organização
+ * inteira para ADMIN, time para LEADER) — foi assim que a carteira do líder
+ * ficou fundida com a do time. Ver docs/API.md, "Escopo por assessor".
+ */
+// `type` e não `interface`: só aliases de objeto ganham index signature
+// implícita, e sem ela nada disto entra no `Record<string, …>` que o `qs`
+// abaixo recebe. Com interface, o tsc do CI (`tsc -b`) reprova.
+export type SoWScopeParams = {
+  scope?: string;
+  assessorId?: string;
+};
 
 const qs = (params: Record<string, string | number | boolean | undefined>) => {
   const p = new URLSearchParams();
@@ -29,7 +45,7 @@ const qs = (params: Record<string, string | number | boolean | undefined>) => {
 
 export const sowApi = {
   // ── Clientes ──
-  getClientes: (params: { scope?: string; assessorId?: string; status?: string; sort?: string } = {}) =>
+  getClientes: (params: SoWScopeParams & { status?: string; sort?: string } = {}) =>
     request<SoWCliente[]>(`/sow/clientes${qs(params)}`),
   getCliente: (id: string) => request<SoWCliente>(`/sow/clientes/${id}`),
   createCliente: (body: CreateClienteInput) =>
@@ -90,30 +106,36 @@ export const sowApi = {
     request<null>(`/sow/timeline/${id}`, { method: "DELETE" }),
 
   // ── Oportunidades ──
-  getOportunidades: (params: { status?: string; urgencia?: string; clienteId?: string } = {}) =>
-    request<SoWOportunidade[]>(`/sow/oportunidades${qs(params)}`),
+  getOportunidades: (
+    params: SoWScopeParams & { status?: string; urgencia?: string; clienteId?: string } = {}
+  ) => request<SoWOportunidade[]>(`/sow/oportunidades${qs(params)}`),
   updateOportunidade: (id: string, body: Partial<SoWOportunidade>) =>
     request<SoWOportunidade>(`/sow/oportunidades/${id}`, { method: "PUT", body }),
   deleteOportunidade: (id: string) =>
     request<null>(`/sow/oportunidades/${id}`, { method: "DELETE" }),
 
   // ── Alertas ──
-  getAlertas: (params: { resolvido?: boolean; severidade?: string; clienteId?: string } = {}) =>
-    request<SoWAlerta[]>(`/sow/alertas${qs(params)}`),
+  getAlertas: (
+    params: SoWScopeParams & { resolvido?: boolean; severidade?: string; clienteId?: string } = {}
+  ) => request<SoWAlerta[]>(`/sow/alertas${qs(params)}`),
   updateAlerta: (id: string, body: { resolvido?: boolean }) =>
     request<SoWAlerta>(`/sow/alertas/${id}`, { method: "PUT", body }),
   deleteAlerta: (id: string) =>
     request<null>(`/sow/alertas/${id}`, { method: "DELETE" }),
 
   // ── Dashboard / indicadores / histórico / score ──
-  getDashboard: (params: { scope?: string; assessorId?: string } = {}) =>
+  getDashboard: (params: SoWScopeParams = {}) =>
     request<SoWDashboard>(`/sow/dashboard${qs(params)}`),
-  getIndicadores: (params: { scope?: string } = {}) =>
+  getIndicadores: (params: SoWScopeParams = {}) =>
     request<SoWIndicadores>(`/sow/indicadores${qs(params)}`),
-  getHistoricoShare: (params: { clienteId?: string; meses?: number } = {}) =>
+  getHistoricoShare: (params: SoWScopeParams & { clienteId?: string; meses?: number } = {}) =>
     request<{ pontos: SoWShareSnapshot[] }>(`/sow/historico/share${qs(params)}`),
-  getScore: (params: { scope?: string } = {}) =>
+  getScore: (params: SoWScopeParams = {}) =>
     request<SoWCliente[]>(`/sow/score${qs(params)}`),
+
+  // ── Liderança ──
+  // 403 para SELLER: a aba nem aparece para ele, mas a rota é a fronteira real.
+  getEquipe: () => request<SoWEquipe>("/sow/equipe"),
 
   // ── IA ──
   // Vários extratos vão numa requisição só: o backend consolida por instituição

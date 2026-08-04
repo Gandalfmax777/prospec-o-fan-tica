@@ -2,6 +2,7 @@ import { KPICard } from "@/components/crm/KPICard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
+import { useSoWScopeParams } from "@/context/SoWContext";
 import { useSoWDashboard } from "@/hooks/sow/useSoW";
 import { formatBRLCompacto, formatPct } from "@/lib/money";
 import { ShareEvolutionChart } from "./ShareEvolutionChart";
@@ -19,7 +20,7 @@ import {
 } from "lucide-react";
 
 export default function SoWDashboard({ onNavigate }: { onNavigate?: (key: string) => void }) {
-  const { data, isLoading, error } = useSoWDashboard();
+  const { data, isLoading, error } = useSoWDashboard(useSoWScopeParams());
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
 

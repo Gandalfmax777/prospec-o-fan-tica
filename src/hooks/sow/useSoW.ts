@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
-import { sowApi } from "@/services/sowApi";
+import { sowApi, type SoWScopeParams } from "@/services/sowApi";
 import type {
   CreateClienteInput,
   UpdateClienteInput,
@@ -13,39 +13,59 @@ function useOrgId() {
   return useAuth().user?.organizationId ?? "no-org";
 }
 
+type ScopeArgs = SoWScopeParams;
+
+/**
+ * Escopo corrente, serializado para entrar na query key.
+ *
+ * TODA chave de listagem/agregação precisa dele. Sem isso o react-query devolve
+ * o cache do escopo anterior ao trocar de "meus clientes" para "toda a
+ * organização" — a tela não muda, e o bug de carteiras misturadas volta
+ * mascarado de "não atualiza".
+ */
+const scopeKey = (s: ScopeArgs) => `${s.scope ?? ""}:${s.assessorId ?? ""}`;
+
 const keys = {
   all: (org: string) => ["sow", org] as const,
   dashboard: (org: string, scope: string) => ["sow", org, "dashboard", scope] as const,
-  indicadores: (org: string) => ["sow", org, "indicadores"] as const,
+  indicadores: (org: string, scope: string) => ["sow", org, "indicadores", scope] as const,
   clientes: (org: string, scope: string) => ["sow", org, "clientes", scope] as const,
   cliente: (org: string, id: string) => ["sow", org, "cliente", id] as const,
   catalogo: (org: string) => ["sow", org, "catalogo"] as const,
   instituicoes: (org: string, clienteId: string) => ["sow", org, "instituicoes", clienteId] as const,
   ativosCliente: (org: string, clienteId: string) => ["sow", org, "ativos", clienteId] as const,
   timeline: (org: string, clienteId: string) => ["sow", org, "timeline", clienteId] as const,
-  oportunidades: (org: string) => ["sow", org, "oportunidades"] as const,
-  alertas: (org: string) => ["sow", org, "alertas"] as const,
-  historico: (org: string, clienteId?: string) => ["sow", org, "historico", clienteId ?? "carteira"] as const,
-  score: (org: string) => ["sow", org, "score"] as const,
+  oportunidades: (org: string, scope: string) => ["sow", org, "oportunidades", scope] as const,
+  alertas: (org: string, scope: string) => ["sow", org, "alertas", scope] as const,
+  historico: (org: string, scope: string, clienteId?: string) =>
+    ["sow", org, "historico", scope, clienteId ?? "carteira"] as const,
+  score: (org: string, scope: string) => ["sow", org, "score", scope] as const,
+  equipe: (org: string) => ["sow", org, "equipe"] as const,
   importJob: (org: string, id: string) => ["sow", org, "importJob", id] as const,
   analise: (org: string, clienteId: string) => ["sow", org, "analise", clienteId] as const,
 };
 
 // ── Dashboard / indicadores ──
-export function useSoWDashboard(scope = "") {
+export function useSoWDashboard(params: ScopeArgs = {}) {
   const org = useOrgId();
-  return useQuery({ queryKey: keys.dashboard(org, scope), queryFn: () => sowApi.getDashboard({ scope: scope || undefined }) });
+  return useQuery({
+    queryKey: keys.dashboard(org, scopeKey(params)),
+    queryFn: () => sowApi.getDashboard(params),
+  });
 }
-export function useSoWIndicadores() {
+export function useSoWIndicadores(params: ScopeArgs = {}) {
   const org = useOrgId();
-  return useQuery({ queryKey: keys.indicadores(org), queryFn: () => sowApi.getIndicadores() });
+  return useQuery({
+    queryKey: keys.indicadores(org, scopeKey(params)),
+    queryFn: () => sowApi.getIndicadores(params),
+  });
 }
 
 // ── Clientes ──
-export function useSoWClientes(params: { scope?: string; status?: string; sort?: string } = {}) {
+export function useSoWClientes(params: ScopeArgs & { status?: string; sort?: string } = {}) {
   const org = useOrgId();
   return useQuery({
-    queryKey: [...keys.clientes(org, params.scope ?? ""), params.status ?? "", params.sort ?? ""],
+    queryKey: [...keys.clientes(org, scopeKey(params)), params.status ?? "", params.sort ?? ""],
     queryFn: () => sowApi.getClientes(params),
   });
 }
@@ -243,10 +263,17 @@ export function useDeleteEvento(clienteId: string) {
 }
 
 // ── Oportunidades ──
-export function useSoWOportunidades(params: { status?: string; urgencia?: string; clienteId?: string } = {}) {
+export function useSoWOportunidades(
+  params: ScopeArgs & { status?: string; urgencia?: string; clienteId?: string } = {}
+) {
   const org = useOrgId();
   return useQuery({
-    queryKey: [...keys.oportunidades(org), params.status ?? "", params.urgencia ?? "", params.clienteId ?? ""],
+    queryKey: [
+      ...keys.oportunidades(org, scopeKey(params)),
+      params.status ?? "",
+      params.urgencia ?? "",
+      params.clienteId ?? "",
+    ],
     queryFn: () => sowApi.getOportunidades(params),
   });
 }
@@ -265,19 +292,28 @@ export function useDeleteOportunidade() {
 }
 
 // ── Alertas ──
-export function useSoWAlertas(params: { resolvido?: boolean; severidade?: string; clienteId?: string } = {}) {
+export function useSoWAlertas(
+  params: ScopeArgs & { resolvido?: boolean; severidade?: string; clienteId?: string } = {}
+) {
   const org = useOrgId();
   return useQuery({
-    queryKey: [...keys.alertas(org), String(params.resolvido ?? ""), params.severidade ?? "", params.clienteId ?? ""],
+    queryKey: [
+      ...keys.alertas(org, scopeKey(params)),
+      String(params.resolvido ?? ""),
+      params.severidade ?? "",
+      params.clienteId ?? "",
+    ],
     queryFn: () => sowApi.getAlertas(params),
   });
 }
+// Prefixo sem o escopo de propósito: resolver um alerta tem que invalidar a
+// lista de TODOS os escopos em cache, não só a que está na tela.
 export function useUpdateAlerta() {
   const qc = useQueryClient();
   const org = useOrgId();
   return useMutation({
     mutationFn: ({ id, resolvido }: { id: string; resolvido: boolean }) => sowApi.updateAlerta(id, { resolvido }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.alertas(org) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sow", org, "alertas"] }),
   });
 }
 export function useDeleteAlerta() {
@@ -285,21 +321,33 @@ export function useDeleteAlerta() {
   const org = useOrgId();
   return useMutation({
     mutationFn: (id: string) => sowApi.deleteAlerta(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.alertas(org) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sow", org, "alertas"] }),
   });
 }
 
 // ── Histórico / score ──
-export function useSoWHistorico(clienteId?: string, meses = 12) {
+export function useSoWHistorico(
+  params: ScopeArgs & { clienteId?: string; meses?: number } = {}
+) {
   const org = useOrgId();
+  const { clienteId, meses = 12 } = params;
   return useQuery({
-    queryKey: [...keys.historico(org, clienteId), meses],
-    queryFn: () => sowApi.getHistoricoShare({ clienteId, meses }),
+    queryKey: [...keys.historico(org, scopeKey(params), clienteId), meses],
+    queryFn: () => sowApi.getHistoricoShare({ ...params, meses }),
   });
 }
-export function useSoWScore() {
+export function useSoWScore(params: ScopeArgs = {}) {
   const org = useOrgId();
-  return useQuery({ queryKey: keys.score(org), queryFn: () => sowApi.getScore() });
+  return useQuery({
+    queryKey: keys.score(org, scopeKey(params)),
+    queryFn: () => sowApi.getScore(params),
+  });
+}
+
+// ── Liderança ──
+export function useSoWEquipe(enabled = true) {
+  const org = useOrgId();
+  return useQuery({ queryKey: keys.equipe(org), queryFn: () => sowApi.getEquipe(), enabled });
 }
 
 // ── IA ──

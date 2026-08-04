@@ -6,14 +6,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSoW } from "@/context/SoWContext";
+import { useSoW, useSoWScopeParams } from "@/context/SoWContext";
 import { useSoWClientes } from "@/hooks/sow/useSoW";
 import { CalendarClock } from "lucide-react";
 import { ClienteTimeline } from "./ClienteTimeline";
 
 export default function TimelineView() {
-  const { selectedClienteId, setSelectedClienteId, scope } = useSoW();
-  const { data, isLoading } = useSoWClientes({ scope: scope || undefined });
+  const { selectedClienteId, setSelectedClienteId } = useSoW();
+  const { data, isLoading } = useSoWClientes(useSoWScopeParams());
 
   if (selectedClienteId) {
     return <ClienteTimeline clienteId={selectedClienteId} />;
