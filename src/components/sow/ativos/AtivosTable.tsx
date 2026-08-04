@@ -37,6 +37,8 @@ import {
   ChevronRight,
   ChevronUp,
   Edit2,
+  Eye,
+  EyeOff,
   Plus,
   Sparkles,
   Trash2,
@@ -151,16 +153,38 @@ export function AtivosTable({
   const [sort, setSort] = useState<{ key: SortKey; dir: Dir }>({ key: "valor", dir: "desc" });
   const [agrupar, setAgrupar] = useState<Agrupamento>("nenhum");
   const [gruposFechados, setGruposFechados] = useState<Set<string>>(new Set());
+  // Ativo resgatado é posição morta numa leitura de alocação — o dinheiro já
+  // saiu daquele papel. Some da TABELA por padrão, e SÓ da tabela: o cálculo do
+  // patrimônio e do share continua somando tudo (lib/sow/recalc.js).
+  //
+  // Filtrar no cálculo seria pior que o ruído que resolve: share é
+  // `interno / total`, então marcar um ativo externo como resgatado faria o
+  // share SUBIR sem nenhuma captação atrás — e o dinheiro resgatado que ainda
+  // não foi realocado no sistema simplesmente sumiria do patrimônio do cliente.
+  const [ocultarResgatados, setOcultarResgatados] = useState(true);
 
   // Aninhada dentro do InstituicoesPanel, a coluna de instituição é ruído.
   const mostrarInstituicao = !instituicaoId;
 
+  const doEscopo = useMemo(
+    () =>
+      instituicaoId
+        ? carteira.ativos.filter((a) => a.instituicaoId === instituicaoId)
+        : carteira.ativos,
+    [carteira.ativos, instituicaoId]
+  );
+
+  const resgatados = useMemo(
+    () => doEscopo.filter((a) => a.statusEfetivo === "Resgatado"),
+    [doEscopo]
+  );
+
   const linhas = useMemo(() => {
-    const base = instituicaoId
-      ? carteira.ativos.filter((a) => a.instituicaoId === instituicaoId)
-      : carteira.ativos;
-    return ordenar(base, sort.key, sort.dir);
-  }, [carteira.ativos, instituicaoId, sort]);
+    const visiveis = ocultarResgatados
+      ? doEscopo.filter((a) => a.statusEfetivo !== "Resgatado")
+      : doEscopo;
+    return ordenar(visiveis, sort.key, sort.dir);
+  }, [doEscopo, ocultarResgatados, sort]);
 
   // Escopo: dentro de uma instituição, os totais são os DELA — mas o `%` de cada
   // linha continua sendo % da carteira do cliente (ver CarteiraAtivo.pct).
@@ -168,6 +192,8 @@ export function AtivosTable({
     ? carteira.instituicoes.find((i) => i.id === instituicaoId)
     : undefined;
   const somaLinhas = linhas.reduce((acc, a) => acc + (a.valorAplicado ?? 0), 0);
+  const somaResgatados = resgatados.reduce((acc, a) => acc + (a.valorAplicado ?? 0), 0);
+  const resgatadosOcultos = ocultarResgatados && resgatados.length > 0;
   const naoMapeado = escopo ? escopo.naoMapeado : carteira.naoMapeadoTotal;
   const declarado = escopo ? escopo.valorInformado ?? 0 : 0;
   const patrimonioEscopo = escopo ? escopo.patrimonio : carteira.total;
@@ -351,6 +377,29 @@ export function AtivosTable({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-foreground">Ativos</h3>
         <div className="flex items-center gap-2">
+          {/* Só aparece quando há o que ocultar — senão é ruído permanente. */}
+          {resgatados.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => setOcultarResgatados((v) => !v)}
+              title={
+                ocultarResgatados
+                  ? "Mostrar os ativos resgatados na tabela"
+                  : "Ocultar os ativos resgatados da tabela"
+              }
+            >
+              {ocultarResgatados ? (
+                <Eye className="mr-1.5 h-3.5 w-3.5" />
+              ) : (
+                <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              {ocultarResgatados
+                ? `Mostrar ${resgatados.length} resgatado${resgatados.length > 1 ? "s" : ""}`
+                : "Ocultar resgatados"}
+            </Button>
+          )}
           <ToggleGroup
             type="single"
             size="sm"
@@ -407,7 +456,22 @@ export function AtivosTable({
                   colSpan={COLUNAS}
                   className="py-8 text-center text-sm text-muted-foreground"
                 >
-                  Nenhum ativo cadastrado.
+                  {/* "Nenhum ativo cadastrado" seria mentira quando existem
+                      ativos e todos estão ocultos. */}
+                  {resgatadosOcultos ? (
+                    <>
+                      Todos os {resgatados.length} ativos desta carteira estão resgatados.{" "}
+                      <button
+                        type="button"
+                        onClick={() => setOcultarResgatados(false)}
+                        className="underline decoration-dotted underline-offset-2 hover:text-foreground"
+                      >
+                        Mostrar
+                      </button>
+                    </>
+                  ) : (
+                    "Nenhum ativo cadastrado."
+                  )}
                 </TableCell>
               </TableRow>
             ) : grupos ? (
@@ -449,18 +513,23 @@ export function AtivosTable({
           </TableBody>
 
           {/*
-            TRÊS linhas, nunca uma. "Total" sozinho seria mentira em toda carteira
+            NUNCA uma linha só. "Total" sozinho seria mentira em toda carteira
             com saldo declarado maior que a soma dos ativos: a soma das linhas
             NÃO é o patrimônio, e é justamente por isso que a coluna de % não
             fecha 100%.
+
+            O rodapé tem de explicar o patrimônio INTEIRO. Por isso o que está
+            oculto ganha linha própria: nada some em silêncio, e
+            visíveis + resgatados + declarado = patrimônio, sempre.
           */}
-          {!isLoading && linhas.length > 0 && (
+          {!isLoading && (linhas.length > 0 || resgatadosOcultos) && (
             <TableFooter>
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={2}>
                   Total em ativos{" "}
                   <span className="font-normal text-muted-foreground">
-                    ({linhas.length} {linhas.length === 1 ? "posição" : "posições"})
+                    ({linhas.length} {linhas.length === 1 ? "posição" : "posições"}
+                    {resgatadosOcultos ? ", sem os resgatados" : ""})
                   </span>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
@@ -471,6 +540,27 @@ export function AtivosTable({
                 </TableCell>
                 <TableCell colSpan={4} />
               </TableRow>
+
+              {resgatadosOcultos && (
+                <TableRow className="text-muted-foreground hover:bg-transparent">
+                  <TableCell colSpan={2} className="font-normal">
+                    <button
+                      type="button"
+                      onClick={() => setOcultarResgatados(false)}
+                      className="underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+                    >
+                      Resgatados ({resgatados.length}) — ocultos
+                    </button>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatBRLExato(somaResgatados)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatPct(pctDe(somaResgatados, carteira.total), 1)}
+                  </TableCell>
+                  <TableCell colSpan={4} />
+                </TableRow>
+              )}
 
               {naoMapeado > 0 && (
                 <TableRow className="text-muted-foreground hover:bg-transparent">
