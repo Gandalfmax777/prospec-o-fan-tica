@@ -45,10 +45,14 @@ Veja [README_FRONTEND.md](README_FRONTEND.md) para documentação detalhada.
 
 Pipeline automatizado via GitHub Actions e Coolify.
 
-- **Pull Request aberto** → roda `CI` (lint + typecheck)
+- **Pull Request aberto** → roda `CI` (lint + typecheck + build) — sem acesso a configuração de produção
 - **Merge em `main`** → roda `Deploy`:
-  1. Build da imagem Docker (multi-stage Vite + nginx)
-  2. Push para `ghcr.io/gandalfmax777/prospec-o-fan-tica:latest`
-  3. Trigger do webhook de deploy no Coolify, que puxa a nova imagem e faz rolling update
+  1. Lê `VITE_*` do 1Password (`production-web/public-config`)
+  2. Build da imagem Docker (multi-stage Vite + nginx) com elas como build args
+  3. Push para `ghcr.io/gandalfmax777/prospec-o-fan-tica` (`latest` + `sha-<commit>`)
+  4. Dispara o deploy no Coolify, que puxa a nova imagem e faz rolling update
 
-As variáveis `VITE_*` são injetadas em **build-time** (ficam baked no bundle JS). Por isso são gerenciadas como GitHub Actions secrets — alterar uma exige rebuild da imagem.
+A configuração de produção vem do **1Password** (vault `cdr-prospeccao`); o
+único secret do repositório é `OP_SERVICE_ACCOUNT_TOKEN`. As variáveis `VITE_*`
+são configuração **pública** de build-time (ficam no bundle JS) — alterar uma
+exige rebuild. Detalhes: [docs/PRODUCTION_CONFIG.md](docs/PRODUCTION_CONFIG.md).
