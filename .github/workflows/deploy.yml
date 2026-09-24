@@ -17,6 +17,15 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+# Configuração de produção vem do 1Password (vault `cdr-prospeccao`), não de
+# GitHub Secrets. O único secret do repositório é OP_SERVICE_ACCOUNT_TOKEN, e
+# cada job carrega só o item de que precisa:
+#
+#   build-and-push → production-web/public-config  (VITE_*, vão para o bundle)
+#   deploy         → production-coolify            (token + uuid do app web)
+#
+# Ver docs/PRODUCTION_CONFIG.md.
+
 jobs:
   build-and-push:
     name: Build & Push image
@@ -43,6 +52,42 @@ jobs:
         id: img
         run: echo "name=${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
 
+      # VITE_* são configuração PÚBLICA: o Vite as grava no bundle JS, que
+      # qualquer navegador baixa. Vêm do 1Password por ser a fonte única da
+      # configuração de produção, não por serem sigilosas — e por isso são as
+      # únicas coisas que este build recebe.
+      - name: Load build config from 1Password
+        id: web
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        with:
+          export-env: false
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          VITE_API_URL: op://cdr-prospeccao/production-web/public-config/VITE_API_URL
+          VITE_BETTER_AUTH_URL: op://cdr-prospeccao/production-web/public-config/VITE_BETTER_AUTH_URL
+
+      # Sem isto, um campo vazio no 1Password gera um build "bem-sucedido" cujo
+      # bundle cai no fallback http://localhost:3333 de src/services/*.ts.
+      - name: Validate build config
+        env:
+          VITE_API_URL: ${{ steps.web.outputs.VITE_API_URL }}
+          VITE_BETTER_AUTH_URL: ${{ steps.web.outputs.VITE_BETTER_AUTH_URL }}
+        run: |
+          falhou=0
+          for nome in VITE_API_URL VITE_BETTER_AUTH_URL; do
+            valor="${!nome:-}"
+            if [ -z "$valor" ]; then
+              echo "::error::$nome ausente ou vazio em op://cdr-prospeccao/production-web/public-config"
+              falhou=1
+            elif [[ "$valor" != https://* ]]; then
+              echo "::error::$nome precisa começar com https:// em produção"
+              falhou=1
+            else
+              echo "✓ $nome loaded"
+            fi
+          done
+          exit "$falhou"
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -60,9 +105,17 @@ jobs:
             ${{ env.REGISTRY }}/${{ steps.img.outputs.name }}:sha-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Manifest único, e não índice. Com provenance/SBOM (default do
+          # build-push-action) a tag aponta para um índice OCI cujos filhos —
+          # o manifest da imagem e o da attestation — ficam SEM tag no GHCR, e
+          # o passo "Apagar versões sem tag" abaixo os apagava: `latest` e as
+          # tags de sha passavam a apontar para manifests inexistentes e o
+          # pull do Coolify falhava com "manifests/sha256:… not found".
+          provenance: false
+          sbom: false
           build-args: |
-            VITE_API_URL=${{ secrets.VITE_API_URL }}
-            VITE_BETTER_AUTH_URL=${{ secrets.VITE_BETTER_AUTH_URL }}
+            VITE_API_URL=${{ steps.web.outputs.VITE_API_URL }}
+            VITE_BETTER_AUTH_URL=${{ steps.web.outputs.VITE_BETTER_AUTH_URL }}
 
   deploy:
     name: Trigger Coolify deploy
@@ -70,14 +123,65 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Call Coolify webhook
+      - name: Load Coolify config from 1Password
+        id: coolify
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        with:
+          export-env: false
         env:
-          URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
-          TOKEN: ${{ secrets.COOLIFY_API_KEY }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          COOLIFY_BASE_URL: op://cdr-prospeccao/production-coolify/shared/COOLIFY_BASE_URL
+          COOLIFY_TOKEN: op://cdr-prospeccao/production-coolify/shared/COOLIFY_TOKEN
+          APP_UUID: op://cdr-prospeccao/production-coolify/web/APP_UUID
+
+      # A URL de deploy é derivada em memória de BASE_URL + APP_UUID, e não
+      # guardada: um COOLIFY_WEBHOOK_URL à parte duplicaria o uuid e podia
+      # divergir dele.
+      - name: Trigger Coolify deploy
+        env:
+          COOLIFY_BASE_URL: ${{ steps.coolify.outputs.COOLIFY_BASE_URL }}
+          COOLIFY_TOKEN: ${{ steps.coolify.outputs.COOLIFY_TOKEN }}
+          APP_UUID: ${{ steps.coolify.outputs.APP_UUID }}
         run: |
-          curl -fsSL --retry 3 --retry-delay 5 -X GET "$URL" \
-            -H "Authorization: Bearer $TOKEN" \
-            -H "Accept: application/json"
+          set -euo pipefail
+          falhou=0
+          for nome in COOLIFY_BASE_URL COOLIFY_TOKEN APP_UUID; do
+            if [ -z "${!nome:-}" ]; then
+              echo "::error::$nome ausente ou vazio no item production-coolify"
+              falhou=1
+            else
+              echo "✓ $nome loaded"
+            fi
+          done
+          [ "$falhou" -eq 0 ] || exit 1
+
+          if [[ "$COOLIFY_BASE_URL" != https://* ]]; then
+            echo "::error::COOLIFY_BASE_URL precisa começar com https://"
+            exit 1
+          fi
+          if [[ ! "$APP_UUID" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::APP_UUID com formato inesperado"
+            exit 1
+          fi
+          # Vai dentro de aspas no config do curl abaixo.
+          if [[ "$COOLIFY_TOKEN" == *[[:space:]\"\\]* ]]; then
+            echo "::error::COOLIFY_TOKEN contém espaço, aspas ou barra invertida"
+            exit 1
+          fi
+
+          DEPLOY_URL="${COOLIFY_BASE_URL%/}/api/v1/deploy?uuid=${APP_UUID}&force=false"
+
+          # POST: desde o Coolify v4.2.0 o GET neste endpoint responde 405
+          # (a v4.1.x aceita os dois). O corpo da resposta vai para uma
+          # variável, e só a mensagem é impressa. O token vai por stdin (-K -),
+          # para não aparecer na linha de comando do processo.
+          resposta="$(
+            printf 'header = "Authorization: Bearer %s"\n' "$COOLIFY_TOKEN" |
+              curl -fsS --retry 3 --retry-delay 5 -K - -X POST \
+                -H "Accept: application/json" \
+                "$DEPLOY_URL"
+          )"
+          jq -r '.deployments[]?.message // empty' <<<"$resposta" 2>/dev/null || true
 
   # Poda o registry.
   #
@@ -103,11 +207,10 @@ jobs:
       # a imagem anterior perdia a tag a cada push e este passo apagaria o
       # histórico inteiro.
       #
-      # Seguro também quanto a multi-arch porque o build é de uma plataforma só
-      # e o provenance default do build-push-action no Actions é inline (grava
-      # no config da imagem, não num manifest separado). Se este build virar
-      # multi-arch, os manifests por arquitetura viram versões sem tag e este
-      # passo quebraria a imagem publicada. Revise antes de pôr arm64.
+      # Só é seguro porque o build publica MANIFEST ÚNICO (provenance e sbom
+      # desligados acima). Qualquer coisa que volte a gerar índice OCI —
+      # attestation, SBOM, multi-arch — cria filhos sem tag, e este passo os
+      # apagaria, quebrando a imagem publicada. Revise antes de mudar isso.
       - name: Apagar versões sem tag
         uses: actions/delete-package-versions@v5
         with:

@@ -5,8 +5,9 @@ dist
 .vscode
 .codex
 .claude
-.env
-.env.*
+**/.env
+**/.env.*
+**/*.env
 !.env.example
 *.log
 README.md
